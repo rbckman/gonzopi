@@ -73,10 +73,10 @@ sudo pip3 install web.py==0.61
 if [ "$screen" = "ugeek-hdtft" ]
 then
 echo "installing ugeek screen drivers"
-echo "Tarina configuration seems to be in order in /boot/config.txt"
+echo "Gonzopi configuration seems to be in order in /boot/config.txt"
 echo "Adding to /boot/config.txt"
 cat <<'EOF' >> /boot/config.txt
-#-----Tarina configuration starts here-------
+#-----GonzoPi configuration starts here-------
 #gonzopi-rpi-configuration-ugeek-1.0
 #Rpi-hd-tft
 dtoverlay=dpi18
@@ -109,7 +109,7 @@ dtparam=act_led_activelow=off
 dtparam=pwr_led_trigger=none
 dtparam=pwr_led_activelow=off
 
-#--------Tarina configuration end here---------
+#--------GonzoPi configuration end here---------
 EOF
 elif [ "$screen" = "hyperpixel4" ]
 then
@@ -119,10 +119,10 @@ curl -sSL get.pimoroni.com/hyperpixel4-legacy | bash
 cat <<'EOF' >> /etc/udev/rules.d/98-hyperpixel4-calibration.rules
 ATTRS{name}=="Goodix Capacitive TouchScreen", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1"
 EOF
-echo "Tarina configuration seems to be in order in /boot/config.txt"
+echo "GonzoPi configuration seems to be in order in /boot/config.txt"
 echo "Adding to /boot/config.txt"
 cat <<'EOF' >> /boot/config.txt
-#-----Tarina configuration starts here-------
+#-----GonzoPi configuration starts here-------
 #gonzopi-rpi-configuration-hyperpixel-1.0
 #hyperpixel
 start_x=1
@@ -158,16 +158,16 @@ dpi_mode=87
 dpi_output_format=0x7f216
 hdmi_timings=480 0 10 16 59 800 0 15 113 15 0 0 0 60 0 32000000 6
 
-#--------Tarina configuration end here---------
+#--------GonzoPi configuration end here---------
 EOF
 
 if [ "$screen" = "hdmi-screen" ]
 then
 echo "configuring hdmi screen"
-echo "Tarina configuration seems to be in order in /boot/config.txt"
+echo "GonzoPi configuration seems to be in order in /boot/config.txt"
 echo "Adding to /boot/config.txt"
 cat <<'EOF' >> /boot/config.txt
-#-----Tarina configuration starts here-------
+#-----GonzoPi configuration starts here-------
 #gonzopi-rpi-configuration-hdmi-screen
 start_x=1
 gpu_mem=256
@@ -186,7 +186,7 @@ framebuffer_height=480
 #hdmi_force_hotplug=1
 hdmi_group=1
 hdmi_mode=3
-#--------Tarina configuration end here---------
+#--------GonzoPi configuration end here---------
 EOF
 
 else
@@ -234,7 +234,7 @@ options snd slots=snd_usb_audio, snd_bcm2835
 EOF
 fi
 
-echo "Automatically boot to Tarina"
+echo "Automatically boot to GonzoPi"
 echo "creating a gonzopi.service file"
 cat <<'EOF' > /etc/systemd/system/gonzopi.service
 [Unit]
@@ -387,6 +387,6 @@ cat <<'EOF'
                                
 EOF
 sleep 2
-echo "Rebooting into up-to-date Tarina..."
+echo "Rebooting into up-to-date GonzoPi..."
 sleep 2
 reboot
