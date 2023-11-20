@@ -4314,9 +4314,10 @@ def copytousb(filmfolder):
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
     films = getfilms(filmfolder)
+    usbmount = 0
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
-        usbconnected = os.path.ismount('/media/usb0')
+        usbconnected = os.path.ismount('/media/usb'+str(usbmount))
         if pressed == 'middle':
             writemessage('canceling..')
             time.sleep(2)
@@ -4329,7 +4330,7 @@ def copytousb(filmfolder):
             except:
                 pass
             try:
-                p = subprocess.check_output('stat -f -c %T /media/usb0', shell=True)
+                p = subprocess.check_output('stat -f -c %T /media/usb'+str(usbmount), shell=True)
                 filesystem = p.decode()
                 print('filesystem info: ' + filesystem)
             except:
@@ -4340,6 +4341,7 @@ def copytousb(filmfolder):
                 #check filmhash
                 filmname = filmname[0]
                 usbpath = '/media/usb0/gonzopifilms/'+filmname
+                usbvideopath = '/media/usb0/gonzopifilms/.videos/'
                 usbfilmhash = ''
                 filmhash = ''
                 while True:
@@ -4371,18 +4373,21 @@ def copytousb(filmfolder):
                 except:
                     writemessage('Found existing ' + filmname + ', copying new files... ')
                 try:
-                    run_command('rsync -avr -P ' + filmfolder + filmname + ' ' + usbpath)
+                    run_command('rsync -avr -P ' + filmfolder + filmname + '/ ' + usbpath)
+                    run_command('rsync -avr -P ' + filmfolder + '.videos/ ' + usbvideopath)
                 except:
                     writemessage('couldnt copy film ' + filmname)
                     waitforanykey()
                     return
             run_command('sync')
-            run_command('pumount /media/usb0')
             writemessage('all files copied successfully!')
             waitforanykey()
+            run_command('pumount /media/usb0')
             writemessage('You can safely unplug the usb device now')
             time.sleep(2)
             return
+        else:
+            usbmount = usbmount + 1
 
 #-----------Check for the webz---------
 
@@ -4852,5 +4857,5 @@ if __name__ == '__main__':
     except:
         os.system('pkill arecord')
         os.system('pkill startinterface')
-        os.system('pkill gonzopigui')
+        os.system('pkill tarinagui')
         print('Unexpected error : ', sys.exc_info()[0], sys.exc_info()[1])
