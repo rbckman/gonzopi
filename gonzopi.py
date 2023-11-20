@@ -109,8 +109,8 @@ def main():
     cammode = 'film'
     camera_model=''
     fps = 25
-    fps_selection=[5,8,10,11,12,13,14,15,24.985,35,49]
     fps_selected=8
+    fps_selection=[]
     quality = 27
     profilelevel='4.2'
     headphoneslevel = 40
@@ -1420,11 +1420,10 @@ def main():
                 if channels == 1:
                     channels = 2
             elif menu[selected] == 'FPS:':
-                if camera_model == 'imx477':
-                    if fps_selected < len(fps_selection)-1:
-                        fps_selected+=1
-                        fps=fps_selection[fps_selected]
-                        camera.framerate = fps
+                if fps_selected < len(fps_selection)-1:
+                    fps_selected+=1
+                    fps=fps_selection[fps_selected]
+                    camera.framerate = fps
             elif menu[selected] == 'Q:':
                 if quality < 39:
                     quality += 1
@@ -1584,11 +1583,10 @@ def main():
                 if channels == 2:
                     channels = 1
             elif menu[selected] == 'FPS:':
-                if camera_model == 'imx477':
-                    if fps_selected > 0:
-                        fps_selected-=1
-                        fps=fps_selection[fps_selected]
-                        camera.framerate = fps
+                if fps_selected > 0:
+                    fps_selected-=1
+                    fps=fps_selection[fps_selected]
+                    camera.framerate = fps
             elif menu[selected] == 'Q:':
                 if quality > 10:
                     quality -= 1
@@ -4812,13 +4810,20 @@ def startcamera(lens, fps):
         # if there's more frames then the video will be longer when converting it to 25 fps,
         # I try to get it as perfect as possible with trial and error.
         # ov5647 Rev C
-        if camera_revision == 'rev.C':
-            camera.framerate = 26.03
+        if camera_revision == 'rev.C': 
+            #camera.framerate = 26.03
+            fps_selection=[5,8,10,11,12,13,14,15,26.03,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
         # ov5647 Rev D"
         if camera_revision == 'rev.D':
-            camera.framerate = 23.15
+            #camera.framerate = 23.15
+            fps_selection=[5,8,10,11,12,13,14,15,23.15,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
     elif camera_model == 'imx477':
         #fps_selection=[5,15,24.985,35,49]
+        fps_selection=[5,8,10,11,12,13,14,15,24.985,35,49]
         fps=fps_selection[fps_selected]
         camera.framerate = fps 
     else:
