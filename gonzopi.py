@@ -109,7 +109,8 @@ def main():
     cammode = 'film'
     camera_model=''
     fps = 25
-    fps_selected=2
+    fps_selection=[5,8,10,11,12,13,14,15,24.985,35,49]
+    fps_selected=8
     quality = 27
     profilelevel='4.2'
     headphoneslevel = 40
@@ -1422,7 +1423,6 @@ def main():
                 if camera_model == 'imx477':
                     if fps_selected < len(fps_selection)-1:
                         fps_selected+=1
-                        fps_selection=[5,8,10,11,12,13,14,15,24.985,35,49]
                         fps=fps_selection[fps_selected]
                         camera.framerate = fps
             elif menu[selected] == 'Q:':
@@ -1587,7 +1587,6 @@ def main():
                 if camera_model == 'imx477':
                     if fps_selected > 0:
                         fps_selected-=1
-                        fps_selection=[5,8,10,11,12,13,14,15,24.985,35,49]
                         fps=fps_selection[fps_selected]
                         camera.framerate = fps
             elif menu[selected] == 'Q:':
@@ -1636,7 +1635,7 @@ def main():
                 #serverstate=filmsettings[20]
                 plughw=filmsettings[21]
                 channels=filmsettings[22]
-                cammode=filmsettings[23]
+                #cammode=filmsettings[23]
                 scene=filmsettings[24]
                 shot=filmsettings[25]
                 take=filmsettings[26]
@@ -4819,7 +4818,7 @@ def startcamera(lens, fps):
         if camera_revision == 'rev.D':
             camera.framerate = 23.15
     elif camera_model == 'imx477':
-        fps_selection=[5,15,24.985,35,49]
+        #fps_selection=[5,15,24.985,35,49]
         fps=fps_selection[fps_selected]
         camera.framerate = fps 
     else:
