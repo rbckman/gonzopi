@@ -1,0 +1,1 @@
+raspivid -o - -t 0 -w 1920 -h 816 -vf -hf -fps 25 -b 3000000 | ffmpeg -re -ar 44100 -acodec pcm_s16le -f alsa -ac 1 -i hw:0 -f h264 -i - -vcodec copy -acodec aac -ab 128k -g 50 -strict experimental -f flv rtmp://a.rtmp.youtube.com/live2/j1cs-7hac-ygrj-5gaq-3m5b

@@ -1,0 +1,10 @@
+[Unit]
+Description=Set wifi localization
+After=multi-user.target
+
+[Service]
+Type=idle
+ExecStart=/home/pi/tarina/extras/wifiset.sh
+
+[Install]
+WantedBy=multi-user.target

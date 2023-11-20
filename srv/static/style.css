@@ -1,0 +1,22 @@
+body
+{
+    margin: 0px auto;
+    text-align: center;
+    background-color:#000;
+    color: #f4f4f4;
+    font-family: monospace;
+}
+
+pre
+{
+    margin: 5px auto;
+    padding: 3px;
+    display: inline-block;
+    background-color: #555;
+    color: #fff;
+}
+
+a
+{
+    color: #FCD612;
+}

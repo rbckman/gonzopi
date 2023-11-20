@@ -1,0 +1,95 @@
+$def with (renderedfilms, unrenderedfilms, cameras, menu, selected,name,scene,shot,take,str,randhash,thumb,vumetermessage,func)
+$var renderedfilms = renderedfilms
+$var unrenderedfilms = unrenderedfilms
+<script>
+$$(document).on('keydown', function (event) {
+    if (event.which == 37) {
+        $$('#LEFT').trigger('click');
+    } else if (event.which == 39) {
+        $$('#RIGHT').trigger('click');
+    } else if (event.which == 38) {
+        $$('#UP').trigger('click');
+    } else if (event.which == 40) {
+        $$('#DOWN').trigger('click');
+    } else if (event.which == 33) {
+        $$('#RECORD').trigger('click');
+    } else if (event.which == 34) {
+        $$('#RETAKE').trigger('click');
+    } else if (event.which == 9) {
+        $$('#VIEW').trigger('click');
+    } else if (event.which == 46) {
+        $$('#DELETE').trigger('click');
+    } else if (event.which == 13) {
+        $$('#MIDDLE').trigger('click');
+    }
+});
+</script>
+connected 
+<pre>use keyboard to control</pre>
+$for i in cameras:
+    $i
+<br>
+<div id="controls" style="display:none"> >
+<a id="VIEW" href="/?func=view">VIEW</a> <a id="UP" href="/?func=up">__UP__</a> <a id="RECORD" href="/?func=record">RECORD</a><br>
+<a id="LEFT" href="/?func=left">LEFT</a> <a id="MIDDLE" href="/?func=middle">MIDDLE</a> <a id="RIGHT" href="/?func=right">RIGHT</a><br>
+<a id="DELETE" href="/?func=delete">DELETE</a> <a id="DOWN" href="/?func=down">DOWN</a> <a id="RETAKE" href="/?func=retake">RETAKE</a><br>
+<a href="/?func=picture">PICTURE</a>
+<a href="/?func=search">SEARCH</a>
+</div>
+
+<div id="menu" style="margin:0 auto; width:99%">
+$vumetermessage
+<br>
+$ y=0
+$for m in menu[3:]:
+    $if selected == y:
+        <b>$m[:-1]</b>
+    $else:
+        <a href="?selected=$y">$m[:-1]</a>
+    $ y+=1
+<br>
+</div>
+$if thumb != '':
+    $ picture="static/Videos/" + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/picture" + str(take).zfill(3) + ".jpeg"
+$else:
+    $ picture="static/Videos/" + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg"
+
+
+$ take_link="static/Videos/" + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".mp4"
+$ scene_link="static/Videos/" + name + "/scene" + str(scene).zfill(3) + "/scene.mp4"
+$ film_link="static/Videos/" + name + "/" +name+ ".mp4"
+$if selected == 0:
+    <a href='$film_link'><img width="80%" src="$picture?$randhash"/></a><br>
+$elif selected == 1:
+    <a href='$scene_link'><img width="80%" src="$picture?$randhash"/></a><br>
+$elif selected > 1:
+    <a href='$take_link'><img width="80%" src="$picture?$randhash"/></a><br>
+<br>
+$if func=='show_all_films':
+    <h1>FILMS</h1>
+
+    $for i in renderedfilms:
+        <p>--------------------------------------------------------------</p>
+        <h2>$i</h2>
+        <a href="static/Videos/$i/${i}.mp4"><img width="80%" src="static/Videos/$i/scene001/shot001/take001.jpeg?$randhash"/></a><br>
+        <p>Copy project to your destination:</p>
+        <pre>scp -r pi@tarina.local:~/Videos/$i ~/films/$i</pre>
+    <h1>Films unrendered</h1>
+
+    $for i in unrenderedfilms:
+        <h2>$i </h2>
+        <p>Copy project to your destination:</p>
+        <pre>scp -r pi@tarina.local:~/Videos/$i ~/films/$i</pre>
+
+<script>
+$$('#LEFT').on('click', function () { window.open('?func=left',"_self");return false; });
+$$('#RIGHT').on('click', function () { window.open('?func=right',"_self");return false; });
+$$('#DOWN').on('click', function () { window.open('?func=down',"_self");return false; });
+$$('#UP').on('click', function () { window.open('?func=up',"_self");return false; });
+$$('#RECORD').on('click', function () { window.open('?func=record',"_self");return false; });
+$$('#RETAKE').on('click', function () { window.open('?func=retake',"_self");return false; });
+$$('#DELETE').on('click', function () { window.open('?func=delete',"_self");return false; });
+$$('#VIEW').on('click', function () { window.open('?func=view',"_self");return false; });
+$$('#MIDDLE').on('click', function () { window.open('?func=middle',"_self");return false; });
+</script>
+
