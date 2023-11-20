@@ -4769,7 +4769,7 @@ def stopinterface(camera):
         print('no camera to close')
     os.system('pkill arecord')
     os.system('pkill startinterface')
-    os.system('pkill gonzopigui')
+    os.system('pkill tarinagui')
     #run_command('sudo systemctl stop apache2')
     return camera
 
