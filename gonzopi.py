@@ -1631,7 +1631,7 @@ def main():
                 quality = filmsettings[18]
                 #wifistate = filmsettings[19]
                 #serverstate=filmsettings[20]
-                plughw=filmsettings[21]
+                #plughw=filmsettings[21]
                 channels=filmsettings[22]
                 #cammode=filmsettings[23]
                 scene=filmsettings[24]
