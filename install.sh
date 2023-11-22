@@ -70,6 +70,7 @@ echo "installing picamerax with lens shading correction..."
 sudo pip3 install --upgrade picamerax
 echo "installing web.py for the gonzopi webserver..."
 sudo pip3 install web.py==0.61
+
 if [ "$screen" = "ugeek-hdtft" ]
 then
 echo "installing ugeek screen drivers"
@@ -153,15 +154,14 @@ enable_dpi_lcd=1
 display_default_lcd=1
 display_rotate=1
 dpi_group=2
-hdmi_group=2
+hdmi_group=3
 dpi_mode=87
 dpi_output_format=0x7f216
 hdmi_timings=480 0 10 16 59 800 0 15 113 15 0 0 0 60 0 32000000 6
 
 #--------GonzoPi configuration end here---------
 EOF
-
-if [ "$screen" = "hdmi-screen" ]
+elif [ "$screen" = "hdmi-screen" ]
 then
 echo "configuring hdmi screen"
 echo "GonzoPi configuration seems to be in order in /boot/config.txt"
@@ -188,7 +188,6 @@ hdmi_group=1
 hdmi_mode=3
 #--------GonzoPi configuration end here---------
 EOF
-
 else
 echo "screen driver already there, to change it remove gonzopi config in /boot/config.txt"
 fi
