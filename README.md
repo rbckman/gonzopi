@@ -3,14 +3,16 @@ Gonzo Pi
 
 Turn a Raspberry Pi to the Ultimate Filmmaking Device!
 
-How to build and use it here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
+No, need to build custom case, or buttons, this will work with a Raspberry Pi and any of it's camera modules, usb keyboards and usb audio cards, a regular hdmi display should also be fine.
 
-For preorders contact go(at)gonzopi.org
+If you want to build it, there's a complete guide here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
+
+If you want to order a prebuilt device contact go(at)gonzopi.org (only preorders now)
 
 Software
 --------
 - glue selected clips together and/or cutting them.
-- making timelapses, voiceover, music track recording, slo-mo recording, fast-forward recording
+- making timelapses, stop-motion, voiceover, music track recording, slo-mo recording, fast-forward recording
 - cut and copy and move clips around
 - backup to usb harddrive or your own server
 - upload or stream to youtube or your own server
