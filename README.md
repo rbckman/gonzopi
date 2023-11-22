@@ -1,7 +1,8 @@
 Gonzo Pi
 =============
 
-Go Gonzo
+Go Gonzo with the Ultimate Filmmaking Device!
+How to build and use it here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
 
 Software
 --------
