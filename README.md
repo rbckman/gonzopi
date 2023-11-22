@@ -23,6 +23,9 @@ Software
 - stream a film a take or a scene through the network
 - control the camera with silent physical buttons or a usb-wireless-keyboard or through a built in apache2 web server or ssh or ports, you choose how to go gonzo just the way you like it
 
+### GUI
+![GUI](/extras/gonzopi-gui)
+
 ### Buttons
 ![Buttons](/extras/buttons.png)
 
