@@ -3,9 +3,11 @@ Gonzo Pi
 
 Turn a Raspberry Pi to the Ultimate Filmmaking Device!
 
+Demonstration of the device here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
+
 No, need to build custom case, or buttons, this will work with a Raspberry Pi and any of it's camera modules, usb keyboards and usb audio cards, a regular hdmi display should also be fine.
 
-If you want to build it, there's a complete guide here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
+If you want to build it, there's a complete guide here [https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding](https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding)
 
 If you want to order a prebuilt device contact go(at)gonzopi.org (only preorders now)
 
