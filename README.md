@@ -15,7 +15,7 @@ Software
 - backup to usb harddrive or your own server
 - upload or stream to youtube or your own server
 - auto correction can easily be switched on or off for shutter, iso and colors so *operator* is in full control also for audio levels
-- connect many Tarinas together for multicamera shooting
+- connect many GonzoPis together for multicamera shooting
 - stream a film a take or a scene through the network
 - control the camera with silent physical buttons or a usb-wireless-keyboard or through https or ssh or ports, you choose.
 
@@ -48,5 +48,5 @@ Connect
 -------
 Matrix [#tarina:matrix.tarina.org](https://riot.im/app/#/room/#tarina:matrix.tarina.org)
 
-Mail rob(at)tarina.org
+Mail rob(at)gonzopi.org
 
