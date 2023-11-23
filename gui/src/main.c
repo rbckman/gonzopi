@@ -260,15 +260,15 @@ int main(void)
                                 render_subtitle(img, line, text_size, text_size_selected, row2, y_offset3, color);
                                 row2 += read * space + morespace;
                             }
-                            if (linenr >= 13+menuadd && linenr <= 20+menuadd){
+                            if (linenr >= 13+menuadd && linenr <= 19+menuadd){
                                 render_subtitle(img, line, text_size, text_size_selected, row3, y_offset4, color);
                                 row3 += read * space + morespace;
                             }
-                            if (linenr >= 21+menuadd && linenr <= 27+menuadd){
+                            if (linenr >= 20+menuadd && linenr <= 28+menuadd){
                                 render_subtitle(img, line, text_size, text_size_selected, row4, y_offset5, color);
                                 row4 += read * space + morespace;
                             }
-                            if (linenr >= 28+menuadd && linenr <= 40+menuadd){
+                            if (linenr >= 29+menuadd && linenr <= 40+menuadd){
                                 render_subtitle(img, line, text_size, text_size_selected, row5, y_offset6, color);
                                 row5 += read * space + morespace;
                             }
