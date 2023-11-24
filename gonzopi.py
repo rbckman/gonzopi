@@ -113,7 +113,7 @@ def main():
     fps = 25
     fps_selected=8
     fps_selection=[]
-    quality = 27
+    quality = 25
     profilelevel='4.2'
     headphoneslevel = 40
     miclevel = 50
@@ -1434,8 +1434,9 @@ def main():
                     fps=fps_selection[fps_selected]
                     camera.framerate = fps
             elif menu[selected] == 'Q:':
-                if quality < 39:
-                    quality += 1
+                if scenes == 0:
+                    if quality < 39:
+                        quality += 1
             elif menu[selected] == 'CAMERA:':
                 if camselected < len(cameras)-1:
                     newselected = camselected+1
@@ -1606,8 +1607,9 @@ def main():
                     fps=fps_selection[fps_selected]
                     camera.framerate = fps
             elif menu[selected] == 'Q:':
-                if quality > 10:
-                    quality -= 1
+                if scenes == 0:
+                    if quality > 10:
+                        quality -= 1
             elif menu[selected] == 'CAMERA:':
                 if camselected > 0:
                     newselected = camselected-1
@@ -1748,7 +1750,7 @@ def main():
             lastmenu = menu[selected]
             if showgonzopictrl == False:
                 menu = standardmenu
-                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
             else:
                 #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                 menu = gonzopictrlmenu
