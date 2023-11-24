@@ -434,7 +434,7 @@ def main():
                     if dubfiles==[]:
                         print('no dubs, copying original sound to original')
                         os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
-                        time.sleep(2)
+                        time.sleep(0.2)
                     renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
                     playdub(filmname,renderfilename, 'dub')
                     #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
