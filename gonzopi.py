@@ -1405,6 +1405,7 @@ def main():
                 camera.close()
                 camera = startcamera(lens,fps)
                 loadfilmsettings = True
+                flushbutton()
             elif menu[selected] == 'LENS:':
                 s = 0
                 for a in lenses:
@@ -1573,6 +1574,7 @@ def main():
                 camera.close()
                 camera = startcamera(lens,fps)
                 loadfilmsettings = True
+                flushbutton()
             elif menu[selected] == 'LENS:':
                 s = 0
                 for a in lenses:
