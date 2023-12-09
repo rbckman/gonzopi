@@ -3107,7 +3107,7 @@ def compileshot(filename,filmfolder,filmname):
         run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
         stretchaudio(filename,fps)
         audiosync, videolenght, audiolenght = audiotrim(filename, 'end','')
-        muxing = False
+        muxing = True
         if muxing == True:
             #muxing mp3 layer to mp4 file
             #count estimated audio filesize with a bitrate of 320 kb/s
