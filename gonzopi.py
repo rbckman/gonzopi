@@ -745,8 +745,28 @@ def main():
                     showmenu_settings = True
             #DSK
             elif pressed == 'middle' and menu[selected] == 'DSK:':
-                print("clean up film folder here")
-                #cleanupdisk(filmname,filmfolder)
+                print("usb filmfolder")
+                filmfolderusb=usbfilmfolder()
+                if filmfolderusb:
+                    filmfolder=filmfolderusb
+                    #COUNT DISKSPACE
+                    #sudo mkfs -t ext4 /dev/sdb1
+                    disk = os.statvfs(filmfolder)
+                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                    #LOAD FILM AND SCENE SETTINGS
+                    try:
+                        filmname = getfilms(filmfolder)[0][0]
+                    except:
+                        filmname = 'onthefloor' 
+                    try:
+                        filmname_back = getfilms(filmfolder)[0][1]
+                    except:
+                        filmname_back = 'onthefloor' 
+                    if os.path.isdir(filmfolder) == False:
+                        os.makedirs(filmfolder)
+                    #loadfilmsettings = True
+                    updatethumb = True
+                    #cleanupdisk(filmname,filmfolder)
             #REMOVE DELETE
             #take
             elif pressed == 'remove' and menu[selected] == 'TAKE:':
@@ -1183,7 +1203,7 @@ def main():
                     vumetermessage('Filming was canceled!!')
             elif recording == True and float(time.time() - starttime) > 0.2:
                 #print(term.clear+term.home)
-                disk = os.statvfs(gonzopifolder + '/')
+                disk = os.statvfs(filmfolder)
                 diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
                 recording = False
                 if showmenu_settings == True:
@@ -1797,7 +1817,7 @@ def main():
                         if searchforcameras == 'on':
                             camerasconnected='searching '+str(pingip)
                         vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
-                    disk = os.statvfs(gonzopifolder + '/')
+                    disk = os.statvfs(filmfolder)
                     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
                     #print(term.yellow+'filming with '+camera_model +' ip:'+ network
                     print(camselected,camera_recording,cameras)
@@ -4324,6 +4344,42 @@ def audiosilence(foldername,filename):
     os.system('cp /dev/shm/silence.wav ' + foldername + filename + '.wav')
     os.system('rm /dev/shm/silence.wav')
 
+#--------------USB filmfolder-------------------
+
+def usbfilmfolder():
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    writemessage('Searching for usb storage device, middlebutton to cancel')
+    usbmount = 0
+    while True:
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        usbconnected = os.path.ismount('/media/usb'+str(usbmount))
+        if pressed == 'middle':
+            writemessage('canceling..')
+            time.sleep(2)
+            break
+        time.sleep(0.02)
+        if usbconnected == True:
+            try:
+                os.makedirs('/media/usb'+str(usbmount)+'/gonzopifilms/')
+            except:
+                pass
+            try:
+                p = subprocess.check_output('stat -f -c %T /media/usb'+str(usbmount), shell=True)
+                filesystem = p.decode()
+                print('filesystem info: ' + filesystem)
+            except:
+                writemessage('Oh-no! dont know your filesystem')
+                waitforanykey()
+            filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
+            #run_command('pumount /media/usb'+str(usbmount))
+            writemessage('Filming to USB'+str(usbmount))
+            return filmfolder
+        else:
+            usbmount = usbmount + 1
+
 #--------------Copy to USB-------------------
 
 def copytousb(filmfolder):
@@ -4345,7 +4401,7 @@ def copytousb(filmfolder):
         if usbconnected == True:
             #Copy new files to usb device
             try:
-                os.makedirs('/media/usb0/gonzopifilms/')
+                os.makedirs('/media/usb'+str(usbmount)+'/gonzopifilms/')
             except:
                 pass
             try:
@@ -4359,7 +4415,7 @@ def copytousb(filmfolder):
             for filmname in films:
                 #check filmhash
                 filmname = filmname[0]
-                usbpath = '/media/usb0/gonzopifilms/'+filmname
+                usbpath = '/media/usb'+str(usbmount)+'/gonzopifilms/'+filmname
                 usbvideopath = '/media/usb0/gonzopifilms/.videos/'
                 usbfilmhash = ''
                 filmhash = ''
@@ -4401,7 +4457,7 @@ def copytousb(filmfolder):
             run_command('sync')
             writemessage('all files copied successfully!')
             waitforanykey()
-            run_command('pumount /media/usb0')
+            run_command('pumount /media/usb'+str(usbmount))
             writemessage('You can safely unplug the usb device now')
             time.sleep(2)
             return
