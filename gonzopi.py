@@ -193,6 +193,14 @@ def main():
     #Make screen shut off work and run full brightness
     run_command('gpio -g mode 19 pwm ')
     run_command('gpio -g pwm 19 1023')
+    
+    #CHECK IF FILMING TO USB STORAGE
+    filmfolderusb=usbfilmfolder()
+    if filmfolderusb:
+        filmfolder=filmfolderusb
+        if os.path.isdir(filmfolder) == False:
+            os.makedirs(filmfolder)
+ 
     #COUNT DISKSPACE
     disk = os.statvfs(filmfolder)
     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
@@ -211,6 +219,7 @@ def main():
     oldscene = scene
     oldshot = shot
     oldtake = take
+
     #TURN ON WIFI AND TARINA SERVER
     serverstate = 'on'
     wifistate = 'on'
@@ -263,7 +272,6 @@ def main():
     serverstate_old='off'
     wifistate_old='off'
 
-    camera_model, camera_revision, filmfolder= getconfig(camera)
 
     #--------------MAIN LOOP---------------#
     while True:
@@ -1688,6 +1696,9 @@ def main():
                 camera.hflip = True
             run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
             run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+            print('fuckme')
+            print(filmfolder)
+            print(filmname)
             origin_videos=organize(filmfolder, filmname)
             print('ORIGIN')
             print(origin_videos)
