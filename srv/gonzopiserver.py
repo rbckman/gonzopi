@@ -8,20 +8,61 @@ import sys
 import time
 import random
 import hashlib
+import configparser
 
 # Get path of the current dir, then use it as working directory:
 rundir = os.path.dirname(__file__)
 if rundir != '':
     os.chdir(rundir)
 
-filmfolder = '/home/pi/Videos/'
+#--------------USB filmfolder-------------------
+
+def usbfilmfolder():
+    usbmount = 0
+    while True:
+        usbconnected = os.path.ismount('/media/usb'+str(usbmount))
+        time.sleep(0.02)
+        if usbconnected == True:
+            try:
+                os.makedirs('/media/usb'+str(usbmount)+'/gonzopifilms/')
+            except:
+                pass
+            try:
+                p = subprocess.check_output('stat -f -c %T /media/usb'+str(usbmount), shell=True)
+                filesystem = p.decode()
+                print('filesystem info: ' + filesystem)
+            except:
+                print('Oh-no! dont know your filesystem')
+            filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
+            return filmfolder
+        else:
+            usbmount = usbmount + 1
+        if usbmount > 20:
+            break
+
+home = os.path.expanduser('~')
+configfile = home + '/.gonzopi/config.ini'
+configdir = os.path.dirname(configfile)
+config = configparser.ConfigParser()
+if config.read(configfile):
+    filmfolder = config['USER']['filmfolder']+'/'
+
+
+os.system("unlink static/*")
+#CHECK IF FILMING TO USB STORAGE
+filmfolderusb=usbfilmfolder()
+if filmfolderusb:
+    filmfolder=filmfolderusb
+    # Link video directory to static dir
+    os.system("ln -s -t static/ " + filmfolder)
+    filmfolder='static/gonzopifilms/'
+else:
+    os.system("ln -s -t static/ " + filmfolder)
+    filmfolder='static/Videos/'
+    #fix filmfolder root to Videos/gonzopifilms
 
 basedir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(basedir)
-
-# Link video directory to static dir
-if os.path.isfile('static/Videos') == False:
-    os.system("ln -s -t static/ " + filmfolder)
 
 films = []
 
@@ -153,7 +194,7 @@ class index:
         renderedfilms = []
         unrenderedfilms = []
         for f in films:
-            if os.path.isfile('static/Videos/' + f[0] + '/' + f[0] + '.mp4') == True:
+            if os.path.isfile(filmfolder + f[0] + '/' + f[0] + '.mp4') == True:
                 renderedfilms.append(f[0])
             else:
                 unrenderedfilms.append(f[0])
@@ -216,7 +257,7 @@ class index:
             take=1
             session.reload = 0
         if i.func == 'retake': 
-            print(i.func+'fuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuiccccccccccccccccccccccccccccccccccccccccckkkkkkkkkkkkkkkkkkkkkkkkkk')
+            print(i.func)
             if recording == False:
                 sendtocamera(ip,port,'RETAKE:'+shot)
                 recording = True
@@ -227,12 +268,12 @@ class index:
             time.sleep(1)
             session.reload = 1
             raise web.seeother('/')
-        thumb="/static/Videos/"+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
+        thumb=filmfolder+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
         print(thumb)
         if os.path.isfile(basedir+thumb) == False:
             print(basedir+thumb)
             thumb=''
-        return render.index(renderedfilms, unrenderedfilms, session.cameras, menu, selected,name,scene,shot,take,str,session.randhash,thumb,vumetermessage,i.func)
+        return render.index(renderedfilms, unrenderedfilms, session.cameras, menu, selected,name,scene,shot,take,str,session.randhash,thumb,vumetermessage,i.func,filmfolder)
 
 class films:
     def GET(self, film):
