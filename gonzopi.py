@@ -4912,7 +4912,8 @@ def startcamera(lens, fps):
             camera.framerate = fps 
     elif camera_model == 'imx477':
         #fps_selection=[5,15,24.985,35,49]
-        fps_selection=[5,8,10,11,12,13,14,15,24.985,35,49]
+        #if sound is gettin before pic add 0.001
+        fps_selection=[5,8,10,11,12,13,14,15,24.986,35,49]
         fps=fps_selection[fps_selected]
         camera.framerate = fps 
     else:
