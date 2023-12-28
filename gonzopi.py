@@ -89,8 +89,8 @@ def main():
     gonzopifolder = os.getcwd()
 
     #MENUS
-    standardmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
-    gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
+    standardmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
+    gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
     menu = standardmenu
@@ -106,12 +106,14 @@ def main():
     awb = 'auto', 'sunlight', 'cloudy', 'shade', 'tungsten', 'fluorescent', 'incandescent', 'flash', 'horizon'
     awbx = 0
     awb_lock = 'no'
+    effects = 'none', 'negative', 'solarize'
+    effectselected = 0
     cammode = 'film'
     camera_model=''
     fps = 25
     fps_selected=8
     fps_selection=[]
-    quality = 27
+    quality = 25
     profilelevel='4.2'
     headphoneslevel = 40
     miclevel = 50
@@ -191,6 +193,14 @@ def main():
     #Make screen shut off work and run full brightness
     run_command('gpio -g mode 19 pwm ')
     run_command('gpio -g pwm 19 1023')
+    
+    #CHECK IF FILMING TO USB STORAGE
+    filmfolderusb=usbfilmfolder()
+    if filmfolderusb:
+        filmfolder=filmfolderusb
+        if os.path.isdir(filmfolder) == False:
+            os.makedirs(filmfolder)
+ 
     #COUNT DISKSPACE
     disk = os.statvfs(filmfolder)
     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
@@ -209,6 +219,7 @@ def main():
     oldscene = scene
     oldshot = shot
     oldtake = take
+
     #TURN ON WIFI AND TARINA SERVER
     serverstate = 'on'
     wifistate = 'on'
@@ -261,7 +272,6 @@ def main():
     serverstate_old='off'
     wifistate_old='off'
 
-    camera_model, camera_revision, filmfolder= getconfig(camera)
 
     #--------------MAIN LOOP---------------#
     while True:
@@ -432,7 +442,7 @@ def main():
                     if dubfiles==[]:
                         print('no dubs, copying original sound to original')
                         os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
-                        time.sleep(2)
+                        time.sleep(0.2)
                     renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
                     playdub(filmname,renderfilename, 'dub')
                     #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
@@ -743,8 +753,28 @@ def main():
                     showmenu_settings = True
             #DSK
             elif pressed == 'middle' and menu[selected] == 'DSK:':
-                print("clean up film folder here")
-                #cleanupdisk(filmname,filmfolder)
+                print("usb filmfolder")
+                filmfolderusb=usbfilmfolder()
+                if filmfolderusb:
+                    filmfolder=filmfolderusb
+                    #COUNT DISKSPACE
+                    #sudo mkfs -t ext4 /dev/sdb1
+                    disk = os.statvfs(filmfolder)
+                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                    #LOAD FILM AND SCENE SETTINGS
+                    try:
+                        filmname = getfilms(filmfolder)[0][0]
+                    except:
+                        filmname = 'onthefloor' 
+                    try:
+                        filmname_back = getfilms(filmfolder)[0][1]
+                    except:
+                        filmname_back = 'onthefloor' 
+                    if os.path.isdir(filmfolder) == False:
+                        os.makedirs(filmfolder)
+                    #loadfilmsettings = True
+                    updatethumb = True
+                    #cleanupdisk(filmname,filmfolder)
             #REMOVE DELETE
             #take
             elif pressed == 'remove' and menu[selected] == 'TAKE:':
@@ -1181,7 +1211,7 @@ def main():
                     vumetermessage('Filming was canceled!!')
             elif recording == True and float(time.time() - starttime) > 0.2:
                 #print(term.clear+term.home)
-                disk = os.statvfs(gonzopifolder + '/')
+                disk = os.statvfs(filmfolder)
                 diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
                 recording = False
                 if showmenu_settings == True:
@@ -1302,6 +1332,10 @@ def main():
                 camera.contrast = min(camera.contrast + 1, 99)
             elif menu[selected] == 'SAT:':
                 camera.saturation = min(camera.saturation + 1, 99)
+            elif menu[selected] == 'SFX:':
+                if effectselected < len(effects) - 1:
+                    effectselected += 1
+                    camera.image_effect = effects[effectselected]
             elif menu[selected] == 'SHUTTER:':
                 if camera.shutter_speed == 0:
                     camera.shutter_speed = camera.exposure_speed
@@ -1399,6 +1433,7 @@ def main():
                 camera.close()
                 camera = startcamera(lens,fps)
                 loadfilmsettings = True
+                flushbutton()
             elif menu[selected] == 'LENS:':
                 s = 0
                 for a in lenses:
@@ -1428,8 +1463,9 @@ def main():
                     fps=fps_selection[fps_selected]
                     camera.framerate = fps
             elif menu[selected] == 'Q:':
-                if quality < 39:
-                    quality += 1
+                if scenes == 0:
+                    if quality < 39:
+                        quality += 1
             elif menu[selected] == 'CAMERA:':
                 if camselected < len(cameras)-1:
                     newselected = camselected+1
@@ -1462,6 +1498,10 @@ def main():
                 camera.contrast = max(camera.contrast - 1, -100)
             elif menu[selected] == 'SAT:':
                 camera.saturation = max(camera.saturation - 1, -100)
+            elif menu[selected] == 'SFX:':
+                if effectselected > 0:
+                    effectselected -= 1
+                    camera.image_effect = effects[effectselected]
             elif menu[selected] == 'SHUTTER:':
                 if camera.shutter_speed == 0:
                     camera.shutter_speed = camera.exposure_speed
@@ -1562,6 +1602,7 @@ def main():
                 camera.close()
                 camera = startcamera(lens,fps)
                 loadfilmsettings = True
+                flushbutton()
             elif menu[selected] == 'LENS:':
                 s = 0
                 for a in lenses:
@@ -1596,8 +1637,9 @@ def main():
                     fps=fps_selection[fps_selected]
                     camera.framerate = fps
             elif menu[selected] == 'Q:':
-                if quality > 10:
-                    quality -= 1
+                if scenes == 0:
+                    if quality > 10:
+                        quality -= 1
             elif menu[selected] == 'CAMERA:':
                 if camselected > 0:
                     newselected = camselected-1
@@ -1654,6 +1696,9 @@ def main():
                 camera.hflip = True
             run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
             run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+            print('fuckme')
+            print(filmfolder)
+            print(filmname)
             origin_videos=organize(filmfolder, filmname)
             print('ORIGIN')
             print(origin_videos)
@@ -1738,12 +1783,12 @@ def main():
             lastmenu = menu[selected]
             if showgonzopictrl == False:
                 menu = standardmenu
-                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
             else:
                 #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                 menu = gonzopictrlmenu
                 #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
+                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
             #Rerender menu if picamera settings change
             #if settings != oldsettings or selected != oldselected:
             writemenu(menu,settings,selected,'',showmenu)
@@ -1783,7 +1828,7 @@ def main():
                         if searchforcameras == 'on':
                             camerasconnected='searching '+str(pingip)
                         vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
-                    disk = os.statvfs(gonzopifolder + '/')
+                    disk = os.statvfs(filmfolder)
                     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
                     #print(term.yellow+'filming with '+camera_model +' ip:'+ network
                     print(camselected,camera_recording,cameras)
@@ -3093,7 +3138,7 @@ def compileshot(filename,filmfolder,filmname):
         run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
         stretchaudio(filename,fps)
         audiosync, videolenght, audiolenght = audiotrim(filename, 'end','')
-        muxing = False
+        muxing = True
         if muxing == True:
             #muxing mp3 layer to mp4 file
             #count estimated audio filesize with a bitrate of 320 kb/s
@@ -4310,6 +4355,42 @@ def audiosilence(foldername,filename):
     os.system('cp /dev/shm/silence.wav ' + foldername + filename + '.wav')
     os.system('rm /dev/shm/silence.wav')
 
+#--------------USB filmfolder-------------------
+
+def usbfilmfolder():
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    writemessage('Searching for usb storage device, middlebutton to cancel')
+    usbmount = 0
+    while True:
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        usbconnected = os.path.ismount('/media/usb'+str(usbmount))
+        if pressed == 'middle':
+            writemessage('canceling..')
+            time.sleep(2)
+            break
+        time.sleep(0.02)
+        if usbconnected == True:
+            try:
+                os.makedirs('/media/usb'+str(usbmount)+'/gonzopifilms/')
+            except:
+                pass
+            try:
+                p = subprocess.check_output('stat -f -c %T /media/usb'+str(usbmount), shell=True)
+                filesystem = p.decode()
+                print('filesystem info: ' + filesystem)
+            except:
+                writemessage('Oh-no! dont know your filesystem')
+                waitforanykey()
+            filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
+            #run_command('pumount /media/usb'+str(usbmount))
+            writemessage('Filming to USB'+str(usbmount))
+            return filmfolder
+        else:
+            usbmount = usbmount + 1
+
 #--------------Copy to USB-------------------
 
 def copytousb(filmfolder):
@@ -4331,7 +4412,7 @@ def copytousb(filmfolder):
         if usbconnected == True:
             #Copy new files to usb device
             try:
-                os.makedirs('/media/usb0/gonzopifilms/')
+                os.makedirs('/media/usb'+str(usbmount)+'/gonzopifilms/')
             except:
                 pass
             try:
@@ -4345,7 +4426,7 @@ def copytousb(filmfolder):
             for filmname in films:
                 #check filmhash
                 filmname = filmname[0]
-                usbpath = '/media/usb0/gonzopifilms/'+filmname
+                usbpath = '/media/usb'+str(usbmount)+'/gonzopifilms/'+filmname
                 usbvideopath = '/media/usb0/gonzopifilms/.videos/'
                 usbfilmhash = ''
                 filmhash = ''
@@ -4387,7 +4468,7 @@ def copytousb(filmfolder):
             run_command('sync')
             writemessage('all files copied successfully!')
             waitforanykey()
-            run_command('pumount /media/usb0')
+            run_command('pumount /media/usb'+str(usbmount))
             writemessage('You can safely unplug the usb device now')
             time.sleep(2)
             return
