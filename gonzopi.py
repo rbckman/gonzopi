@@ -1325,7 +1325,10 @@ def main():
                     flip = 'yes'
                     time.sleep(0.2)
             elif menu[selected] == 'LENGTH:':
-                reclenght = reclenght + 1
+                if reclenght < 1:
+                    reclenght = reclenght + 0.2
+                else:
+                    reclenght = int(reclenght + 1)
                 time.sleep(0.1)
             elif menu[selected] == 'MIC:':
                 if miclevel < 100:
@@ -1483,9 +1486,14 @@ def main():
                     flip = 'yes'
                     time.sleep(0.2)
             elif menu[selected] == 'LENGTH:':
-                if reclenght > 0:
-                    reclenght = reclenght - 1
+                if reclenght > 1:
+                    reclenght = int(reclenght - 1)
                     time.sleep(0.1)
+                elif reclenght > 0.3:
+                    reclenght = reclenght - 0.2
+                    time.sleep(0.1)
+                else:
+                    reclenght = 0
             elif menu[selected] == 'MIC:':
                 if miclevel > 0:
                     miclevel = miclevel - 2
