@@ -1,6 +1,9 @@
 Gonzo Pi
 =============
 
+Go Gonzo with the Ultimate Filmmaking Device!
+How to build and use it here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
+=======
 Turn a Raspberry Pi to the Ultimate Filmmaking Device!
 
 Demonstration of the device here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)

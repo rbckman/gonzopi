@@ -2386,15 +2386,16 @@ def getconfig(camera):
                     config.write(f)
             time.sleep(0.02)
 
-    if filmfolder != '':
-        return version, camera_revision, filmfolder+'/'
-    else:
-        filmfolder = namesomething('Your film folder: ', home+'/Videos')
-        config['USER'] = {}
-        config['USER']['filmfolder'] = filmfolder
-        with open(configfile, 'w') as f:
-            config.write(f)
-        return camera_model, camera_revision, filmfolder+'/'
+    return version, camera_revision, home+'/gonzopifilms/'
+    #if filmfolder != '':
+    #    return version, camera_revision, filmfolder+'/'
+    #else:
+    #    filmfolder = namesomething('Your film folder: ', home+'/Videos')
+    #    config['USER'] = {}
+    #    config['USER']['filmfolder'] = filmfolder
+    #    with open(configfile, 'w') as f:
+    #        config.write(f)
+    #    return camera_model, camera_revision, filmfolder+'/'
 
 #-------------Calc folder size with du-----------
 
