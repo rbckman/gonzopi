@@ -1,7 +1,6 @@
 Gonzo Pi
 =============
 
-<<<<<<< HEAD
 Go Gonzo with the Ultimate Filmmaking Device!
 How to build and use it here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
 =======
@@ -14,7 +13,6 @@ No, need to build custom case, or buttons, this will work with a Raspberry Pi an
 If you want to build it, there's a complete guide here [https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding](https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding)
 
 If you want to order a prebuilt device contact go(at)gonzopi.org (only preorders now)
->>>>>>> 32c849051bc25683e63d0f3dc05db5d2835d809e
 
 Software
 --------

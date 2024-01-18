@@ -41,12 +41,12 @@ def usbfilmfolder():
             break
 
 home = os.path.expanduser('~')
-configfile = home + '/.gonzopi/config.ini'
-configdir = os.path.dirname(configfile)
-config = configparser.ConfigParser()
-if config.read(configfile):
-    filmfolder = config['USER']['filmfolder']+'/'
-
+#configfile = home + '/.gonzopi/config.ini'
+#configdir = os.path.dirname(configfile)
+#config = configparser.ConfigParser()
+#if config.read(configfile):
+#    filmfolder = config['USER']['filmfolder']+'/'
+filmfolder = '/home/pi/gonzopifilms/'
 
 os.system("unlink static/*")
 #CHECK IF FILMING TO USB STORAGE
@@ -58,7 +58,7 @@ if filmfolderusb:
     filmfolder='static/gonzopifilms/'
 else:
     os.system("ln -s -t static/ " + filmfolder)
-    filmfolder='static/Videos/'
+    filmfolder='static/gonzopifilms/'
     #fix filmfolder root to Videos/gonzopifilms
 
 basedir = os.path.dirname(os.path.realpath(__file__))
