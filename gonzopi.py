@@ -415,12 +415,27 @@ def main():
                     renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
                     if renderfilename != '':
                         trim = playdub(filmname,foldername + filename, 'shot')
-                        if trim:
+                        if trim[0] == 'beginning' or trim[0] == 'end':
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
                             videotrim(foldername + filename, trim_filename, trim[0], trim[1])
                             if os.path.exists(foldername+'dub') == True:
                                 print('trim dubs here')
+                        elif trim[0] != 0 and trim[1] != 0:
+                            take = counttakes(filmname, filmfolder, scene, shot)+1
+                            trim_filename = foldername + 'take' + str(take).zfill(3)
+                            videotrim(foldername + filename, trim_filename, 'end', trim[1])
+                            take = counttakes(filmname, filmfolder, scene, shot)+1
+                            trim_filename2 = foldername + 'take' + str(take).zfill(3)
+                            videotrim(trim_filename, trim_filename2, 'beginning', trim[0])
+                        elif trim[0] == 0 and trim[1] != 0:
+                            take = counttakes(filmname, filmfolder, scene, shot)+1
+                            trim_filename = foldername + 'take' + str(take).zfill(3)
+                            videotrim(foldername + filename, trim_filename, 'end', trim[1])
+                        elif trim[1] == 0 and trim[0] != 0:
+                            take = counttakes(filmname, filmfolder, scene, shot)+1
+                            trim_filename = foldername + 'take' + str(take).zfill(3)
+                            videotrim(foldername + filename, trim_filename, 'beginning', trim[0])
                         imagename = foldername + filename + '.jpeg'
                         overlay = displayimage(camera, imagename, overlay, 3)
                         camera.start_preview()
@@ -1747,13 +1762,29 @@ def main():
                 if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
                     p = counttakes(filmname, filmfolder, scene, 1)
                     imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
+                    try:
+                        videosize=countsize(filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/scene.mp4')
+                        vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                    except:
+                        vumetermessage('not rendered')
                 #elif menu[selected] == 'FILM:' and recordable == True:
                 #    scene, shot, take = countlast(filmname,filmfolder)
                 #    shot += 1
                 elif menu[selected] == 'FILM:' and recordable == False: # display first shot of film
                     p = counttakes(filmname, filmfolder, 1, 1)
                     imagename = filmfolder + filmname + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
+                    try:
+                        videosize=countsize(filmfolder + filmname + '/' + filmname+'.mp4')
+                        vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                    except:
+                        vumetermessage('not rendered')
                 imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.jpeg'
+                if menu[selected]=='SHOT:' and recordable == False or menu[selected]=='TAKE:' and recordable==False:
+                    try:
+                        videosize=countsize(foldername + filename + '.mp4')
+                        vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                    except:
+                        vumetermessage('not rendered')
                 overlay = displayimage(camera, imagename, overlay, 3)
                 oldscene = scene
                 oldshot = shot
@@ -1827,7 +1858,8 @@ def main():
                         recordwithports=False
                         if searchforcameras == 'on':
                             camerasconnected='searching '+str(pingip)
-                        vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
+                        if menu[selected] != 'SHOT:' and menu[selected] != 'SCENE:' and menu[selected] != 'FILM:' and menu[selected] != 'TAKE:':
+                            vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
                     disk = os.statvfs(filmfolder)
                     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
                     #print(term.yellow+'filming with '+camera_model +' ip:'+ network
@@ -2049,6 +2081,8 @@ def countsize(filename):
     size = 0
     if type(filename) is str:
         size = os.stat(filename).st_size
+    else:
+        return 0
     return size/1024
 
 #------------Count scenes, takes and shots-----
@@ -3283,13 +3317,13 @@ def fastedit(filmfolder, filmname, filmfiles, scene):
         os.remove(scenedir + '.fastedit')
     except:
         print('no fastedit file')
-    for f in filmfiles:
-        pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + f + '.mp4', shell=True)
-        videolenght = pipe.decode().strip()
-        totlenght = int(videolenght) + totlenght
-        print('writing shot lenghts for fastedit mode')
-        with open(scenedir + '.fastedit', 'a') as f:
-            f.write(str(totlenght)+'\n')
+    #for f in filmfiles:
+        #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + f + '.mp4', shell=True)
+        #videolenght = pipe.decode().strip()
+        #totlenght = int(videolenght) + totlenght
+        #print('writing shot lenghts for fastedit mode')
+        #with open(scenedir + '.fastedit', 'a') as f:
+        #    f.write(str(totlenght)+'\n')
     
 
 #-------------Get scene files--------------
@@ -3990,6 +4024,8 @@ def playdub(filmname, filename, player_menu):
     pause = False
     trim = False
     videolag = 0
+    trimfromstart=0
+    trimfromend=0
     remove_shots = []
     if video == True:
         if player_menu == 'dubbb':
@@ -4080,11 +4116,7 @@ def playdub(filmname, filename, player_menu):
         if buttonpressed == True:
             flushbutton()
         if pressed == 'remove':
-            if fastedit_shot in remove_shots:
-                remove_shots.remove(fastedit_shot)
-            else:
-                remove_shots.append(fastedit_shot)
-            time.sleep(0.2)
+            vumetermessage('add direct remove here')
         elif pressed == 'right':
             if selected < (len(settings) - 1):
                 selected = selected + 1
@@ -4122,6 +4154,18 @@ def playdub(filmname, filename, player_menu):
                         #playerAudio.set_position(player.position())
                     except:
                         print('couldnt set position of player')
+        elif pressed == 'view':
+            trimfromstart = player.position()
+            vumetermessage('shot start position set to: '+ str(trimfromstart))
+            player.pause()
+            time.sleep(0.5)
+            player.play()
+        elif pressed == 'retake':
+            trimfromend = player.position()
+            vumetermessage('shot end position set to: '+ str(trimfromend))
+            player.pause()
+            time.sleep(0.5)
+            player.play()
         elif pressed == 'middle' or pressed == 'record':
             time.sleep(0.2)
             if menu[selected] == 'BACK' or player.playback_status() == "Stopped" or pressed == 'record':
@@ -4140,7 +4184,7 @@ def playdub(filmname, filename, player_menu):
                     time.sleep(0.2)
                 os.system('pkill -9 omxplayer')
                 #os.system('pkill -9 dbus-daemon')
-                return remove_shots
+                return [trimfromstart, trimfromend]
             elif menu[selected] == 'REPLAY' or menu[selected] == 'REDUB':
                 pause = False
                 try:
@@ -4206,7 +4250,8 @@ def playdub(filmname, filename, player_menu):
                 os.system('pkill aplay') 
                 if dub == True:
                     os.system('pkill arecord')
-                return remove_shots
+                return [trimfromstart, trimfromend]
+                #return remove_shots
     player.quit()
     #playerAudio.quit()
     #os.system('pkill dbus-daemon')
@@ -4241,6 +4286,19 @@ def videotrim(filename, trim_filename, where, s):
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'end','')
     #take last frame 
+    run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
+    return
+
+#---------------Video Trim From start and end--------------------
+
+def fastvideotrim(filename, trim_filename, beginning, end):
+    #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
+    logger.info('trimming clip from beginning and end')
+    #run_command('ffmpeg -to ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
+    run_command('MP4Box ' + filename + '.mp4 -splitx '+ str(beginning)+ ':' + str(end) + ' -out ' + trim_filename + '.mp4')
+    run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
+    fastaudiotrim(trim_filename, beginning, end)
+    #take last frame 
     run_command('ffmpeg -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
     return
 
@@ -4254,6 +4312,12 @@ def getaudiocards():
             print('audio card 0: ' + i[22:].rstrip('\n'))
             audiocards.append(i[22:].rstrip('\n'))
     return audiocards
+
+#--------------Fast Audio Trim--------------------
+# make audio file same lenght as video file
+def fastaudiotrim(filename, beginning, end):
+    run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim ' + beginning + ' ' + end)
+    run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
 
 #--------------Audio Trim--------------------
 # make audio file same lenght as video file
