@@ -677,7 +677,7 @@ def main():
                 copying = ''
                 moving = False
                 vumetermessage('Pasted!')
-                time.sleep(2)
+                time.sleep(3)
             #INSERT SHOT
             elif pressed == 'insert' and menu[selected] != 'SCENE:' and yanked == '':
                 insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
