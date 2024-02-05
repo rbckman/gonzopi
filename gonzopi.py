@@ -658,15 +658,15 @@ def main():
                         pass
                     os.system('cp -r ' + yanked + ' ' + paste)
                     if moving == True:
-                        os.system('rm -r ' + yanked + '/*')
+                        os.system('rm -r ' + yanked)
                         #Remove hidden placeholder
-                        os.system('rm ' + yanked + '/.placeholder')
+                        #os.system('rm ' + yanked + '/.placeholder')
                 elif copying == 'scene':
                     vumetermessage('Pasting scene, please wait...')
                     paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
                     os.system('cp -r ' + yanked + ' ' + paste)
                     if moving == True:
-                        os.system('rm -r ' + yanked + '/*')
+                        os.system('rm -r ' + yanked)
                         #Remove hidden placeholder
                         #os.system('rm ' + yanked + '/.placeholder')
                 add_organize(filmfolder, filmname)
