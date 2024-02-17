@@ -372,15 +372,16 @@ def main():
                     renderfilename = renderfilm(filmfolder, filmname, comp, scene, True)
                     if renderfilename != '':
                         remove_shots = playdub(filmname,renderfilename, 'film')
-                        if remove_shots != []:
-                            for i in remove_shots:
-                                remove(filmfolder, filmname, scene, i, take, 'shot')
-                            organize(filmfolder, filmname)
-                            updatethumb = True
-                            #loadfilmsettings = True
-                            time.sleep(0.5)
-                        else:
-                            print('nothing to remove')
+                        #fastedit (maybe deploy sometime)
+                        #if remove_shots != []:
+                        #    for i in remove_shots:
+                        #        remove(filmfolder, filmname, scene, i, take, 'shot')
+                        #    organize(filmfolder, filmname)
+                        #    updatethumb = True
+                        #    #loadfilmsettings = True
+                        #    time.sleep(0.5)
+                        #else:
+                        #    print('nothing to remove')
                         camera.start_preview()
                 else:
                     vumetermessage("There's absolutely nothing in this scene! hit rec!")
@@ -529,7 +530,7 @@ def main():
                 rendermenu = True
             #LOAD FILM
             elif pressed == 'middle' and menu[selected] == 'LOAD':
-                filmname = loadfilm(filmname, filmfolder)
+                filmname = loadfilm(filmname, filmfolder, camera, overlay)
                 loadfilmsettings = True
             #UPDATE
             elif pressed == 'middle' and menu[selected] == 'UPDATE':
@@ -1341,7 +1342,7 @@ def main():
             if menu[selected] == 'FILM:':
                 filmname = 'onthefloor'
                 filmname_back = filmname
-                filmname = loadfilm(filmname, filmfolder)
+                filmname = loadfilm(filmname, filmfolder, camera, overlay)
                 loadfilmsettings = True
             if menu[selected] == 'BRIGHT:':
                 camera.brightness = min(camera.brightness + 1, 99)
@@ -2471,7 +2472,7 @@ def cleanupdisk(filmname, filmfolder):
 
 #-------------Load film---------------
 
-def loadfilm(filmname, filmfolder):
+def loadfilm(filmname, filmfolder, camera, overlay):
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -2493,9 +2494,17 @@ def loadfilm(filmname, filmfolder):
         if pressed == 'down':
             if selectedfilm < filmstotal:
                 selectedfilm = selectedfilm + 1
+                p = counttakes(films[selectedfilm][0], filmfolder, 1, 1)
+                overlay = removeimage(camera, overlay)
+                imagename = filmfolder + films[selectedfilm][0] + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
+                overlay = displayimage(camera, imagename, overlay, 3)
         elif pressed == 'up':
             if selectedfilm > 0:
                 selectedfilm = selectedfilm - 1
+                p = counttakes(films[selectedfilm][0], filmfolder, 1, 1)
+                overlay = removeimage(camera, overlay)
+                imagename = filmfolder + films[selectedfilm][0] + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
+                overlay = displayimage(camera, imagename, overlay, 3)
         elif pressed == 'right':
             if selected < (len(settings) - 1):
                 selected = selected + 1
@@ -3700,6 +3709,7 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
                 #os.remove(renderfilename + '.mp4') 
                 call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
                 call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
+                #call(['MP4Box', '-inter', '500', renderfilename + '.mp4'], shell=False)
                 os.remove(renderfilename + '_tmp.mp4')
                 os.remove(renderfilename + '.mp3')
         else:
