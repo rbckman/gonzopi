@@ -5013,10 +5013,10 @@ def gonzopiserver(state):
         try:
             run_command('sudo systemctl start apache2')
             os.system("sudo ln -sf -t "+gonzopifolder+"/srv/static/ " + filmfolder)
-            os.system("sudo chown www-data "+gonzopifolder+"/srv/static/ " + filmfolder)
+            os.system("sudo chown -h www-data "+gonzopifolder+"/srv/static/gonzopifilms")
             return 'on'
         except:
-            os.system("sudo chown pi "+gonzopifolder+"/srv/static/ " + filmfolder)
+            os.system("sudo chown -h pi "+gonzopifolder+"/srv/static/gonzopifilms")
             writemessage("could not run gonzopi server")
             time.sleep(2)
             return 'off'
