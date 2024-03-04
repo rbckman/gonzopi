@@ -4897,7 +4897,7 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'screen'
         elif event == 'A' or (readbus2 == 245 and readbus == 127):
             pressed = 'showmenu'
-        elif event == (readbus2 == 245 and readbus == 239):
+        elif event == 'O' or (readbus2 == 245 and readbus == 239):
             pressed = 'changemode'
         elif event == 'H' or (readbus2 == 245 and readbus == 247):
             pressed = 'showhelp'
@@ -4907,6 +4907,8 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'copy'
         elif event == 'M' or (readbus2 == 245 and readbus == 254):
             pressed = 'move'
+        elif event == '|' or (readbus2 == 245 and readbus == 251):
+            pressed = 'split'
         #elif readbus2 == 247:
         #    pressed = 'shutdown'
         #if pressed != '':
