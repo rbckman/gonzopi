@@ -1,15 +1,8 @@
 Gonzo Pi
 =============
+a retake on filmmaking
 
-Turn a Raspberry Pi to the Ultimate Filmmaking Device!
-
-Demonstration of the device here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
-
-No, need to build custom case, or buttons, this will work with a Raspberry Pi and any of it's camera modules, usb keyboards and usb audio cards, a regular hdmi display should also be fine.
-
-If you want to build it, there's a complete guide here [https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding](https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding)
-
-If you want to order a prebuilt device contact go(at)gonzopi.org (only preorders now)
+![Gonzopi](/extras/gonzopi-01.jpeg)
 
 Software
 --------
@@ -23,10 +16,14 @@ Software
 - stream a film a take or a scene through the network
 - control the camera with silent physical buttons or a usb-wireless-keyboard or through a built in apache2 web server or ssh or ports, you choose how to go gonzo just the way you like it
 
+
+![Gonzopi](/extras/gonzopi-01.jpeg)
+
 ### GUI
-![GUI](/extras/gonzopi-gui.jpeg)
+![Gonzopi](/extras/gonzopi-02.jpeg)
 
 ### Buttons
+![Gonzopi](/extras/gonzopi-04.jpeg)
 ![Buttons](/extras/buttons.png)
 
 Installing
@@ -50,6 +47,16 @@ You'r ready to go gonzo!
 ```
 python3 gonzopi.py
 ```
+
+![Gonzopi](/extras/gonzopi-03.jpeg)
+
+more about Gonzo Pi here [https://github.com/rbckman/gonzopi_build](https://github.com/rbckman/gonzopi_build)
+
+No, need to build custom case, or buttons, this will work with a Raspberry Pi and any of it's camera modules, usb keyboards and usb audio cards, a regular hdmi display should also be fine.
+
+If you want to build it, there's a complete guide here [https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding](https://github.com/rbckman/gonzopi_build/blob/master/gonzopi-manual.md#building-repairing-and-modding)
+
+If you want to order a prebuilt device contact go(at)gonzopi.org (only preorders now)
 
 Connect
 -------
