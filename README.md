@@ -1,6 +1,6 @@
 Gonzo Pi
 =============
-a retake on filmmaking
+### a retake on filmmaking
 
 The camera that runs Linux with an unique all-in-one filmmaking interface. Gonzo Pi is 3d printed, easy to hack & repair.
 
