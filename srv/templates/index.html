@@ -1,6 +1,4 @@
-$def with (renderedfilms, unrenderedfilms, cameras, menu, selected,name,scene,shot,take,str,randhash,thumb,vumetermessage,func,filmfolder)
-$var renderedfilms = renderedfilms
-$var unrenderedfilms = unrenderedfilms
+$def with (films, cameras, menu, selected,name,scene,shot,take,str,randhash,thumb,vumetermessage,func,filmfolder)
 <script>
 $$(document).on('keydown', function (event) {
     if (event.which == 37) {
@@ -65,21 +63,9 @@ $elif selected == 1:
 $elif selected > 1:
     <a href='$take_link'><img width="80%" src="$picture?$randhash"/></a><br>
 <br>
-$if func=='show_all_films':
-    <h1>FILMS</h1>
-
-    $for i in renderedfilms:
-        <p>--------------------------------------------------------------</p>
-        <h2>$i</h2>
-        <a href="$filmfolder$i/${i}.mp4"><img width="80%" src="$filmfolder$i/scene001/shot001/take001.jpeg?$randhash"/></a><br>
-        <p>Copy project to your destination:</p>
-        <pre>scp -r pi@tarina.local:~$filmfolder$i ~/films/$i</pre>
-    <h1>Films unrendered</h1>
-
-    $for i in unrenderedfilms:
-        <h2>$i </h2>
-        <p>Copy project to your destination:</p>
-        <pre>scp -r pi@tarina.local:$filmfolder$i ~/films/$i</pre>
+<h1>FILMS</h1>
+$for i in films:
+    <a href="/f/$i"><h2>$i </h2>
 
 <script>
 $$('#LEFT').on('click', function () { window.open('?func=left',"_self");return false; });

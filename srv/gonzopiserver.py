@@ -139,8 +139,6 @@ def getfilms(filmfolder):
         if os.path.isfile(filmfolder + i + '/settings.p') == True:
             lastupdate = os.path.getmtime(filmfolder + i + '/' + 'settings.p')
             films_sorted.append((i,lastupdate))
-        else:
-            films_sorted.append((i,0))
     films_sorted = sorted(films_sorted, key=lambda tup: tup[1], reverse=True)
     print(films_sorted)
     return films_sorted
@@ -187,17 +185,37 @@ def counttakes(filmname, filmfolder, scene, shot):
             takes = takes + 1
     return takes
 
+def checkpicture(thumbdir,scene,shot,take):
+    if os.path.isfile(thumbdir) == False:
+        return "/"+filmfolder+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
+    else:
+        return ''
+
+def checkvideo(video,filmfolder,film,scene,shot,take):
+    print(basedir+video+'fuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuck')
+    if os.path.islink(basedir+video) == False:
+        p = "/"+filmfolder+film+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
+        if os.path.isfile(basedir+p) == False:
+            return 'render'
+        else:
+            return p
+    else:
+        return 'video'
+
 class index:
     def GET(self):
         global recording
         films = getfilms(filmfolder)
         renderedfilms = []
         unrenderedfilms = []
+        allfilms = []
         for f in films:
             if os.path.isfile(filmfolder + f[0] + '/' + f[0] + '.mp4') == True:
                 renderedfilms.append(f[0])
+                allfilms.append(f[0])
             else:
                 unrenderedfilms.append(f[0])
+                allfilms.append(f[0])
         i=web.input(func=None,selected=None)
         if i.selected != None:
             sendtocamera(ip,port,'SELECTED:'+i.selected)
@@ -268,25 +286,36 @@ class index:
             time.sleep(1)
             session.reload = 1
             raise web.seeother('/')
-        thumb=filmfolder+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
+        thumb="/"+filmfolder+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
         print(thumb)
         if os.path.isfile(basedir+thumb) == False:
             print(basedir+thumb)
             thumb=''
-        return render.index(renderedfilms, unrenderedfilms, session.cameras, menu, selected,name,scene,shot,take,str,session.randhash,thumb,vumetermessage,i.func,filmfolder)
+        return render.index(allfilms, session.cameras, menu, selected,name,scene,shot,take,str,session.randhash,thumb,vumetermessage,i.func,filmfolder)
 
 class films:
     def GET(self, film):
         shots = 0
         takes = 0
-        i = web.input(page=None, scene=None, shot=None, take=None)
+        gonzopifilms = getfilms(filmfolder)
+        renderedfilms = []
+        unrenderedfilms = []
+        allfilms = []
+        for f in gonzopifilms:
+            if os.path.isfile(filmfolder + f[0] + '/' + f[0] + '.mp4') == True:
+                renderedfilms.append(f[0])
+                allfilms.append(f[0])
+            else:
+                unrenderedfilms.append(f[0])
+                allfilms.append(f[0])
+        i = web.input(page=None, scene=None, shot=None, take=None, film=None)
         if i.scene != None:
             shots = countshots(film, filmfolder, i.scene)
             takes = counttakes(film, filmfolder, i.scene, i.shot)
         if i.scene != None and i.shot != None:
             shots = countshots(film, filmfolder, i.scene)
         scenes = countscenes(filmfolder, film)
-        return render.filmpage(film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take)
+        return render.filmpage(allfilms, film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take, checkvideo)
 
 application = app.wsgifunc()
 

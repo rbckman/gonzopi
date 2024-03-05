@@ -1,39 +1,56 @@
-$def with (film, scenes, str, filmfolder, counttakes, countshots, shots, scene, takes, shot, take)
+$def with (films, film, scenes, str, filmfolder, counttakes, countshots, shots, scene, takes, shot, take, checkvideo)
 $ video = ''
 $if take != None:
     <h1>$film | scene $scene | shot $shot | take $take</h1>
-    <h2><a href='?scene=$scene&shot=$shot'>go back</a></h2><br>
-    $ video = '/static/Videos/' + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+    $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
 $elif shot != None:
     <h1>$film | scene $scene | shot $shot</h1>
-    <h2><a href='?scene=$scene'>go back</a></h2><br>
-    $ video = '/static/Videos/' + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(takes).zfill(3) + '.mp4'
+    $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(takes).zfill(3) + '.mp4'
+    $ take = takes
 $elif scene != None:
     <h1>$film | scene $scene</h1>
-    <h2><a href='/f/$film'>go back</a><h2><br>
-    $ video = '/static/Videos/' + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
-$elif scene == None:
+    $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
+$elif film != '':
     <h1>$film</h1>
-    $ video = '/static/Videos/' + film + '/' + film + '.mp4'
-<video width="80%" controls>
-<source src="$video" type="video/mp4">
-Your brower is caput
-</video>
-<p>Copy project to your destination:</p>
-<pre>scp -r pi@tarina.local:~/Videos/$film ~/films/$film </pre>
+    $ video = '/'+filmfolder + film + '/' + film + '.mp4'
+<br>
+<a href="javascript:history.back()">Go Back</a>
+<br>
+
+$ picture = checkvideo(video,filmfolder,film,scene,shot,take)
+$if picture == 'video':
+    <video width="80%" controls>
+    <source src="$video" style="width:80%; max-width:500px;"  type="video/mp4">
+    Your brower is caput
+    </video>
+$elif picture == 'render':
+    <pre>render video</pre>
+$else:
+    <img style="width:80%;" src="$picture"/>
+
+$if film == '':
+    <h1>FILMS</h1>
+    $for i in films:
+        <a href="/f/$i"><h2>$i</h2></a>
+<br>
+
+$ t=0
 
 $if shot != None:
     $for t in range(takes):
-        $ thumbnail_url = '/static/Videos/' + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(t+1).zfill(3) + '.jpeg'
-        <a href="?scene=$scene&shot=$shot&take=${str(t+1)}"><img width="80%" src="$thumbnail_url"/></a><br>
+        $ thumbnail_url = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(t+1).zfill(3) + '.jpeg'
+        <pre>take $str(t+1)</pre>
+        <a href="?scene=$scene&shot=$shot&take=${str(t+1)}"><img style="width:80%; max-width:500px;"  src="$thumbnail_url"/></a><br>
 $elif scene != None:
     $for s in range(shots)
+        <pre>shot $str(s+1)</pre>
         $ t = countshots(film, filmfolder, scene)
         $ p = counttakes(film, filmfolder, scene, s+1)
-        $ thumbnail_url = '/static/Videos/' + film + '/scene' + str(scene).zfill(3) + '/shot' + str(s+1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
-        <a href="?scene=$scene&shot=${str(s+1)}"><img width="80%" src="$thumbnail_url"/></a><br>
+        $ thumbnail_url = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(s+1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
+        <a href="?scene=$scene&shot=${str(s+1)}"><img style="width:80%; max-width:500px;" src="$thumbnail_url"/></a><br>
 $else:
     $for s in range(scenes):
+        <pre>scene $str(s+1)</pre>
         $ t = counttakes(film, filmfolder, s+1, 1)
-        $ thumbnail_url = '/static/Videos/' + film + '/scene' + str(s+1).zfill(3) + '/shot001/take' + str(t).zfill(3) + '.jpeg'
-        <a href="?scene=${str(s+1)}"><img width="80%" src="$thumbnail_url"/></a><br>
+        $ thumbnail_url = '/'+filmfolder + film + '/scene' + str(s+1).zfill(3) + '/shot001/take' + str(t).zfill(3) + '.jpeg'
+        <a href="?scene=${str(s+1)}"><img style="width:80%; max-width:500px;" src="$thumbnail_url"/></a><br>
