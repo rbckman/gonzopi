@@ -2512,9 +2512,11 @@ def loadfilm(filmname, filmfolder, camera, overlay):
             if selected > 0:
                 selected = selected - 1
         elif pressed == 'middle' and menu[selected] == 'FILM:':
+            overlay = removeimage(camera, overlay)
             filmname = films[selectedfilm][0]
             return filmname
         elif pressed == 'middle' and menu[selected] == 'BACK':
+            overlay = removeimage(camera, overlay)
             writemessage('Returning')
             return filmname
         time.sleep(0.02)
