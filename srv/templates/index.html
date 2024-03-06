@@ -28,11 +28,11 @@ $for i in cameras:
     $i
 <br>
 <div id="controls" style="display:none"> >
-<a id="VIEW" href="/?func=view">VIEW</a> <a id="UP" href="/?func=up">__UP__</a> <a id="RECORD" href="/?func=record">RECORD</a><br>
-<a id="LEFT" href="/?func=left">LEFT</a> <a id="MIDDLE" href="/?func=middle">MIDDLE</a> <a id="RIGHT" href="/?func=right">RIGHT</a><br>
-<a id="DELETE" href="/?func=delete">DELETE</a> <a id="DOWN" href="/?func=down">DOWN</a> <a id="RETAKE" href="/?func=retake">RETAKE</a><br>
-<a href="/?func=picture">PICTURE</a>
-<a href="/?func=search">SEARCH</a>
+<a id="VIEW" href="?func=view">VIEW</a> <a id="UP" href="?func=up">__UP__</a> <a id="RECORD" href="?func=record">RECORD</a><br>
+<a id="LEFT" href="?func=left">LEFT</a> <a id="MIDDLE" href="?func=middle">MIDDLE</a> <a id="RIGHT" href="?func=right">RIGHT</a><br>
+<a id="DELETE" href="?func=delete">DELETE</a> <a id="DOWN" href="?func=down">DOWN</a> <a id="RETAKE" href="?func=retake">RETAKE</a><br>
+<a href="?func=picture">PICTURE</a>
+<a href="?func=search">SEARCH</a>
 </div>
 
 <div id="menu" style="margin:0 auto; width:99%">
@@ -48,14 +48,14 @@ $for m in menu[3:]:
 <br>
 </div>
 $if thumb != '':
-    $ picture=filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/picture" + str(take).zfill(3) + ".jpeg"
+    $ picture= '/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/picture" + str(take).zfill(3) + ".jpeg"
 $else:
-    $ picture=filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg"
+    $ picture= '/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg"
 
 
-$ take_link=filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".mp4"
-$ scene_link=filmfolder + name + "/scene" + str(scene).zfill(3) + "/scene.mp4"
-$ film_link=filmfolder + name + "/" +name+ ".mp4"
+$ take_link='/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".mp4"
+$ scene_link='/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/scene.mp4"
+$ film_link='/'+filmfolder + name + "/" +name+ ".mp4"
 $if selected == 0:
     <a href='$film_link'><img width="80%" src="$picture?$randhash"/></a><br>
 $elif selected == 1:
@@ -63,9 +63,6 @@ $elif selected == 1:
 $elif selected > 1:
     <a href='$take_link'><img width="80%" src="$picture?$randhash"/></a><br>
 <br>
-<h1>FILMS</h1>
-$for i in films:
-    <a href="/f/$i"><h2>$i </h2>
 
 <script>
 $$('#LEFT').on('click', function () { window.open('?func=left',"_self");return false; });

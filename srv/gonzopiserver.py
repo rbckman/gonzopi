@@ -15,6 +15,11 @@ rundir = os.path.dirname(__file__)
 if rundir != '':
     os.chdir(rundir)
 
+urls = (
+    '/c/?', 'index',
+    '/(.*)?', 'films'
+)
+
 #--------------USB filmfolder-------------------
 
 def usbfilmfolder():
@@ -77,11 +82,6 @@ for adapter in adapters:
             print(ip.ip)
             networks.append(ip.ip)
 network=networks[0]
-
-urls = (
-    '/?', 'index',
-    '/f/(.*)?', 'films'
-)
 
 app = web.application(urls, globals())
 render = web.template.render('templates/', base="base")
@@ -191,16 +191,32 @@ def checkpicture(thumbdir,scene,shot,take):
     else:
         return ''
 
-def checkvideo(video,filmfolder,film,scene,shot,take):
-    print(basedir+video+'fuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuck')
-    if os.path.islink(basedir+video) == False:
-        p = "/"+filmfolder+film+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
-        if os.path.isfile(basedir+p) == False:
-            return 'render'
-        else:
-            return p
+def countsize(filename):
+    size = 0
+    if type(filename) is str:
+        size = os.stat(filename).st_size
     else:
-        return 'video'
+        return 0
+    return size/1024
+
+def checkvideo(video,filmfolder,film,scene,shot,take):
+    if take==None:
+        take=1
+    print(basedir+video)
+    p = "/"+filmfolder+film+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+ "/picture"+str(take).zfill(3)+".jpeg"
+    print(p)
+    v = ''
+    if video != '':
+        try:
+            if os.stat(basedir+video).st_size == 0:
+                v = ''
+            else:
+                v='video'
+        except:
+            v = ''
+    if os.path.isfile(basedir+p) == True:
+        return p, v
+    return '', v
 
 class index:
     def GET(self):
@@ -285,7 +301,7 @@ class index:
         if i.func != None:
             time.sleep(1)
             session.reload = 1
-            raise web.seeother('/')
+            raise web.seeother('/c/')
         thumb="/"+filmfolder+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
         print(thumb)
         if os.path.isfile(basedir+thumb) == False:
