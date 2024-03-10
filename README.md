@@ -26,7 +26,7 @@ Software
 ![Gonzopi](/extras/gonzopi-04.jpeg)
 ![Buttons](/extras/buttons.png)
 
-####in view mode
+#### in view mode
 ![Buttons](/extras/view-buttons.png)
 
 Installing
