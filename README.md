@@ -8,7 +8,7 @@ The camera that runs Linux with an unique all-in-one filmmaking interface. Shoot
 
 Software
 --------
-- filmmode & picutremode, soon musicvideomode.
+- film mode & picture mode, soon music video mode.
 - glue selected clips together and/or cutting them by setting in & out points easily.
 - making timelapses, stop-motion, voiceover, music track recording, slo-mo recording, fast-forward recording
 - cut and copy and move clips around
