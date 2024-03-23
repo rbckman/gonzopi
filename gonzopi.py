@@ -4452,12 +4452,12 @@ def usbfilmfolder():
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
     usbmount = 0
+    waiting = time.time()
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         usbconnected = os.path.ismount('/media/usb'+str(usbmount))
-        if pressed == 'middle':
+        if pressed == 'middle' or time.time() - waiting > 1:
             writemessage('canceling..')
-            time.sleep(2)
             break
         time.sleep(0.02)
         if usbconnected == True:
