@@ -4979,11 +4979,11 @@ def startcamera(lens, fps):
     # v2 = ? 
     logger.info("picamera version is: " + camera_model + ' ' + camera_revision)
     if camera_model == 'imx219':
-        table = read_table('lenses/' + lens)
-        camera.lens_shading_table = table
+        #table = read_table('lenses/' + lens)
+        #camera.lens_shading_table = table
         camera.framerate = 24.999
     elif camera_model == 'ov5647':
-        table = read_table('lenses/' + lens)
+        #table = read_table('lenses/' + lens)
         camera.lens_shading_table = table
         # Different versions of ov5647 with different clock speeds, need to make a config file
         # if there's more frames then the video will be longer when converting it to 25 fps,
