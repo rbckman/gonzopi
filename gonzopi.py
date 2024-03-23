@@ -882,7 +882,7 @@ def main():
                     run_command('ssh-keygen')
                 run_command('ssh-copy-id pi@'+ip)
                 try:
-                    run_command('rsync -avr --update --progress --files-from='+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos / pi@'+ip+':'+syncfolder+'.videos/')
+                    run_command('rsync -avr --update --progress --files-from='+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos --no-relative / pi@'+ip+':'+syncfolder+'.videos/')
                 except:
                     logger.info('no origin videos')
                 #run_command('scp -r '+filmfolder+filmname+'/'+'scene'+str(scene).zfill(3)+' pi@'+ip+':'+filmfolder+filmname+'/')
