@@ -870,7 +870,7 @@ def main():
             elif 'SYNCIP:' in pressed:
                 msg = pressed.split(':')[1]
                 syncfolder=msg.split('|')[1]
-                ip = ip.split(':')[0]
+                ip = msg.split(':')[0]
                 vumetermessage('SYNCING!')
                 stopinterface(camera)
                 video_files=shotfiles(filmfolder, filmname, scene)
@@ -895,7 +895,7 @@ def main():
                 stopinterface(camera)
                 msg = pressed.split(':')[1]
                 syncfolder=msg.split('|')[1]
-                ip = pressed.split(':')[1]
+                ip = pressed.split(':')[0]
                 logger.info('SYNCING from ip:'+ip)
                 run_command('ssh-copy-id pi@'+ip)
                 try:
