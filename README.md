@@ -1,14 +1,15 @@
 Gonzo Pi
 =============
-### a retake on filmmaking
+### a reboot of filmmaking
 
-The camera that runs Linux with an unique all-in-one filmmaking interface. Gonzo Pi is 3d printed, easy to hack & repair.
+The camera that runs Linux with an unique all-in-one filmmaking interface. Shooting your videos as takes in a scene and shot based structure. Gonzo Pi is 3d printed, easy to mod & repair.
 
 ![Gonzopi](/extras/gonzopi-01.jpeg)
 
 Software
 --------
-- glue selected clips together and/or cutting them.
+- film mode & picture mode, soon music video mode.
+- glue selected clips together and/or cutting them by setting in & out points easily.
 - making timelapses, stop-motion, voiceover, music track recording, slo-mo recording, fast-forward recording
 - cut and copy and move clips around
 - backup to usb harddrive or your own server
@@ -24,6 +25,9 @@ Software
 ### Buttons
 ![Gonzopi](/extras/gonzopi-04.jpeg)
 ![Buttons](/extras/buttons.png)
+
+#### in view mode
+![Buttons](/extras/view-buttons.png)
 
 Installing
 ----------
