@@ -84,7 +84,7 @@ while probei2c < 3:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -390,6 +390,7 @@ def main():
                         camera.start_preview()
                 else:
                     vumetermessage("There's absolutely nothing in this scene! hit rec!")
+                updatethumb=True
                 rendermenu = True
             #VIEW FILM
             elif pressed == 'view' and menu[selected] == 'FILM:':
@@ -406,6 +407,7 @@ def main():
                     camera.start_preview()
                 else:
                     vumetermessage('wow, shoot first! there is zero, nada, zip footage to watch now... just hit rec!')
+                updatethumb=True
                 rendermenu = True
             #VIEW SHOT OR TAKE
             elif pressed == 'view':
@@ -450,6 +452,7 @@ def main():
                     else:
                         vumetermessage('nothing here! hit rec!')
                     rendermenu = True
+                    updatethumb=True
             #DUB SHOT
             elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
                 newdub = clipsettings(filmfolder, filmname, scene, shot, take, plughw)
@@ -4014,7 +4017,10 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
 #---------------Play & DUB--------------------
 
 def playdub(filmname, filename, player_menu):
-    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat
+    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder
+    if showhelp == True:
+        overlay2 = removeimage(camera, overlay2)
+        overlay2 = displayimage(camera, gonzopifolder+'/extras/view-buttons.png', overlay, 4)
     #read fastedit file
     if player_menu == 'scene':
         scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
@@ -4067,7 +4073,8 @@ def playdub(filmname, filename, player_menu):
                 time.sleep(0.5)
                 return
             #player = OMXPlayer(filename + '.mp4', args=['--fps', '25', '--layer', '3', '--win', '0,70,800,410', '--no-osd', '--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
-        writemessage('Loading...')
+        writemessage('Loading..')
+        vumetermessage('view [set in point] retake [set out poin], up [fastforward], down [rewind]')
         clipduration = player.duration()
     #sound
     #if player_menu != 'film':
@@ -4141,6 +4148,17 @@ def playdub(filmname, filename, player_menu):
             flushbutton()
         if pressed == 'remove':
             vumetermessage('add direct remove here')
+        #SHOWHELP
+        elif pressed == 'showhelp':
+            vumetermessage('Button layout')
+            if showhelp == False:
+                overlay2 = removeimage(camera, overlay2)
+                overlay2 = displayimage(camera, gonzopifolder+'/extras/view-buttons.png', overlay, 4)
+                showhelp = True
+            elif showhelp == True:
+                overlay2 = removeimage(camera, overlay2)
+                updatethumb =  True
+                showhelp = False
         elif pressed == 'right':
             if selected < (len(settings) - 1):
                 selected = selected + 1
