@@ -869,7 +869,7 @@ def main():
                     vumetermessage('No network!')
             elif 'SYNCIP:' in pressed:
                 msg = pressed.split(':')[1]
-                syncfolder+msg.split('|')[1]
+                syncfolder=msg.split('|')[1]
                 ip = ip.split(':')[0]
                 vumetermessage('SYNCING!')
                 stopinterface(camera)
@@ -894,7 +894,7 @@ def main():
             elif 'SYNCDONE:' in pressed:
                 stopinterface(camera)
                 msg = pressed.split(':')[1]
-                syncfolder+msg.split('|')[1]
+                syncfolder=msg.split('|')[1]
                 ip = pressed.split(':')[1]
                 logger.info('SYNCING from ip:'+ip)
                 run_command('ssh-copy-id pi@'+ip)
