@@ -903,7 +903,8 @@ def main():
                 except:
                     logger.info('no files')
                 with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
-                    scene_origin_files = [line.rstrip() for line in f]
+                    if f:
+                        scene_origin_files = [line.rstrip() for line in f]
                 #a=0
                 #for i in cameras:
                 #    if a != 0:
