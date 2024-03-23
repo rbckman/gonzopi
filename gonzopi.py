@@ -863,7 +863,9 @@ def main():
                 else:
                     vumetermessage('No network!')
             elif 'SYNCIP:' in pressed:
-                ip = pressed.split(':')[1]
+                msg = pressed.split(':')[1]
+                syncfolder+msg.split('|')[1]
+                ip = ip.split(':')[0]
                 vumetermessage('SYNCING!')
                 stopinterface(camera)
                 video_files=shotfiles(filmfolder, filmname, scene)
@@ -875,22 +877,24 @@ def main():
                     run_command('ssh-keygen')
                 run_command('ssh-copy-id pi@'+ip)
                 try:
-                    run_command('rsync -avr --update --progress --files-from='+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos / pi@'+ip+':/')
+                    run_command('rsync -avr --update --progress --files-from='+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos / pi@'+ip+':/')
                 except:
                     logger.info('no origin videos')
                 #run_command('scp -r '+filmfolder+filmname+'/'+'scene'+str(scene).zfill(3)+' pi@'+ip+':'+filmfolder+filmname+'/')
-                sendtocamera(ip,port,'SYNCDONE:'+cameras[0])
+                sendtocamera(ip,port,'SYNCDONE:'+cameras[0]+'|'+filmfolder)
                 startinterface()
                 camera = startcamera(lens,fps)
                 loadfilmsettings = True
                 rendermenu = True
             elif 'SYNCDONE:' in pressed:
                 stopinterface(camera)
+                msg = pressed.split(':')[1]
+                syncfolder+msg.split('|')[1]
                 ip = pressed.split(':')[1]
                 logger.info('SYNCING from ip:'+ip)
                 run_command('ssh-copy-id pi@'+ip)
                 try:
-                    run_command('rsync -avr --update --progress pi@'+ip+':'+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
+                    run_command('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
                 except:
                     logger.info('no files')
                 with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
@@ -987,7 +991,7 @@ def main():
                 for i in cameras:
                     if i != cameras[0]:
                         vumetermessage('Hold on syncing!')
-                        sendtocamera(i,port,'SYNCIP:'+cameras[0])
+                        sendtocamera(i,port,'SYNCIP:'+cameras[0]+'|'+filmfolder)
                         time.sleep(1)
             elif pressed == "middle" and menu[selected]=='New SCENE':
                 a=0
