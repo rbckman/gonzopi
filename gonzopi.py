@@ -45,6 +45,11 @@ pipe = subprocess.check_output('lsb_release -c -s', shell=True)
 debianversion = pipe.decode().strip()
 print('running debian ' + debianversion)
 
+#give permissions to GPIO
+os.system('sudo chown root.gpio /dev/gpiomem')
+os.system('sudo chmod g+rw /dev/gpiomem')
+
+
 #I2CBUTTONS
 probei2c = 0
 while probei2c < 3:
