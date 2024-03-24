@@ -49,6 +49,8 @@ print('running debian ' + debianversion)
 os.system('sudo chown root.gpio /dev/gpiomem')
 os.system('sudo chmod g+rw /dev/gpiomem')
 
+#give permissions to RAM
+os.system('sudo chown -R pi /dev/shm')
 
 #I2CBUTTONS
 probei2c = 0
@@ -153,6 +155,7 @@ def main():
     flip = 'no'
     between = 30
     duration = 0.2
+    dsk = 0
     lenses = os.listdir('lenses/')
     lens = lenses[0]
     buttontime = time.time()
@@ -199,10 +202,19 @@ def main():
     run_command('gpio -g mode 19 pwm ')
     run_command('gpio -g pwm 19 1023')
     
+    #STORAGE DRIVES
+    storagedrives=[['sd',filmfolder]]
+
     #CHECK IF FILMING TO USB STORAGE
+    if os.path.exists('/dev/sda1') == False:
+        os.system('sudo umount /media/usb0')
+    if os.path.exists('/dev/sda2') == False:
+        os.system('sudo umount /media/usb1')
     filmfolderusb=usbfilmfolder()
     if filmfolderusb:
         filmfolder=filmfolderusb
+        storagedrives.append(['usb0',filmfolder])
+        dsk=1
         if os.path.isdir(filmfolder) == False:
             os.makedirs(filmfolder)
  
@@ -603,6 +615,12 @@ def main():
                 else:
                     vumetermessage('')
                 rendermenu = True
+            #(YANK) COPY FILM
+            elif pressed == 'copy' and menu[selected] == 'FILM:' and recordable == False:
+                copying = 'film'
+                yanked = filmfolder + filmname
+                vumetermessage('Film ' + filmname + ' copied! (I)nsert button to place it...')
+                time.sleep(1)
             #(YANK) COPY TAKE
             elif pressed == 'copy' and menu[selected] == 'TAKE:' and recordable == False:
                 copying = 'take'
@@ -676,6 +694,18 @@ def main():
                     vumetermessage('Pasting scene, please wait...')
                     paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
                     os.system('cp -r ' + yanked + ' ' + paste)
+                    if moving == True:
+                        os.system('rm -r ' + yanked)
+                        #Remove hidden placeholder
+                        #os.system('rm ' + yanked + '/.placeholder')
+                elif copying == 'film':
+                    vumetermessage('Pasting film, please wait...')
+                    paste = filmfolder
+                    os.system('cp -r ' + yanked + ' ' + paste)
+                    try:
+                        run_command('rsync -avr --update --progress --files-from='+yanked+'/.origin_videos --no-relative / ' +filmfolder+'.videos/')
+                    except:
+                        logger.info('no origin videos')
                     if moving == True:
                         os.system('rm -r ' + yanked)
                         #Remove hidden placeholder
@@ -780,27 +810,35 @@ def main():
             #DSK
             elif pressed == 'middle' and menu[selected] == 'DSK:':
                 print("usb filmfolder")
+                vumetermessage('checking usb mount...')
+                if os.path.exists('/dev/sda1') == False:
+                    os.system('sudo umount /media/usb0')
                 filmfolderusb=usbfilmfolder()
                 if filmfolderusb:
                     filmfolder=filmfolderusb
-                    #COUNT DISKSPACE
-                    #sudo mkfs -t ext4 /dev/sdb1
-                    disk = os.statvfs(filmfolder)
-                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                    #LOAD FILM AND SCENE SETTINGS
-                    try:
-                        filmname = getfilms(filmfolder)[0][0]
-                    except:
-                        filmname = 'onthefloor' 
-                    try:
-                        filmname_back = getfilms(filmfolder)[0][1]
-                    except:
-                        filmname_back = 'onthefloor' 
+                else:
+                    camera_model, camera_revision , filmfolder = getconfig(camera)
                     if os.path.isdir(filmfolder) == False:
                         os.makedirs(filmfolder)
-                    #loadfilmsettings = True
-                    updatethumb = True
-                    #cleanupdisk(filmname,filmfolder)
+                #COUNT DISKSPACE
+                #sudo mkfs -t ext4 /dev/sdb1
+                disk = os.statvfs(filmfolder)
+                diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                #LOAD FILM AND SCENE SETTINGS
+                try:
+                    filmname = getfilms(filmfolder)[0][0]
+                except:
+                    filmname = 'onthefloor' 
+                try:
+                    filmname_back = getfilms(filmfolder)[0][1]
+                except:
+                    filmname_back = 'onthefloor' 
+                if os.path.isdir(filmfolder) == False:
+                    os.makedirs(filmfolder)
+                #loadfilmsettings = True
+                updatethumb = True
+                rendermenu = True
+                #cleanupdisk(filmname,filmfolder)
             #REMOVE DELETE
             #take
             elif pressed == 'remove' and menu[selected] == 'TAKE:':
@@ -1501,6 +1539,24 @@ def main():
                 if camselected < len(cameras)-1:
                     newselected = camselected+1
                     logger.info('camera selected:'+str(camselected))
+            elif menu[selected] == 'DSK:':
+                if dsk+1 < len(storagedrives):
+                    dsk += 1
+                    filmfolder = storagedrives[dsk][1]
+                    rendermenu=True
+                    updatethumb=True
+                    #COUNT DISKSPACE
+                    disk = os.statvfs(filmfolder)
+                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                    #LOAD FILM AND SCENE SETTINGS
+                    try:
+                        filmname = getfilms(filmfolder)[0][0]
+                    except:
+                        filmname = filmname 
+                    try:
+                        filmname_back = getfilms(filmfolder)[0][1]
+                    except:
+                        filmname_back = filmname 
 
         #LEFT
         elif pressed == 'left':
@@ -1675,6 +1731,24 @@ def main():
                 if camselected > 0:
                     newselected = camselected-1
                     logger.info('camera selected:'+str(camselected))
+            elif menu[selected] == 'DSK:':
+                if dsk > 0:
+                    dsk -= 1
+                    filmfolder = storagedrives[dsk][1]
+                    rendermenu=True
+                    updatethumb=True
+                    #COUNT DISKSPACE
+                    disk = os.statvfs(filmfolder)
+                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                    #LOAD FILM AND SCENE SETTINGS
+                    try:
+                        filmname = getfilms(filmfolder)[0][0]
+                    except:
+                        filmname = filmname 
+                    try:
+                        filmname_back = getfilms(filmfolder)[0][1]
+                    except:
+                        filmname_back = filmname 
 
         #RIGHT
         elif pressed == 'right':
@@ -1734,6 +1808,8 @@ def main():
             print('ORIGIN')
             print(origin_videos)
             print('total of videos: '+str(len(origin_videos)))
+            with open(filmfolder+filmname+'/.origin_videos', 'w') as outfile:
+                outfile.write('\n'.join(str(i) for i in origin_videos))
             if not os.path.isdir(filmfolder+'.videos/'):
                 os.makedirs(filmfolder+'.videos/')
             allfiles = os.listdir(filmfolder+'.videos/')
@@ -1830,12 +1906,12 @@ def main():
             lastmenu = menu[selected]
             if showgonzopictrl == False:
                 menu = standardmenu
-                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, storagedrives[dsk][0]+diskleft, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
             else:
                 #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                 menu = gonzopictrlmenu
                 #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, diskleft, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
+                settings = filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, storagedrives[dsk][0]+diskleft, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
             #Rerender menu if picamera settings change
             #if settings != oldsettings or selected != oldselected:
             writemenu(menu,settings,selected,'',showmenu)
@@ -3394,7 +3470,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             #time.sleep(3)
         else:
             vumetermessage('Nothing here to play hit record')
-            return '', ''
+            status='',''
+            q.put(status)
         #if os.path.isfile(renderfilename + '.h264') and os.path.isfile(renderfilename + '.mp4'):
         #    os.system('rm ' + renderfilename + '.h264 ')
         # Check if video corrupt
@@ -3411,8 +3488,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             print('Okey, shot file not found or is corrupted')
             # For backwards compatibility remove old rendered scene files
             # run_command('rm ' + renderfilename + '*')
-            return '', ''
-            #renderfix = True
+            status='',''
+            q.put(status)
         try:
             with open(scenedir + '.videohash', 'r') as f:
                 oldvideohash = f.readline().strip()
@@ -3519,7 +3596,6 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             newaudiomix=''
             break
     return renderfilename, newaudiomix
-
 
 #-------------Render Scene-------------
 
@@ -4503,10 +4579,11 @@ def usbfilmfolder():
     writemessage('Searching for usb storage device, middlebutton to cancel')
     usbmount = 0
     waiting = time.time()
+ 
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         usbconnected = os.path.ismount('/media/usb'+str(usbmount))
-        if pressed == 'middle' or time.time() - waiting > 1:
+        if pressed == 'middle' or time.time() - waiting > 3:
             writemessage('canceling..')
             break
         time.sleep(0.02)
@@ -4525,6 +4602,7 @@ def usbfilmfolder():
             filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
             #run_command('pumount /media/usb'+str(usbmount))
             writemessage('Filming to USB'+str(usbmount))
+            time.sleep(1)
             return filmfolder
         else:
             usbmount = usbmount + 1
