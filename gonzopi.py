@@ -839,6 +839,8 @@ def main():
                 updatethumb = True
                 rendermenu = True
                 #cleanupdisk(filmname,filmfolder)
+                serverstate = gonzopiserver(False)
+                serverstate = gonzopiserver(True)
             #REMOVE DELETE
             #take
             elif pressed == 'remove' and menu[selected] == 'TAKE:':
@@ -1556,7 +1558,10 @@ def main():
                     try:
                         filmname_back = getfilms(filmfolder)[0][1]
                     except:
-                        filmname_back = filmname 
+                        filmname_back = filmname
+                    if serverstate == 'on':
+                        gonzopiserver(False)
+                        gonzopiserver(True)
 
         #LEFT
         elif pressed == 'left':
@@ -1749,6 +1754,9 @@ def main():
                         filmname_back = getfilms(filmfolder)[0][1]
                     except:
                         filmname_back = filmname 
+                    if serverstate == 'on':
+                        gonzopiserver(False)
+                        gonzopiserver(True)
 
         #RIGHT
         elif pressed == 'right':

@@ -324,14 +324,16 @@ class films:
             else:
                 unrenderedfilms.append(f[0])
                 allfilms.append(f[0])
-        i = web.input(page=None, scene=None, shot=None, take=None, film=None)
+        i = web.input(page=None, scene=None, shot=None, take=None, film=None, randhash=None)
         if i.scene != None:
             shots = countshots(film, filmfolder, i.scene)
             takes = counttakes(film, filmfolder, i.scene, i.shot)
         if i.scene != None and i.shot != None:
             shots = countshots(film, filmfolder, i.scene)
+        if i.randhash == None:
+            randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
         scenes = countscenes(filmfolder, film)
-        return render.filmpage(allfilms, film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take, checkvideo)
+        return render.filmpage(allfilms, film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash)
 
 application = app.wsgifunc()
 
