@@ -3373,120 +3373,151 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
     global fps
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
-    videohash = ''
-    oldvideohash = ''
-    scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
-    #take = counttakes(filmname, filmfolder, scene, shot)
-    #renderfilename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) 
-    #return if no file
-    # Video Hash
-    if os.path.isfile(renderfilename + '.h264') == True:
-        compileshot(renderfilename,filmfolder,filmname)
-        audiohash = str(int(countsize(renderfilename + '.wav')))
-        with open(scenedir + '.audiohash', 'w') as f:
-            f.write(audiohash)
-    #if something shutdown in middle of process
-    elif os.path.isfile(renderfilename + '_tmp.mp4') == True:
-        os.system('cp ' + renderfilename + '_tmp.mp4 ' + renderfilename + '.mp4')
-    elif os.path.isfile(renderfilename + '.mp4') == True:
-        videohash = videohash + str(int(countsize(renderfilename + '.mp4')))
-        video_origins = (os.path.realpath(renderfilename+'.mp4'))[:-4]
-        print('Videohash of shot is: ' + videohash)
-        #time.sleep(3)
-    else:
-        vumetermessage('Nothing here to play hit record')
-        return '', ''
-    #if os.path.isfile(renderfilename + '.h264') and os.path.isfile(renderfilename + '.mp4'):
-    #    os.system('rm ' + renderfilename + '.h264 ')
-    # Check if video corrupt
-    renderfix = False
-    if os.path.isfile(renderfilename + '.jpeg') == False: 
-        run_command('ffmpeg -sseof -1 -i ' + renderfilename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + renderfilename + '.jpeg')
-    try:
-        pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-        videolenght = pipe.decode().strip()
-    except:
-        videolenght = ''
-    print('Shot lenght ' + videolenght)
-    if videolenght == '':
-        print('Okey, shot file not found or is corrupted')
-        # For backwards compatibility remove old rendered scene files
-        # run_command('rm ' + renderfilename + '*')
-        return '', ''
-        #renderfix = True
-    try:
-        with open(scenedir + '.videohash', 'r') as f:
-            oldvideohash = f.readline().strip()
-        print('oldvideohash is: ' + oldvideohash)
-    except:
-        print('no videohash found, making one...')
-        with open(scenedir + '.videohash', 'w') as f:
-            f.write(videohash)
-    #Audio
-    audiohash = ''
-    oldaudiohash = ''
-    newaudiomix = False
-    audiohash += str(int(countsize(renderfilename + '.wav')))
-    dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
-    for p in dubfiles:
-        audiohash += str(int(countsize(p)))
-    print('Audiohash of shot is: ' + audiohash)
-    try:
-        with open(scenedir + '.audiohash', 'r') as f:
-            oldaudiohash = f.readline().strip()
-        print('oldaudiohash is: ' + oldaudiohash)
-    except:
-        print('no audiohash found, making one...')
-        with open(scenedir + '.audiohash', 'w') as f:
-            f.write(audiohash)
-    if audiohash != oldaudiohash or newmix == True or renderfix == True:
-        print('rerendering')
-        #time.sleep(3)
-        #make scene rerender
-        os.system('touch '+filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/.rerender')
-        #copy original sound
-        if os.path.exists(scenedir+'dub') == True:
-            os.system('cp '+scenedir+'dub/original.wav '+renderfilename+'.wav')
-        #os.system('cp '+dubfolder+'original.wav '+renderfilename+'.wav')
-        renderaudio(renderfilename, renderfilename, dubfiles, dubmix)
-        print('updating audiohash...')
-        with open(scenedir + '.audiohash', 'w') as f:
-            f.write(audiohash)
-        for i in range(len(dubfiles)):
-            os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
-        print('Audio rendered!')
-        newaudiomix = True
-        muxing = True
-        if muxing == True:
-            #muxing mp3 layer to mp4 file
-            #count estimated audio filesize with a bitrate of 320 kb/s
-            audiosize = countsize(renderfilename + '.wav') * 0.453
-            p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-            while p.poll() is None:
-                time.sleep(0.2)
-                try:
-                    rendersize = countsize(renderfilename + '.mp3')
-                except:
-                    continue
-                writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-            ##MERGE AUDIO & VIDEO
-            writemessage('Merging audio & video')
-            #os.remove(renderfilename + '.mp4') 
-            call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
-            call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
-            os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
+    def render(q, filmfolder, filmname, renderfilename, scene, shot):
+        videohash = ''
+        oldvideohash = ''
+        scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
+        #return if no file
+        # Video Hash
+        if os.path.isfile(renderfilename + '.h264') == True:
+            compileshot(renderfilename,filmfolder,filmname)
+            audiohash = str(int(countsize(renderfilename + '.wav')))
+            with open(scenedir + '.audiohash', 'w') as f:
+                f.write(audiohash)
+        #if something shutdown in middle of process
+        elif os.path.isfile(renderfilename + '_tmp.mp4') == True:
+            os.system('cp ' + renderfilename + '_tmp.mp4 ' + renderfilename + '.mp4')
+        elif os.path.isfile(renderfilename + '.mp4') == True:
+            videohash = videohash + str(int(countsize(renderfilename + '.mp4')))
+            video_origins = (os.path.realpath(renderfilename+'.mp4'))[:-4]
+            print('Videohash of shot is: ' + videohash)
+            #time.sleep(3)
+        else:
+            vumetermessage('Nothing here to play hit record')
+            return '', ''
+        #if os.path.isfile(renderfilename + '.h264') and os.path.isfile(renderfilename + '.mp4'):
+        #    os.system('rm ' + renderfilename + '.h264 ')
+        # Check if video corrupt
+        renderfix = False
+        if os.path.isfile(renderfilename + '.jpeg') == False: 
+            run_command('ffmpeg -sseof -1 -i ' + renderfilename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + renderfilename + '.jpeg')
+        try:
+            pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
+            videolenght = pipe.decode().strip()
+        except:
+            videolenght = ''
+        print('Shot lenght ' + videolenght)
+        if videolenght == '':
+            print('Okey, shot file not found or is corrupted')
+            # For backwards compatibility remove old rendered scene files
+            # run_command('rm ' + renderfilename + '*')
+            return '', ''
+            #renderfix = True
+        try:
+            with open(scenedir + '.videohash', 'r') as f:
+                oldvideohash = f.readline().strip()
+            print('oldvideohash is: ' + oldvideohash)
+        except:
+            print('no videohash found, making one...')
+            with open(scenedir + '.videohash', 'w') as f:
+                f.write(videohash)
+        #Audio
+        lasttake = counttakes(filmname, filmfolder, scene, shot)
+        lasttakefilename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(lasttake).zfill(3) 
+        audiohash = ''
+        oldaudiohash = ''
+        newaudiomix = False
+        if lasttakefilename == renderfilename:
+            audiohash += str(int(countsize(renderfilename + '.wav')))
+            dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
+            for p in dubfiles:
+                audiohash += str(int(countsize(p)))
+            print('Audiohash of shot is: ' + audiohash)
             try:
-                os.remove(video_origins + '_tmp.mp4')
-                os.remove(renderfilename + '.mp3')
+                with open(scenedir + '.audiohash', 'r') as f:
+                    oldaudiohash = f.readline().strip()
+                print('oldaudiohash is: ' + oldaudiohash)
             except:
-                print('nothing to remove')
-        #origin=os.path.realpath(renderfilename+'.mp4')
-        #os.system('rm ' + filename + '.h264')
-        #os.system('rm /dev/shm/temp.wav')
-        #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
-        logger.info('compile done!')
-    else:
-        print('Already rendered!')
+                print('no audiohash found, making one...')
+                with open(scenedir + '.audiohash', 'w') as f:
+                    f.write(audiohash)
+            if audiohash != oldaudiohash or newmix == True or renderfix == True:
+                print('rerendering')
+                #time.sleep(3)
+                #make scene rerender
+                os.system('touch '+filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/.rerender')
+                #copy original sound
+                if os.path.exists(scenedir+'dub') == True:
+                    os.system('cp '+scenedir+'dub/original.wav '+renderfilename+'.wav')
+                #os.system('cp '+dubfolder+'original.wav '+renderfilename+'.wav')
+                renderaudio(renderfilename, renderfilename, dubfiles, dubmix)
+                print('updating audiohash...')
+                with open(scenedir + '.audiohash', 'w') as f:
+                    f.write(audiohash)
+                for i in range(len(dubfiles)):
+                    os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
+                print('Audio rendered!')
+                newaudiomix = True
+                muxing = True
+                if muxing == True:
+                    #muxing mp3 layer to mp4 file
+                    #count estimated audio filesize with a bitrate of 320 kb/s
+                    audiosize = countsize(renderfilename + '.wav') * 0.453
+                    p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+                    while p.poll() is None:
+                        time.sleep(0.2)
+                        try:
+                            rendersize = countsize(renderfilename + '.mp3')
+                        except:
+                            continue
+                        writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+                    ##MERGE AUDIO & VIDEO
+                    writemessage('Merging audio & video')
+                    #os.remove(renderfilename + '.mp4') 
+                    call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
+                    call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
+                    os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
+                    try:
+                        os.remove(video_origins + '_tmp.mp4')
+                        os.remove(renderfilename + '.mp3')
+                    except:
+                        print('nothing to remove')
+                #origin=os.path.realpath(renderfilename+'.mp4')
+                #os.system('rm ' + filename + '.h264')
+                #os.system('rm /dev/shm/temp.wav')
+                #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+                logger.info('compile done!')
+            else:
+                print('Already rendered!')
+        status=renderfilename,newaudiomix
+        q.put(status)
+    q = mp.Queue()
+    proc = mp.Process(target=render, args=(q, filmfolder, filmname, renderfilename, scene, shot))
+    proc.start()
+    procdone = False
+    status = ''
+    vumetermessage('press middlebutton to cancel')
+    while True:
+        if proc.is_alive() == False and procdone == False:
+            status = q.get()
+            print(status)
+            procdone = True
+            proc.join()
+            renderfilename,newaudiomix = status
+            vumetermessage('')
+            break
+        if middlebutton() == True:
+            proc.terminate()
+            proc.join()
+            procdone = True
+            q=''
+            os.system('pkill MP4Box')
+            vumetermessage('canceled for now, maybe u want to render later ;)')
+            writemessage('press any button to continue')
+            print('canceling videorender')
+            renderfilename = ''
+            newaudiomix=''
+            break
     return renderfilename, newaudiomix
 
 
@@ -3626,7 +3657,7 @@ def renderscene(filmfolder, filmname, scene):
 
 def renderfilm(filmfolder, filmname, comp, scene, muxing):
     global fps
-    def render(q, filmfolder, filmname, comp, scene):
+    def render(q, filmfolder, filmname, comp, scene, muxing):
         newaudiomix = False
         #if comp == 1:
         #    newaudiomix = True
@@ -3731,7 +3762,7 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
             print('Already rendered!')
         q.put(renderfilename)
     q = mp.Queue()
-    proc = mp.Process(target=render, args=(q,filmfolder,filmname,comp,scene))
+    proc = mp.Process(target=render, args=(q,filmfolder,filmname,comp,scene,muxing))
     proc.start()
     procdone = False
     status = ''
