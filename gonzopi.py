@@ -813,9 +813,15 @@ def main():
                 vumetermessage('checking usb mount...')
                 if os.path.exists('/dev/sda1') == False:
                     os.system('sudo umount /media/usb0')
+                    del storagedrives[1]
+                    dsk=0
+                    time.sleep(1)
                 filmfolderusb=usbfilmfolder()
                 if filmfolderusb:
                     filmfolder=filmfolderusb
+                    if dsk < 1:
+                        storagedrives.append(['usb0',filmfolder])
+                        dsk=1
                 else:
                     camera_model, camera_revision , filmfolder = getconfig(camera)
                     if os.path.isdir(filmfolder) == False:
