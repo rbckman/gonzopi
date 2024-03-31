@@ -9,7 +9,7 @@
 # █  █▄▄█ █       █ █ █   █ █▄▄▄▄▄█       █   █   █   █
 # █▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█▄█  █▄▄█▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█▄▄▄█   █▄▄▄█
 
-# https://gonzopi.tarina.org
+# https://gonzopi.org
 
 import picamerax as picamera
 import numpy as np
@@ -215,6 +215,7 @@ def main():
         filmfolder=filmfolderusb
         storagedrives.append(['usb0',filmfolder])
         dsk=1
+        loadfilmsettings == True
         if os.path.isdir(filmfolder) == False:
             os.makedirs(filmfolder)
  
@@ -822,6 +823,7 @@ def main():
                     if dsk < 1:
                         storagedrives.append(['usb0',filmfolder])
                         dsk=1
+                        loadfilmsettings = True
                 else:
                     camera_model, camera_revision , filmfolder = getconfig(camera)
                     if os.path.isdir(filmfolder) == False:
@@ -1551,8 +1553,7 @@ def main():
                 if dsk+1 < len(storagedrives):
                     dsk += 1
                     filmfolder = storagedrives[dsk][1]
-                    rendermenu=True
-                    updatethumb=True
+                    loadfilmsettings = True
                     #COUNT DISKSPACE
                     disk = os.statvfs(filmfolder)
                     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
@@ -1735,7 +1736,7 @@ def main():
                     fps=fps_selection[fps_selected]
                     camera.framerate = fps
             elif menu[selected] == 'Q:':
-                if scenes == 0:
+                if scenes < 0:
                     if quality > 10:
                         quality -= 1
             elif menu[selected] == 'CAMERA:':
@@ -1746,8 +1747,7 @@ def main():
                 if dsk > 0:
                     dsk -= 1
                     filmfolder = storagedrives[dsk][1]
-                    rendermenu=True
-                    updatethumb=True
+                    loadfilmsettings = True
                     #COUNT DISKSPACE
                     disk = os.statvfs(filmfolder)
                     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
@@ -1800,7 +1800,7 @@ def main():
                 quality = filmsettings[18]
                 #wifistate = filmsettings[19]
                 #serverstate=filmsettings[20]
-                #plughw=filmsettings[21]
+                plughw=filmsettings[21]
                 channels=filmsettings[22]
                 #cammode=filmsettings[23]
                 scene=filmsettings[24]
@@ -1815,7 +1815,6 @@ def main():
                 camera.hflip = True
             run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
             run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
-            print('fuckme')
             print(filmfolder)
             print(filmname)
             origin_videos=organize(filmfolder, filmname)
