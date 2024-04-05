@@ -1736,7 +1736,7 @@ def main():
                     fps=fps_selection[fps_selected]
                     camera.framerate = fps
             elif menu[selected] == 'Q:':
-                if scenes < 0:
+                if scenes == 0:
                     if quality > 10:
                         quality -= 1
             elif menu[selected] == 'CAMERA:':
@@ -4756,18 +4756,18 @@ def uploadfilm(filename, filmname):
 
 def startstream(camera, stream, plughw, channels):
     #youtube
-    #youtube="rtmp://a.rtmp.youtube.com/live2/"
-    #with open("/home/pi/.youtube-live") as fp:
-    #    key = fp.readlines()
-    #print('using key: ' + key[0])
-    #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 44100 -vcodec copy -acodec libmp3lame -b:a 128k -ar 44100 -map 0:0 -map 1:0 -strict experimental -f flv ' + youtube + key[0]
+    youtube="rtmp://a.rtmp.youtube.com/live2/"
+    with open("/home/pi/.youtube-live") as fp:
+        key = fp.readlines()
+    print('using key: ' + key[0])
+    stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 48000 -vcodec copy -acodec libmp3lame -b:a 128k -ar 48000 -map 0:0 -map 1:0 -strict experimental -f flv ' + youtube + key[0]
     #
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 44100 -vcodec copy -acodec libmp3lame -b:a 128k -ar 44100 -map 0:0 -map 1:0 -strict experimental -f mpegts tcp://0.0.0.0:3333\?listen'
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -map 0:0 -map 1:0 -g 0 -f mpegts udp://10.42.0.169:5002'
-    stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://10.42.0.169:5002'
+    #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://10.42.0.169:5002'
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
-        camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 55555)
+        camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 5555555)
     except:
         stream = ''
     #now = time.strftime("%Y-%m-%d-%H:%M:%S") 
