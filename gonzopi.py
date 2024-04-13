@@ -621,46 +621,39 @@ def main():
                 copying = 'film'
                 yanked = filmfolder + filmname
                 vumetermessage('Film ' + filmname + ' copied! (I)nsert button to place it...')
-                time.sleep(1)
             #(YANK) COPY TAKE
             elif pressed == 'copy' and menu[selected] == 'TAKE:' and recordable == False:
                 copying = 'take'
                 yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)+'/take' + str(take).zfill(3)
                 vumetermessage('Take ' + str(take) + ' copied! (I)nsert button to place it...')
-                time.sleep(1)
             #(YANK) COPY SHOT
             elif pressed == 'copy' and menu[selected] == 'SHOT:':
                 copying = 'shot'
                 yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
                 vumetermessage('Shot ' + str(shot) + ' copied! (I)nsert button to place it...')
-                time.sleep(1)
             #(YANK) COPY SCENE
             elif pressed == 'copy' and menu[selected] == 'SCENE:':
                 copying = 'scene'
                 yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
                 vumetermessage('Scene ' + str(scene) + ' copied! (I)nsert button to place it...')
-                time.sleep(1)
             #(CUT) MOVE TAKE
             elif pressed == 'move' and menu[selected] == 'TAKE:' and recordable == False:
                 copying = 'take'
                 moving = True
                 yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)+'/take' + str(take).zfill(3)
                 vumetermessage('Moving shot ' + str(shot) + ' (I)nsert button to place it...')
-                time.sleep(1)
             #(CUT) MOVE SHOT
             elif pressed == 'move' and menu[selected] == 'SHOT:':
                 copying='shot'
                 moving = True
                 yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
                 vumetermessage('Moving shot ' + str(shot) + ' (I)nsert button to place it...')
-                time.sleep(1)
             #(CUT) MOVE SCENE
             elif pressed == 'move' and menu[selected] == 'SCENE:':
                 copying='scene'
                 moving = True
                 yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
                 vumetermessage('Moving scene ' + str(scene) + ' (I)nsert button to place it...')
-                time.sleep(1)
             #PASTE SHOT and PASTE SCENE
             elif pressed == 'insert' and yanked:
                 if copying == 'take':
@@ -688,7 +681,7 @@ def main():
                         pass
                     os.system('cp -r ' + yanked + ' ' + paste)
                     if moving == True:
-                        os.system('rm -r ' + yanked)
+                        os.system('rm -r ' + yanked+'/*')
                         #Remove hidden placeholder
                         #os.system('rm ' + yanked + '/.placeholder')
                 elif copying == 'scene':
@@ -696,7 +689,7 @@ def main():
                     paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
                     os.system('cp -r ' + yanked + ' ' + paste)
                     if moving == True:
-                        os.system('rm -r ' + yanked)
+                        os.system('rm -r ' + yanked+'/*')
                         #Remove hidden placeholder
                         #os.system('rm ' + yanked + '/.placeholder')
                 elif copying == 'film':
@@ -713,8 +706,13 @@ def main():
                         #os.system('rm ' + yanked + '/.placeholder')
                 add_organize(filmfolder, filmname)
                 organize(filmfolder, filmname)
+                organize(filmfolder, filmname)
                 updatethumb = True
                 scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                if scene > scenes:
+                    scene = scenes
+                if shot > shots:
+                    shot = shots
                 yanked = ''
                 copying = ''
                 moving = False
