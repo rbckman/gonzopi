@@ -443,7 +443,7 @@ def main():
                             if os.path.exists(foldername+'dub') == True:
                                 print('trim dubs here')
                         elif trim[0] >= trim[1]:
-                            trim = [0,0]
+                            trim = [trim[0],0]
                         elif trim[0] != 0 and trim[1] != 0:
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
@@ -455,7 +455,7 @@ def main():
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
                             videotrim(foldername + filename, trim_filename, 'end', trim[1])
-                        elif trim[1] == 0 and trim[0] != 0:
+                        if trim[0] != 0 and trim[1] == 0:
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
                             videotrim(foldername + filename, trim_filename, 'beginning', trim[0])
