@@ -2695,9 +2695,11 @@ def namesomething(what, readymadeinput):
 #-------------New film----------------
 
 def nameyourfilm(filmfolder, filmname, abc, newfilm):
+    filmcount=len(getfilms(filmfolder))
     oldfilmname = filmname
-    if newfilm == True:
-        filmname = ''
+    filmname = 'reel_'+str(filmcount).zfill(3)
+    #if newfilm == True:
+    #    filmname = ''
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -5048,7 +5050,7 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'remove'
         elif event == 'KEY_BACKSPACE':
             pressed = 'remove'
-        elif event == 'P' or (readbus2 == 245 and readbus == 191):
+        elif event == 'N' or (readbus2 == 245 and readbus == 191):
             pressed = 'peak'
         elif event == 'S' or (readbus2 == 245 and readbus == 223):
             pressed = 'screen'
@@ -5058,7 +5060,7 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'changemode'
         elif event == 'H' or (readbus2 == 245 and readbus == 247):
             pressed = 'showhelp'
-        elif event == 'I' or (readbus2 == 245 and readbus == 253):
+        elif event == 'P' or (readbus2 == 245 and readbus == 253):
             pressed = 'insert'
         elif event == 'C' or (readbus2 == 244):
             pressed = 'copy'
@@ -5078,10 +5080,14 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
     if float(time.time() - buttontime) > 0.2 and buttonpressed == True:
         if holdbutton == 'up' or holdbutton == 'down' or holdbutton == 'right' or holdbutton == 'left' or holdbutton == 'shutdown' or holdbutton == 'remove':
             pressed = holdbutton
-            keydelay = 0.02
+            keydelay = 0.1
     if time.time() - buttontime > 2 and buttonpressed == True:
-        keydelay = 0.02
-    if time.time() - buttontime > 4 and buttonpressed == True:
+        keydelay = 0.1
+    if time.time() - buttontime > 6 and buttonpressed == True:
+        keydelay = 0.05
+    if time.time() - buttontime > 8 and buttonpressed == True:
+        keydelay = 0.08
+    if time.time() - buttontime > 10 and buttonpressed == True:
         keydelay = 0.01
     return pressed, buttonpressed, buttontime, holdbutton, event, keydelay
 

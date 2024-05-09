@@ -368,6 +368,9 @@ class api:
         p=0
         film=None
         if menu != '':
+            scene=1
+            shot=1
+            take=1
             for i in menu:
                 if p == 0:
                     selected=int(i)+3
@@ -392,20 +395,31 @@ class api:
                     except:
                         film=None
                 if p == 4 and film != None:
-                    scene=int(i.split(':')[1].split('/')[0])
+                    try:
+                        scene=int(i.split(':')[1].split('/')[0])
+                    except:
+                        scene=1
                 if p == 5 and film != None:
-                    shot=int(i.split(':')[1].split('/')[0])
+                    try:
+                        shot=int(i.split(':')[1].split('/')[0])
+                    except:
+                        shot=1
                 if p == 6 and film != None:
-                    take=int(i.split(':')[1].split('/')[0])
-                if p > 0 and selected == 423:
-                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
-                if p > 2 and film == None:
-                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                    try:
+                        take=int(i.split(':')[1].split('/')[0])
+                    except:
+                        take=1
+                #if p > 0 and selected == 423:
+                    #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                #if p > 2 and film == None:
+                    #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
                 p = p + 1
         thumb = ''
         video = ''
         if film != None:
-            if selected == 4:
+            if selected == 3:
+                video = '/'+filmfolder + film +'/'+ film+'.mp4'
+            elif selected == 4:
                 video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
             elif selected == 5:
                 video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
