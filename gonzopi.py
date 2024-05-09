@@ -134,6 +134,7 @@ def main():
     showmenu = 1
     showmenu_settings = True
     showhelp = False
+    oldchecksync = ''
     overlay = None
     overlay2 = None
     underlay = None
@@ -1965,6 +1966,12 @@ def main():
                             vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
                     disk = os.statvfs(filmfolder)
                     diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                    checksync = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )) + 'Mb'
+                    if checksync == oldchecksync:
+                        rectime = ''
+                    else:
+                        rectime = 'SYNCING.. '
+                    oldchecksync = checksync
                     #print(term.yellow+'filming with '+camera_model +' ip:'+ network
                     print(camselected,camera_recording,cameras)
             #writemessage(pressed)

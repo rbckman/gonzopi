@@ -17,7 +17,8 @@ if rundir != '':
 
 urls = (
     '/c/?', 'index',
-    '/(.*)?', 'films'
+    '/f/(.*)?', 'films',
+    '/api','api'
 )
 
 #--------------USB filmfolder-------------------
@@ -334,6 +335,92 @@ class films:
             randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
         scenes = countscenes(filmfolder, film)
         return render.filmpage(allfilms, film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash)
+
+
+class api:
+    def GET(self):
+        i=web.input(func=None,selected=None)
+        if i.func == 'record':
+            sendtocamera(ip,port,'REC')
+        elif i.func == 'retake':
+            print('retake')
+        elif i.func == 'up':
+            sendtocamera(ip,port,'UP')
+        elif i.func == 'down':
+            sendtocamera(ip,port,'DOWN')
+        elif i.func == 'left':
+            sendtocamera(ip,port,'LEFT')
+        elif i.func == 'right':
+            sendtocamera(ip,port,'RIGHT')
+        elif i.func == 'view':
+            sendtocamera(ip,port,'VIEW')
+        elif i.func == 'middle':
+            sendtocamera(ip,port,'MIDDLE')
+        elif i.func == 'delete':
+            sendtocamera(ip,port,'DELETE')
+        elif i.func == 'picture':
+            sendtocamera(ip,port,'PICTURE')
+        interface=open('/dev/shm/interface','r')
+        menu=interface.readlines()
+        vumeter=open('/dev/shm/vumeter','r')
+        vumetermessage=vumeter.readlines()[0].rstrip('\n')
+        menudone=''
+        p=0
+        film=None
+        if menu != '':
+            for i in menu:
+                if p == 0:
+                    selected=int(i)+3
+                if p > 1:
+                    if selected == p:
+                        #menudone=menudone+'<b> '+i.rstrip('\n')+' </b> | '
+                        menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                    else:
+                        #menudone=menudone+i.rstrip('\n')+' | '
+                        menudone=menudone+'<a style="text-decoration:none; font-size:20px;" href="?selected='+str(p-3)+'"> '+i+' </a>'
+                    #if p == 7:
+                    #    menudone=menudone+'<br>'
+                    #if p == 13:
+                    #    menudone=menudone+'<br>'
+                    #if p == 21:
+                    #    menudone=menudone+'<br>'
+                    #if p == 30:
+                    #    menudone=menudone+'<br>'
+                if p == 3:
+                    try:
+                        film=i.split(':')[1].rstrip('\n')
+                    except:
+                        film=None
+                if p == 4 and film != None:
+                    scene=int(i.split(':')[1].split('/')[0])
+                if p == 5 and film != None:
+                    shot=int(i.split(':')[1].split('/')[0])
+                if p == 6 and film != None:
+                    take=int(i.split(':')[1].split('/')[0])
+                if p > 0 and selected == 423:
+                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                if p > 2 and film == None:
+                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                p = p + 1
+        thumb = ''
+        video = ''
+        if film != None:
+            if selected == 4:
+                video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
+            elif selected == 5:
+                video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+            elif selected == 6:
+                video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+            else:
+                video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+            thumb = '/'+filmfolder + film + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg" 
+        if os.path.isfile(basedir+thumb) == True:
+            writemenu=menudone+'<br><br>'+vumetermessage+'<br><a href="'+video+'"><img src="'+thumb+'"></a>'
+        else:
+            writemenu=menudone+'<br><br>'+vumetermessage+'<br>'
+        f = open(basedir+'/static/menu.html', 'w')
+        f.write(writemenu)
+        f.close()
 
 application = app.wsgifunc()
 

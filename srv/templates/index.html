@@ -1,5 +1,85 @@
 $def with (films, cameras, menu, selected,name,scene,shot,take,str,randhash,thumb,vumetermessage,func,filmfolder)
+
 <script>
+function Get(yourUrl){
+        var Httpreq = new XMLHttpRequest(); // a new request
+        Httpreq.open("GET",yourUrl,false);
+        Httpreq.send(null);
+        return Httpreq.responseText;          
+}
+(function($$)
+{
+    $$(document).ready(function()
+    {
+        var refreshtime = 1000;
+        var oldrefreshtime = 100;
+        idleTime = 0;
+        //Increment the idle time counter every second.
+        var idleInterval = setInterval(timerIncrement, 1000);
+        function timerIncrement()
+        {
+            idleTime++;
+            if (idleTime > 1)
+            {
+                refreshtime = 1000;
+            }
+            if (oldrefreshtime != refreshtime)
+            {
+                refreshtime = 500;
+            }
+            else
+            {
+                refreshtime = 100;
+            }
+            oldrefreshtime = refreshtime;
+        }
+
+        $$.ajaxSetup(
+        {
+            cache: false,
+            beforeSend: function() {
+                $$('#content').hide();
+                $$('#loading').show();
+            },
+            complete: function() {
+                $$('#loading').hide();
+                $$('#content').show();
+            },
+            success: function() {
+                $$('#loading').hide();
+                $$('#content').show();
+            }
+        });
+
+        var myFunction = function(){
+                refresh();
+                console.log(refreshtime);
+                clearInterval(interval);
+                interval = setInterval(myFunction, refreshtime);
+        }
+        var interval = setInterval(myFunction, refreshtime);
+    });
+
+    function refresh(){
+        var $$container = $$("#menu2");
+        $$container.load('/static/menu.html');
+        $$.ajax({
+            method: "GET",
+            type: "Content-type",
+            url:"/api",
+            success: function(result) {
+            },
+            error: function(result) {
+            console.log('error', result);
+            }
+        })
+    }
+    $$(this).on('keydown', function (event) {
+        idleTime = 0;
+        refreshtime = 10;
+    });
+})(jQuery);
+
 $$(document).on('keydown', function (event) {
     if (event.which == 37) {
         $$('#LEFT').trigger('click');
@@ -24,6 +104,7 @@ $$(document).on('keydown', function (event) {
     }
 });
 </script>
+<input></input>
 connected 
 <pre>use keyboard to control</pre>
 $for i in cameras:
@@ -37,17 +118,8 @@ $for i in cameras:
 <a href="?func=search">SEARCH</a>
 </div>
 
+<div id="menu2" style="margin:0 auto; width:99%" ></div>
 <div id="menu" style="margin:0 auto; width:99%">
-$vumetermessage
-<br>
-$ y=0
-$for m in menu[3:]:
-    $if selected == y:
-        <b>$m[:-1]</b>
-    $else:
-        <a href="?selected=$y">$m[:-1]</a>
-    $ y+=1
-<br>
 </div>
 $if thumb != '':
     $ picture= '/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/picture" + str(take).zfill(3) + ".jpeg"
@@ -58,23 +130,124 @@ $else:
 $ take_link='/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".mp4"
 $ scene_link='/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/scene.mp4"
 $ film_link='/'+filmfolder + name + "/" +name+ ".mp4"
-$if selected == 0:
-    <a href='$film_link'><img width="80%" src="$picture?$randhash"/></a><br>
-$elif selected == 1:
-    <a href='$scene_link'><img width="80%" src="$picture?$randhash"/></a><br>
-$elif selected > 1:
-    <a href='$take_link'><img width="80%" src="$picture?$randhash"/></a><br>
-<br>
+$if thumb != '':
+    $if selected == 0:
+        <a href='$film_link'><img width="80%" src="$picture?$randhash"/></a><br>
+    $elif selected == 1:
+        <a href='$scene_link'><img width="80%" src="$picture?$randhash"/></a><br>
+    $elif selected > 1:
+        <a href='$take_link'><img width="80%" src="$picture?$randhash"/></a><br>
+    <br>
 
 <script>
-$$('#LEFT').on('click', function () { window.open('?func=left',"_self");return false; });
-$$('#RIGHT').on('click', function () { window.open('?func=right',"_self");return false; });
-$$('#DOWN').on('click', function () { window.open('?func=down',"_self");return false; });
-$$('#UP').on('click', function () { window.open('?func=up',"_self");return false; });
-$$('#RECORD').on('click', function () { window.open('?func=record',"_self");return false; });
-$$('#RETAKE').on('click', function () { window.open('?func=retake',"_self");return false; });
-$$('#DELETE').on('click', function () { window.open('?func=delete',"_self");return false; });
-$$('#VIEW').on('click', function () { window.open('?func=view',"_self");return false; });
-$$('#MIDDLE').on('click', function () { window.open('?func=middle',"_self");return false; });
+$$('#LEFT').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=left",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#RIGHT').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=right",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#DOWN').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=down",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#UP').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=up",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#RECORD').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=record",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#RETAKE').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=retake",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#DELETE').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=delete",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#VIEW').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=view",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#MIDDLE').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=middle",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+
 </script>
 

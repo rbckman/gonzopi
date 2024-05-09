@@ -5,6 +5,7 @@ body
     background-color:#000;
     color: #f4f4f4;
     font-family: monospace;
+    width: 90%;
 }
 
 pre
@@ -19,4 +20,11 @@ pre
 a
 {
     color: #FCD612;
+    padding: 5px;
+}
+
+img
+{
+    width: 90%;
+    max-width: 800px;
 }
