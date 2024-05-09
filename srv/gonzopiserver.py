@@ -409,8 +409,8 @@ class api:
                         take=int(i.split(':')[1].split('/')[0])
                     except:
                         take=1
-                #if p > 0 and selected == 423:
-                    #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                if p > 0 and selected == 423:
+                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
                 #if p > 2 and film == None:
                     #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
                 p = p + 1
