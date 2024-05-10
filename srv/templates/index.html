@@ -81,6 +81,7 @@ function Get(yourUrl){
 })(jQuery);
 
 $$(document).on('keydown', function (event) {
+    console.log('error', event.which);
     if (event.which == 37) {
         $$('#LEFT').trigger('click');
     } else if (event.which == 39) {
@@ -101,6 +102,72 @@ $$(document).on('keydown', function (event) {
         $$('#DELETE').trigger('click');
     } else if (event.which == 13) {
         $$('#MIDDLE').trigger('click');
+    } else if (event.which == 49) {
+        $$('#CAMERA0').trigger('click');
+    } else if (event.which == 50) {
+        $$('#CAMERA1').trigger('click');
+    } else if (event.which == 51) {
+        $$('#CAMERA2').trigger('click');
+    } else if (event.which == 52) {
+        $$('#CAMERA3').trigger('click');
+    } else if (event.which == 53) {
+        $$('#CAMERA4').trigger('click');
+    } else if (event.which == 54) {
+        $$('#CAMERA5').trigger('click');
+    } else if (event.which == 55) {
+        $$('#CAMERA6').trigger('click');
+    } else if (event.which == 56) {
+        $$('#CAMERA7').trigger('click');
+    } else if (event.which == 57) {
+        $$('#CAMERA8').trigger('click');
+    } else if (event.which == 58) {
+        $$('#CAMERA9').trigger('click');
+    } else if (event.which == 97) {
+        $$('#CAMERA0').trigger('click');
+    } else if (event.which == 98) {
+        $$('#CAMERA1').trigger('click');
+    } else if (event.which == 99) {
+        $$('#CAMERA2').trigger('click');
+    } else if (event.which == 100) {
+        $$('#CAMERA3').trigger('click');
+    } else if (event.which == 101) {
+        $$('#CAMERA4').trigger('click');
+    } else if (event.which == 102) {
+        $$('#CAMERA5').trigger('click');
+    } else if (event.which == 103) {
+        $$('#CAMERA6').trigger('click');
+    } else if (event.which == 104) {
+        $$('#CAMERA7').trigger('click');
+    } else if (event.which == 105) {
+        $$('#CAMERA8').trigger('click');
+    } else if (event.which == 106) {
+        $$('#CAMERA9').trigger('click');
+    } else if (event.which == 229) {
+        $$('#CAMERA0').trigger('click');
+    } else if (event.which == 98) {
+        $$('#CAMERA1').trigger('click');
+    } else if (event.which == 99) {
+        $$('#CAMERA2').trigger('click');
+    } else if (event.which == 100) {
+        $$('#CAMERA3').trigger('click');
+    } else if (event.which == 101) {
+        $$('#CAMERA4').trigger('click');
+    } else if (event.which == 102) {
+        $$('#CAMERA5').trigger('click');
+    } else if (event.which == 103) {
+        $$('#CAMERA6').trigger('click');
+    } else if (event.which == 104) {
+        $$('#CAMERA7').trigger('click');
+    } else if (event.which == 105) {
+        $$('#CAMERA8').trigger('click');
+    } else if (event.which == 106) {
+        $$('#CAMERA9').trigger('click');
+    } else if (event.which == 77) {
+        $$('#MOVE').trigger('click');
+    } else if (event.which == 67) {
+        $$('#COPY').trigger('click');
+    } else if (event.which == 80) {
+        $$('#PASTE').trigger('click');
     }
 });
 </script>
@@ -113,6 +180,10 @@ $for i in cameras:
 <a id="VIEW" href="?func=view">VIEW</a> <a id="UP" href="?func=up">__UP__</a> <a id="RECORD" href="?func=record">RECORD</a><br>
 <a id="LEFT" href="?func=left">LEFT</a> <a id="MIDDLE" href="?func=middle">MIDDLE</a> <a id="RIGHT" href="?func=right">RIGHT</a><br>
 <a id="DELETE" href="?func=delete">DELETE</a> <a id="DOWN" href="?func=down">DOWN</a> <a id="RETAKE" href="?func=retake">RETAKE</a><br>
+<a id="CAMERA0" href="?func=camera0">CAM0</a> <a id="CAMERA1" href="?func=camera1">CAM1</a> <a id="CAMERA2" href="?func=camera2">CAM2</a><br>
+<a id="CAMERA3" href="?func=camera3">CAM3</a> <a id="CAMERA4" href="?func=camera4">CAM4</a> <a id="CAMERA5" href="?func=camera5">CAM5</a><br>
+<a id="CAMERA6" href="?func=camera6">CAM6</a> <a id="CAMERA7" href="?func=camera7">CAM7</a> <a id="CAMERA8" href="?func=camera8">CAM8</a><br>
+<a id="MOVE" href="?func=move">MOVE</a> <a id="COPY" href="?func=copy">COPY</a> <a id="PASTE" href="?func=paste">PASTE</a><br>
 <a href="?func=picture">PICTURE</a>
 <a href="?func=search">SEARCH</a>
 </div>
@@ -243,6 +314,162 @@ $$('#MIDDLE').on('click', function () {
     method: "GET",
     type: "Content-type",
     url:"/api?func=middle",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA0').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera0",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA1').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera1",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA2').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera2",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA3').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera3",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA4').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera4",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA5').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera5",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA6').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera6",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA7').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera7",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA8').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera8",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA9').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera9",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#MOVE').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=move",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#COPY').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=copy",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#PASTE').on('click', function () { 
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=paste",
     success: function(result) {
     },
     error: function(result) {

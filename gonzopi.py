@@ -990,6 +990,10 @@ def main():
                 qual=pressed.split(':')[1]
                 quality=int(qual)
                 vumetermessage('Quality changed to '+str(quality))
+            elif 'CAMERA:' in pressed:
+                newselected_maybe=int(pressed.split(':')[1])
+                if len(cameras) > newselected_maybe:
+                    newselected=newselected_maybe
             elif 'MAKEPLACEHOLDERS:' in pressed:
                 scenesshots=pressed.split(':')[1]
                 pscene=int(scenesshots.split('|')[0])
@@ -4993,6 +4997,14 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
                 pressed=nextstatus
             elif "Q:" in nextstatus:
                 pressed=nextstatus
+            elif "CAMERA:" in nextstatus:
+                pressed=nextstatus
+            elif "move" in nextstatus:
+                pressed=nextstatus
+            elif "copy" in nextstatus:
+                pressed=nextstatus
+            elif "paste" in nextstatus:
+                pressed="insert"
             elif "MAKEPLACEHOLDERS:" in nextstatus:
                 pressed=nextstatus
             #print(nextstatus)
