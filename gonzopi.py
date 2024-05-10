@@ -4956,6 +4956,8 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
                 pressed="middle"
             elif nextstatus=="DELETE":
                 pressed="remove"
+            elif nextstatus=="RECORD":
+                pressed="record"
             elif nextstatus=="REC":
                 pressed="record_now"
             elif nextstatus=="STOP":

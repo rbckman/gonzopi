@@ -341,7 +341,7 @@ class api:
     def GET(self):
         i=web.input(func=None,selected=None)
         if i.func == 'record':
-            sendtocamera(ip,port,'REC')
+            sendtocamera(ip,port,'RECORD')
         elif i.func == 'retake':
             print('retake')
         elif i.func == 'up':
