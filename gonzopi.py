@@ -2701,7 +2701,7 @@ def namesomething(what, readymadeinput):
 def nameyourfilm(filmfolder, filmname, abc, newfilm):
     filmcount=len(getfilms(filmfolder))
     oldfilmname = filmname
-    filmname = 'reel_'+str(filmcount).zfill(3)
+    filmname = 'reel_'+str(filmcount+1).zfill(3)
     #if newfilm == True:
     #    filmname = ''
     pressed = ''
