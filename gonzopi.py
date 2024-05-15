@@ -1263,7 +1263,7 @@ def main():
                     if cammode == 'film':
                         videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                         tot = int(videos_totalt.videos)
-                        video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)
+                        video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
                         db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolenght=0, videolenght=0)
                         os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D plughw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                         sound_start = time.time()
