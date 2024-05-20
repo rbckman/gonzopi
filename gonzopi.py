@@ -4272,7 +4272,7 @@ def playdub(filmname, filename, player_menu):
         if dub == True:
             header = 'Dubbing ' + str(round(t,1))
         else:
-            header = 'Playing ' + str(round(t,1)) + ' of ' + str(clipduration) + ' s'
+            header = 'Playing ' + str(datetime.timedelta(seconds=round(t))) + ' of ' + str(datetime.timedelta(seconds=round(clipduration))) + ' s'
         writemenu(menu,settings,selected,header,showmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if buttonpressed == True:
