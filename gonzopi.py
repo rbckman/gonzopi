@@ -384,6 +384,7 @@ def main():
                 writemessage('Loading scene...')
                 organize(filmfolder, filmname)
                 filmfiles = shotfiles(filmfolder, filmname, scene)
+                vumetermessage('press middlebutton to cancel')
                 if len(filmfiles) > 0:
                     #Check if rendered video exist
                     camera.stop_preview()
@@ -411,6 +412,7 @@ def main():
                 writemessage('Loading film...')
                 organize(filmfolder, filmname)
                 filmfiles = viewfilm(filmfolder, filmname)
+                vumetermessage('press middlebutton to cancel')
                 if len(filmfiles) > 0:
                     camera.stop_preview()
                     #removeimage(camera, overlay)
@@ -428,6 +430,7 @@ def main():
                 writemessage('Loading clip...')
                 organize(filmfolder, filmname)
                 takes = counttakes(filmname, filmfolder, scene, shot)
+                vumetermessage('press middlebutton to cancel')
                 if takes > 0:
                     removeimage(camera, overlay)
                     camera.stop_preview()
@@ -1975,7 +1978,7 @@ def main():
                         rectime = ''
                     else:
                         rectime = 'SYNCING.. '
-                    oldchecksync = checksync
+                        oldchecksync = checksync
                     #print(term.yellow+'filming with '+camera_model +' ip:'+ network
                     print(camselected,camera_recording,cameras)
             #writemessage(pressed)
@@ -3502,18 +3505,18 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         renderfix = False
         if os.path.isfile(renderfilename + '.jpeg') == False: 
             run_command('ffmpeg -sseof -1 -i ' + renderfilename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + renderfilename + '.jpeg')
-        try:
-            pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-            videolenght = pipe.decode().strip()
-        except:
-            videolenght = ''
-        print('Shot lenght ' + videolenght)
-        if videolenght == '':
-            print('Okey, shot file not found or is corrupted')
-            # For backwards compatibility remove old rendered scene files
-            # run_command('rm ' + renderfilename + '*')
-            status='',''
-            q.put(status)
+        #try:
+        #    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
+        #    videolenght = pipe.decode().strip()
+        #except:
+        #    videolenght = ''
+        #print('Shot lenght ' + videolenght)
+        #if videolenght == '':
+        #    print('Okey, shot file not found or is corrupted')
+        #    # For backwards compatibility remove old rendered scene files
+        #    # run_command('rm ' + renderfilename + '*')
+        #    status='',''
+        #    q.put(status)
         try:
             with open(scenedir + '.videohash', 'r') as f:
                 oldvideohash = f.readline().strip()
@@ -3597,7 +3600,6 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
     proc.start()
     procdone = False
     status = ''
-    vumetermessage('press middlebutton to cancel')
     while True:
         if proc.is_alive() == False and procdone == False:
             status = q.get()
@@ -3605,7 +3607,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             procdone = True
             proc.join()
             renderfilename,newaudiomix = status
-            vumetermessage('')
+            vumetermessage(renderfilename+'.mp4')
             break
         if middlebutton() == True:
             proc.terminate()
@@ -3634,21 +3636,21 @@ def renderscene(filmfolder, filmname, scene):
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
     # Check if video corrupt
     renderfixscene = False
-    try:
-        pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-        videolenght = pipe.decode().strip()
-    except:
-        videolenght = ''
-        renderfixscene = True
-    print('Scene lenght ' + videolenght)
-    if videolenght == '':
-        print('Okey, hold your horses, rendering!')
-        # For backwards compatibility remove old rendered scene files
-        #run_command('rm ' + renderfilename + '.mp4')
-        #run_command('rm ' + renderfilename + '.wav')
-        #vumetermessage('corrupted scene file! removing, please render again')
-        renderfixscene = True
-        #return '', ''
+    #try:
+    #    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
+    #    videolenght = pipe.decode().strip()
+    #except:
+    #    videolenght = ''
+    #    renderfixscene = True
+    #print('Scene lenght ' + videolenght)
+    #if videolenght == '':
+    #    print('Okey, hold your horses, rendering!')
+    #    # For backwards compatibility remove old rendered scene files
+    #    #run_command('rm ' + renderfilename + '.mp4')
+    #    #run_command('rm ' + renderfilename + '.wav')
+    #    #vumetermessage('corrupted scene file! removing, please render again')
+    #    renderfixscene = True
+    #    #return '', ''
     # Video Hash
     for p in filmfiles:
         #compileshot(p,filmfolder,filmname)
@@ -3866,7 +3868,6 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
     proc.start()
     procdone = False
     status = ''
-    vumetermessage('press middlebutton to cancel')
     while True:
         if proc.is_alive() == False and procdone == False:
             status = q.get()
@@ -3874,7 +3875,7 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
             procdone = True
             proc.join()
             renderfilename = status
-            vumetermessage('')
+            vumetermessage(status+'.mp4')
             break
         if middlebutton() == True:
             proc.terminate()
@@ -4205,8 +4206,8 @@ def playdub(filmname, filename, player_menu):
                 return
             #player = OMXPlayer(filename + '.mp4', args=['--fps', '25', '--layer', '3', '--win', '0,70,800,410', '--no-osd', '--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
         writemessage('Loading..')
-        vumetermessage('view [set in point] retake [set out poin], up [fastforward], down [rewind]')
         clipduration = player.duration()
+        #vumetermessage('up [fast-forward], down [rewind], help button for more')
     #sound
     #if player_menu != 'film':
     #    try:
@@ -4308,6 +4309,7 @@ def playdub(filmname, filename, player_menu):
             else:
                 try:
                     player.set_position(t+2)
+                    time.sleep(0.2)
                     #playerAudio.set_position(player.position())
                 except:
                     print('couldnt set position of player')
@@ -4324,6 +4326,7 @@ def playdub(filmname, filename, player_menu):
                 if t > 1:
                     try:
                         player.set_position(t-2)
+                        time.sleep(0.25)
                         #playerAudio.set_position(player.position())
                     except:
                         print('couldnt set position of player')
@@ -4602,12 +4605,11 @@ def usbfilmfolder():
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
     usbmount = 0
-    waiting = time.time()
- 
+    waiting = time.time() 
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         usbconnected = os.path.ismount('/media/usb'+str(usbmount))
-        if pressed == 'middle' or time.time() - waiting > 3:
+        if pressed == 'middle' or time.time() - waiting > 5:
             writemessage('canceling..')
             break
         time.sleep(0.02)
