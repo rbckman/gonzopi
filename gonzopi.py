@@ -441,6 +441,7 @@ def main():
                     if renderfilename != '':
                         trim = playdub(filmname,foldername + filename, 'shot')
                         if trim[0] == 'beginning' or trim[0] == 'end':
+                            writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
                             videotrim(foldername + filename, trim_filename, trim[0], trim[1])
@@ -449,6 +450,7 @@ def main():
                         elif trim[0] >= trim[1]:
                             trim = [trim[0],0]
                         elif trim[0] != 0 and trim[1] != 0:
+                            writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
                             videotrim(foldername + filename, trim_filename, 'end', trim[1])
@@ -456,10 +458,12 @@ def main():
                             trim_filename2 = foldername + 'take' + str(take).zfill(3)
                             videotrim(trim_filename, trim_filename2, 'beginning', trim[0])
                         elif trim[0] == 0 and trim[1] != 0:
+                            writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
                             videotrim(foldername + filename, trim_filename, 'end', trim[1])
                         if trim[0] != 0 and trim[1] == 0:
+                            writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
                             videotrim(foldername + filename, trim_filename, 'beginning', trim[0])
