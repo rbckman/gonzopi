@@ -1242,6 +1242,10 @@ def main():
                 else:
                     pressed = 'record'
                 print('exhausted from all beepings')
+        elif 'CAMERA:' in pressed:
+            newselected_maybe=int(pressed.split(':')[1])
+            if len(cameras) > newselected_maybe:
+                newselected=newselected_maybe
         if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclenght != 0 and t > reclenght:
             overlay = removeimage(camera, overlay)
             if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':

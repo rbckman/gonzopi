@@ -249,7 +249,7 @@ class index:
                 pingip+=1
                 pingtocamera(network[:-3]+str(pingip),port,'PING')
         elif i.func == 'record':
-            sendtocamera(ip,port,'REC')
+            sendtocamera(ip,port,'RECORD')
         elif i.func == 'retake':
             print('retake')
         elif i.func == 'up':
