@@ -28,3 +28,39 @@ img
     width: 90%;
     max-width: 800px;
 }
+
+#controller a
+{
+    margin-bottom: 20px;
+    color: #FFF;
+    line-height:60px;
+    background-color: #555;
+    font-size: 30px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+#controller2 a
+{
+    margin-bottom: 20px;
+    color: #FFF;
+    line-height:60px;
+    background-color: #777;
+    font-size: 30px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+#controller3 a
+{
+    margin-bottom: 20px;
+    color: #FFF;
+    line-height:50px;
+    background-color: #888;
+    font-size: 20px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}

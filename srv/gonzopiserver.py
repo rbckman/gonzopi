@@ -16,6 +16,7 @@ if rundir != '':
     os.chdir(rundir)
 
 urls = (
+    '/','intro',   
     '/c/?', 'index',
     '/f/(.*)?', 'films',
     '/api','api'
@@ -218,6 +219,10 @@ def checkvideo(video,filmfolder,film,scene,shot,take):
     if os.path.isfile(basedir+p) == True:
         return p, v
     return '', v
+
+class intro:
+    def GET(self):
+        return render.intro()
 
 class index:
     def GET(self):
