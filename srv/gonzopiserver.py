@@ -270,6 +270,30 @@ class index:
             sendtocamera(ip,port,'PICTURE')
             session.randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
             session.reload = 1
+        elif i.func == 'camera0':
+            sendtocamera(ip,port,'CAMERA:0')
+        elif i.func == 'camera1':
+            sendtocamera(ip,port,'CAMERA:1')
+        elif i.func == 'camera2':
+            sendtocamera(ip,port,'CAMERA:2')
+        elif i.func == 'camera3':
+            sendtocamera(ip,port,'CAMERA:3')
+        elif i.func == 'camera4':
+            sendtocamera(ip,port,'CAMERA:4')
+        elif i.func == 'camera5':
+            sendtocamera(ip,port,'CAMERA:5')
+        elif i.func == 'camera6':
+            sendtocamera(ip,port,'CAMERA:6')
+        elif i.func == 'camera7':
+            sendtocamera(ip,port,'CAMERA:7')
+        elif i.func == 'camera8':
+            sendtocamera(ip,port,'CAMERA:8')
+        elif i.func == 'move':
+            sendtocamera(ip,port,'move')
+        elif i.func == 'copy':
+            sendtocamera(ip,port,'copy')
+        elif i.func == 'paste':
+            sendtocamera(ip,port,'paste')
         interface=open('/dev/shm/interface','r')
         vumeter=open('/dev/shm/vumeter','r')
         menu=interface.readlines()
