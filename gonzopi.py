@@ -86,7 +86,7 @@ while probei2c < 3:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -973,6 +973,8 @@ def main():
                 loadfilmsettings = True
                 rendermenu = True
                 vumetermessage('SYNC DONE!')
+            elif 'RETAKE' in pressed:
+                pressed="retake_now"
             elif 'RETAKE:' in pressed:
                 shot=pressed.split(':')[1]
                 shot=int(shot)
@@ -4936,7 +4938,7 @@ def flushbutton():
                 break
 
 def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
-    global i2cbuttons, serverstate, nextstatus, process, que, gonzopictrl_ip, recording, onlysound, filmname, filmfolder, scene, shot, take, selected, camera, loadfilmsettings, selected, newfilmname
+    global i2cbuttons, serverstate, nextstatus, process, que, gonzopictrl_ip, recording, onlysound, filmname, filmfolder, scene, shot, take, selected, camera, loadfilmsettings, selected, newfilmname, recordwithports
     #Check controller
     pressed = ''
     nextstatus = ''
@@ -4997,6 +4999,11 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
                 pressed=nextstatus
             elif "SYNCDONE" in nextstatus:
                 pressed=nextstatus
+            elif "RETAKE" in nextstatus:
+                if recordwithports == True:
+                    pressed="retake"
+                else:
+                    pressed="retake_now"
             elif "RETAKE:" in nextstatus:
                 pressed=nextstatus
             elif "SCENE:" in nextstatus:
