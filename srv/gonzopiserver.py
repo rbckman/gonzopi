@@ -372,7 +372,7 @@ class api:
         if i.func == 'record':
             sendtocamera(ip,port,'RECORD')
         elif i.func == 'retake':
-            print('retake')
+            sendtocamera(ip,port,'RETAKE')
         elif i.func == 'up':
             sendtocamera(ip,port,'UP')
         elif i.func == 'down':
