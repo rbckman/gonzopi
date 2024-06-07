@@ -4398,20 +4398,27 @@ def playdub(filmname, filename, player_menu):
                 except:
                     pass
                 starttime = time.time()
+            # check if not to close to end otherwise will throw error
             elif menu[selected] == 'PAUSE':
-                player.pause()
+                try:
+                    player.pause()
+                    pause = True
+                except:
+                    pass
                 #try:
                 #    playerAudio.pause()
                 #except:
                 #    pass
-                pause = True
             elif menu[selected] == 'PLAY':
-                player.play()
+                try:
+                    player.play()
+                    pause = False
+                except:
+                    pass
                 #try:
                 #    playerAudio.play()
                 #except:
                 #    pass
-                pause = False
             elif menu[selected] == 'TRIM':
                 selected = 1
                 trim = True
@@ -4438,7 +4445,15 @@ def playdub(filmname, filename, player_menu):
                     os.system('pkill arecord')
                 return [trimfromstart, trimfromend]
                 #return remove_shots
-    player.quit()
+        if t > (clipduration - 0.3):
+            os.system('pkill aplay') 
+            if dub == True:
+                os.system('pkill arecord')
+            return [trimfromstart, trimfromend]
+    try:
+        player.quit()
+    except:
+        pass
     #playerAudio.quit()
     #os.system('pkill dbus-daemon')
 
