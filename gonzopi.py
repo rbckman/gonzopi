@@ -2972,9 +2972,9 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                         for f in files:
                             if sound == True:
                                 compileshot(f,filmfolder,filmname)
-                                audiotrim(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3), 'end', '')
+                                #audiotrim(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3), 'end', '')
                                 videomerge.append('-cat')
-                                videomerge.append(f + '.mp4')
+                                videomerge.append(f + '.mp4#video')
                             else:
                                 videomerge.append('-cat')
                                 videomerge.append(f + '.h264')
@@ -3688,7 +3688,7 @@ def renderscene(filmfolder, filmname, scene):
 
     print('renderfix is:'+str(renderfixscene))
     # Render if needed
-    if videohash != oldvideohash or renderfixscene == True or renderfix == True:
+    if videohash != oldvideohash or renderfixscene == True:
         rendervideo(filmfiles, renderfilename, 'scene ' + str(scene))
         fastedit(filmfolder, filmname, filmfiles, scene)
         print('updating videohash...')
