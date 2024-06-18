@@ -444,16 +444,14 @@ def main():
                             writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername + filename, trim_filename, trim[0], trim[1])
-                            if os.path.exists(foldername+'dub') == True:
-                                print('trim dubs here')
+                            videotrim(foldername, foldername + filename, trim_filename, trim[0], trim[1])
                         elif trim[0] >= trim[1]:
                             trim = [trim[0],0]
                         elif trim[0] != 0 and trim[1] != 0:
                             writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername + filename, trim_filename, 'end', trim[1])
+                            videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename2 = foldername + 'take' + str(take).zfill(3)
                             videotrim(trim_filename, trim_filename2, 'beginning', trim[0])
@@ -461,12 +459,12 @@ def main():
                             writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername + filename, trim_filename, 'end', trim[1])
+                            videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
                         if trim[0] != 0 and trim[1] == 0:
                             writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername + filename, trim_filename, 'beginning', trim[0])
+                            videotrim(foldername, foldername + filename, trim_filename, 'beginning', trim[0])
                         imagename = foldername + filename + '.jpeg'
                         overlay = displayimage(camera, imagename, overlay, 3)
                         camera.start_preview()
@@ -498,6 +496,8 @@ def main():
                     run_command('mv /dev/shm/temp.wav '+ newdub)
                     audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
                     vumetermessage('new shot dubbing made!')
+                    #rerender audio
+                    os.system('rm ' + filmfolder + filmname + '/.audiohash')
                     camera.start_preview()
                     time.sleep(1)
                 else:
@@ -516,6 +516,8 @@ def main():
                     run_command('mv /dev/shm/temp.wav '+ newdub)
                     audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
                     vumetermessage('new scene dubbing made!')
+                    #rerender audio
+                    os.system('rm ' + filmfolder + filmname + '/.audiohash')
                     camera.start_preview()
                     time.sleep(1)
                 else:
@@ -3908,7 +3910,9 @@ def getdubs(filmfolder, filmname, scene, shot):
     dubfiles = []
     dubmix = []
     rerender = False
-    if scene > 0 and shot == 0:
+    if filmname == None and scene == None and shot == None:
+        filefolder = filmfolder
+    elif scene > 0 and shot == 0:
         filefolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/dub/'
     elif scene > 0 and shot > 0:
         filefolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/dub/'
@@ -4472,7 +4476,7 @@ def viewfilm(filmfolder, filmname):
 
 #---------------Video Trim--------------------
 
-def videotrim(filename, trim_filename, where, s):
+def videotrim(foldername ,filename, trim_filename, where, s):
     #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
     if where == 'beginning':
         logger.info('trimming clip from beginning')
@@ -4480,12 +4484,30 @@ def videotrim(filename, trim_filename, where, s):
         run_command('MP4Box ' + filename + '.mp4 -splitx ' + str(s) + ':end -out ' + trim_filename + '.mp4')
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'beginning','')
+        if os.path.exists(foldername+'dub') == True:
+            dubfiles, dubmix, rerender = getdubs(foldername+'dub/', None, None, None)
+            for d in dubfiles:
+                writemessage('trimming dubs from beginning')
+                vumetermessage(d)
+                logger.info('wadddddddaaaaaaaaaa fuuuuuuuuuuu '+trim_filename)
+                audiotrim(trim_filename, 'beginning', d)
+            writemessage('trimming original sound')
+            audiotrim(trim_filename, 'beginning', foldername+'dub/original.wav')
     if where == 'end':
         logger.info('trimming clip from end')
         #run_command('ffmpeg -to ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
         run_command('MP4Box ' + filename + '.mp4 -splitx 0:' + str(s) + ' -out ' + trim_filename + '.mp4')
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'end','')
+        if os.path.exists(foldername+'dub') == True:
+            dubfiles, dubmix, rerender = getdubs(foldername+'dub/', None, None, None)
+            for d in dubfiles:
+                writemessage('trimming dubs from end')
+                vumetermessage(d)
+                logger.info('wadddddddaaaaaaaaaa fuuuuuuuuuuu '+trim_filename)
+                audiotrim(trim_filename, 'end', d)
+            writemessage('trimming original sound')
+            audiotrim(trim_filename, 'beginning', foldername+'dub/original.wav')
     #take last frame 
     run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
     return
@@ -4532,14 +4554,16 @@ def audiotrim(filename, where, dub):
     videolenght = pipe.decode().strip()
     print('videolenght:'+str(videolenght))
     if dub:
-        filename=dub[:-4]
-    try:
-        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
         audiolenght = pipe.decode().strip()
-    except:
-        audiosilence('',filename)
-        audiolenght=videolenght
-    #if there is no audio lenght
+    else:
+        try:
+            pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+            audiolenght = pipe.decode().strip()
+        except:
+            audiosilence('',filename)
+            audiolenght=videolenght
+        #if there is no audio lenght
     logger.info('audio is:' + audiolenght)
     if not audiolenght.strip():
         audiolenght = 0
@@ -4555,12 +4579,23 @@ def audiotrim(filename, where, dub):
         logger.info('Audiofile is: ' + str(audiosync) + 'ms longer')
         #trim from end or beginning and put a 0.01 in- and outfade
         if where == 'end':
-            run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
+            if dub:
+                run_command('sox -V0 ' + dub[:-4] + '.wav ' + dub[:-4] + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
+            else:
+                run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
         if where == 'beginning':
-            logger.info('trimming from beginning at: '+str(int(audiosync)/1000))
-            run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim ' + str(int(audiosync)/1000))
-        run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
-        os.remove(filename + '_temp.wav')
+            if dub:
+                logger.info('trimming from beginning at: '+str(int(audiosync)/1000))
+                run_command('sox -V0 ' + dub[:-4] + '.wav ' + dub[:-4] + '_temp.wav trim ' + str(int(audiosync)/1000))
+            else:
+                logger.info('trimming from beginning at: '+str(int(audiosync)/1000))
+                run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim ' + str(int(audiosync)/1000))
+        if dub:
+            run_command('sox -V0 -G ' + dub[:-4] + '_temp.wav ' + dub[:-4] + '.wav fade 0.01 0 0.01')
+            os.remove(dub[:-4] + '_temp.wav')
+        else:
+            run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
+            os.remove(filename + '_temp.wav')
         #if int(audiosync) > 400:
         #    writemessage('WARNING!!! VIDEO FRAMES DROPPED!')
         #    vumetermessage('Consider changing to a faster microsd card.')
@@ -4582,19 +4617,30 @@ def audiotrim(filename, where, dub):
         #make fade
         #make delay file
         print(str(int(audiosync)/1000))
-        run_command('sox -V0 -r '+soundrate+' -c 2 '+filename+'.wav '+filename+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
-        run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
+        if dub:
+            run_command('sox -V0 -r '+soundrate+' -c 2 '+dub[:-4]+'.wav '+dub[:-4]+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
+            run_command('sox -V0 -G ' + dub[:-4] + '_temp.wav ' + dub[:-4] + '.wav fade 0.01 0 0.01')
+        else:
+            run_command('sox -V0 -r '+soundrate+' -c 2 '+filename+'.wav '+filename+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
+            run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
         #add silence to end
         #run_command('sox -V0 /dev/shm/silence.wav ' + filename + '_temp.wav')
         #run_command('cp '+filename+'.wav '+filename+'_temp.wav')
         #run_command('sox -V0 -G ' + filename + '_temp.wav /dev/shm/silence.wav ' + filename + '.wav')
-        os.remove(filename + '_temp.wav')
+        if dub:
+            os.remove(dub[:-4] + '_temp.wav')
+        else:
+            os.remove(filename + '_temp.wav')
         #os.remove('/dev/shm/silence.wav')
         delayerr = 'V' + str(audiosync)
         print(delayerr)
     print('the results:')
-    pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
-    audiolenght = pipe.decode().strip()
+    if dub:
+        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
+        audiolenght = pipe.decode().strip()
+    else:
+        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+        audiolenght = pipe.decode().strip()
     print('aftersyncvideo: '+str(videolenght) + ' audio:'+str(audiolenght))
     if int(audiolenght) != int(videolenght):
         vumetermessage('SYNCING FAILED!')
