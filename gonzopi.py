@@ -454,7 +454,7 @@ def main():
                             videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
                             take = counttakes(filmname, filmfolder, scene, shot)+1
                             trim_filename2 = foldername + 'take' + str(take).zfill(3)
-                            videotrim(trim_filename, trim_filename2, 'beginning', trim[0])
+                            videotrim(foldername, trim_filename, trim_filename2, 'beginning', trim[0])
                         elif trim[0] == 0 and trim[1] != 0:
                             writemessage('Cutting clip...')
                             take = counttakes(filmname, filmfolder, scene, shot)+1
