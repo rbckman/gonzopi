@@ -704,14 +704,14 @@ def main():
                         #os.system('rm ' + yanked + '/.placeholder')
                 elif copying == 'film':
                     vumetermessage('Pasting film, please wait...')
-                    paste = filmfolder
+                    paste = yanked+'_copy'
                     os.system('cp -r ' + yanked + ' ' + paste)
                     try:
                         run_command('rsync -avr --update --progress --files-from='+yanked+'/.origin_videos --no-relative / ' +filmfolder+'.videos/')
                     except:
                         logger.info('no origin videos')
-                    if moving == True:
-                        os.system('rm -r ' + yanked)
+                    #if moving == True:
+                        #os.system('rm -r ' + yanked)
                         #Remove hidden placeholder
                         #os.system('rm ' + yanked + '/.placeholder')
                 add_organize(filmfolder, filmname)
@@ -3444,8 +3444,11 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
         #Fade and make stereo
         run_command('sox -V0 -G ' + d + ' /dev/shm/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
         run_command('sox -V0 -G -m -v ' + str(round(i[0],1)) + ' /dev/shm/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav ' + filename + '.wav trim 0 ' + audiolenght)
-        os.remove(filename + '_tmp.wav')
-        os.remove('/dev/shm/fade.wav')
+        try:
+            os.remove(filename + '_tmp.wav')
+            os.remove('/dev/shm/fade.wav')
+        except:
+            pass
         print('Dub mix ' + str(p) + ' done!')
         p += 1
     return
@@ -4489,7 +4492,6 @@ def videotrim(foldername ,filename, trim_filename, where, s):
             for d in dubfiles:
                 writemessage('trimming dubs from beginning')
                 vumetermessage(d)
-                logger.info('wadddddddaaaaaaaaaa fuuuuuuuuuuu '+trim_filename)
                 audiotrim(trim_filename, 'beginning', d)
             writemessage('trimming original sound')
             audiotrim(trim_filename, 'beginning', foldername+'dub/original.wav')
@@ -4504,10 +4506,9 @@ def videotrim(foldername ,filename, trim_filename, where, s):
             for d in dubfiles:
                 writemessage('trimming dubs from end')
                 vumetermessage(d)
-                logger.info('wadddddddaaaaaaaaaa fuuuuuuuuuuu '+trim_filename)
                 audiotrim(trim_filename, 'end', d)
             writemessage('trimming original sound')
-            audiotrim(trim_filename, 'beginning', foldername+'dub/original.wav')
+            audiotrim(trim_filename, 'end', foldername+'dub/original.wav')
     #take last frame 
     run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
     return
