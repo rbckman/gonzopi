@@ -126,6 +126,8 @@ cat <<'EOF' >> /boot/config.txt
 #-----GonzoPi configuration starts here-------
 #gonzopi-rpi-configuration-hyperpixel-1.0
 #hyperpixel
+#uncomment for pi4
+#display_lcd_rotate=1
 start_x=1
 gpu_mem=256
 disable_splash=1
