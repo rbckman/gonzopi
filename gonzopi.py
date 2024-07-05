@@ -244,7 +244,8 @@ def main():
     wifistate = 'on'
     if os.path.isdir(gonzopifolder+'/srv/sessions') == False:
         os.makedirs(gonzopifolder+'/srv/sessions')
-        os.system('chown www-data '+gonzopifolder+'/srv/sessions')
+    os.system('sudo chown -R www-data '+gonzopifolder+'/srv/sessions')
+    os.system('sudo chown -R www-data '+gonzopifolder+'/srv/static/menu.html')
     #serverstate = gonzopiserver(False)
     #TO_BE_OR_NOT_TO_BE 
     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
@@ -1419,8 +1420,6 @@ def main():
         #UP
         elif pressed == 'up':
             if menu[selected] == 'FILM:':
-                filmname = 'onthefloor'
-                filmname_back = filmname
                 filmname = loadfilm(filmname, filmfolder, camera, overlay)
                 loadfilmsettings = True
             if menu[selected] == 'BRIGHT:':
@@ -1599,16 +1598,8 @@ def main():
         #DOWN
         elif pressed == 'down':
             if menu[selected] == 'FILM:':
-                if filmname == 'onthefloor':
-                    try:
-                        filmname = getfilms(filmfolder)[1][0]
-                    except:
-                        filmname='onthefloor'
-                    filename_back = 'onthefloor'
-                    loadfilmsettings = True
-                else:
-                    filmname = 'onthefloor'
-                    loadfilmsettings = True
+                filmname = loadfilm(filmname, filmfolder, camera, overlay)
+                loadfilmsettings = True
             elif menu[selected] == 'BRIGHT:':
                 camera.brightness = max(camera.brightness - 1, 0)
             elif menu[selected] == 'CONT:':
@@ -3060,8 +3051,8 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                 else:
                     if sceneshotortake == 'take':
                         writemessage('Throwing take on the floor' + str(take))
-                        onthefloor = filmfolder + 'onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/take' + str(otf_take).zfill(3) 
-                        onthefloor_folder = filmfolder + 'onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
+                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/take' + str(otf_take).zfill(3) 
+                        onthefloor_folder = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
                         if os.path.isdir(onthefloor_folder) == False:
                             os.makedirs(onthefloor)
                         os.system('mv ' + foldername + filename + '.h264 ' + onthefloor + '.h264')
@@ -3073,13 +3064,13 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                             take = 1
                     elif sceneshotortake == 'shot' and shot > 0:
                         writemessage('Throwing shot on the floor' + str(shot))
-                        onthefloor = filmfolder + 'onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3)+'/'
+                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3)+'/'
                         os.makedirs(onthefloor)
                         os.system('cp -r '+foldername+'* '+onthefloor)
                         os.system('rm -r '+foldername)
                         take = counttakes(filmname, filmfolder, scene, shot)
                     elif sceneshotortake == 'scene':
-                        onthefloor = filmfolder + 'onthefloor/' + 'scene' + str(otf_scene).zfill(3)
+                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3)
                         os.makedirs(onthefloor)
                         writemessage('Throwing clips on the floor ' + str(scene))
                         foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
@@ -3090,7 +3081,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                     elif sceneshotortake == 'film':
                         foldername = filmfolder + filmname
                         os.system('rm -r ' + foldername)
-                    organize(filmfolder, 'onthefloor')
+                    organize(filmfolder, filmname + '_onthefloor')
                 return
             elif selected == 0:
                 return
@@ -4714,7 +4705,10 @@ def copytousb(filmfolder):
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
     films = getfilms(filmfolder)
-    usbmount = 0
+    if 'usb0' in filmfolder:
+        usbmount = 1
+    else:
+        usbmount = 0
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         usbconnected = os.path.ismount('/media/usb'+str(usbmount))
