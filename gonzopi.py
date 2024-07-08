@@ -211,7 +211,7 @@ def main():
         os.system('sudo umount /media/usb0')
     if os.path.exists('/dev/sda2') == False:
         os.system('sudo umount /media/usb1')
-    filmfolderusb=usbfilmfolder()
+    filmfolderusb=usbfilmfolder(dsk)
     if filmfolderusb:
         filmfolder=filmfolderusb
         storagedrives.append(['usb0',filmfolder])
@@ -705,7 +705,7 @@ def main():
                         #os.system('rm ' + yanked + '/.placeholder')
                 elif copying == 'film':
                     vumetermessage('Pasting film, please wait...')
-                    paste = yanked+'_copy'
+                    paste = filmfolder+filmname+'_copy'
                     os.system('cp -r ' + yanked + ' ' + paste)
                     try:
                         run_command('rsync -avr --update --progress --files-from='+yanked+'/.origin_videos --no-relative / ' +filmfolder+'.videos/')
@@ -821,17 +821,32 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'DSK:':
                 print("usb filmfolder")
                 vumetermessage('checking usb mount...')
-                if os.path.exists('/dev/sda1') == False:
-                    os.system('sudo umount /media/usb0')
-                    del storagedrives[1]
+                if os.path.exists('/dev/sdb1') == False:
+                    os.system('sudo umount /media/usb1')
+                    try:
+                        del storagedrives[2]
+                    except:
+                        pass
                     dsk=0
                     time.sleep(1)
-                filmfolderusb=usbfilmfolder()
+                if os.path.exists('/dev/sda1') == False:
+                    os.system('sudo umount /media/usb0')
+                    try:
+                        del storagedrives[1]
+                    except:
+                        pass
+                    dsk=0
+                    time.sleep(1) 
+                filmfolderusb=usbfilmfolder(dsk)
                 if filmfolderusb:
                     filmfolder=filmfolderusb
                     if dsk < 1:
                         storagedrives.append(['usb0',filmfolder])
                         dsk=1
+                        loadfilmsettings = True
+                    elif dsk > 0:
+                        storagedrives.append(['usb1',filmfolder])
+                        dsk=2
                         loadfilmsettings = True
                 else:
                     camera_model, camera_revision , filmfolder = getconfig(camera)
@@ -4661,13 +4676,16 @@ def audiosilence(foldername,filename):
 
 #--------------USB filmfolder-------------------
 
-def usbfilmfolder():
+def usbfilmfolder(dsk):
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
-    usbmount = 0
+    if dsk == 1:
+        usbmount = 1
+    else:
+        usbmount = 0
     waiting = time.time() 
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
@@ -4694,7 +4712,7 @@ def usbfilmfolder():
             time.sleep(1)
             return filmfolder
         else:
-            usbmount = usbmount + 1
+            return
 
 #--------------Copy to USB-------------------
 
