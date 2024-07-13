@@ -37,7 +37,9 @@ $else:
 $if film == '':
     <h1>FILMS</h1>
     $for i in films:
-        <a href="$i"><h2>$i</h2></a>
+        <a href="$i"><h1>$i</h1></a>
+        $ thumbnail_url = '/'+filmfolder + i + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(1).zfill(3) + '.jpeg'
+        <a href="$i"><img style="vertical-align:middle; width:80%; max-width:500px;"  src="$thumbnail_url?$randhash"/></a><br>
 <br>
 
 $ t=0

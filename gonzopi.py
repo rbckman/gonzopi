@@ -61,7 +61,7 @@ while probei2c < 3:
             bus = smbus.SMBus(3) # Rev 2 Pi uses 1
         else:
             os.system('sudo modprobe i2c-dev')
-            bus = smbus.SMBus(11) # Rev 2 Pi uses 1
+            bus = smbus.SMBus(22) # Rev 2 Pi uses 1
         DEVICE = 0x20 # Device address (A0-A2)
         IODIRB = 0x0d # Pin pullups B-side
         IODIRA = 0x00 # Pin pullups A-side 0x0c
@@ -5208,6 +5208,7 @@ def stopinterface(camera):
     os.system('pkill arecord')
     os.system('pkill startinterface')
     os.system('pkill tarinagui')
+    os.system('sudo pkill -9 -f gonzopi_menu.py')
     #run_command('sudo systemctl stop apache2')
     return camera
 
