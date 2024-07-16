@@ -232,4 +232,4 @@ while True:
         #render_subtitle(img, vumeter, text_size, text_size_selected , moverow, y_offset, vucolor);
         menulayer.updateLayer()
         oldmenu = menu
-    time.sleep(0.01)
+    time.sleep(0.05)

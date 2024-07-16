@@ -45,6 +45,11 @@ pipe = subprocess.check_output('lsb_release -c -s', shell=True)
 debianversion = pipe.decode().strip()
 print('running debian ' + debianversion)
 
+#CHECK RASPBERRY PI VERSION
+pipe = subprocess.check_output('cat /sys/firmware/devicetree/base/model', shell=True)
+raspberrypiversion = pipe.decode().strip()
+print('on ' + raspberrypiversion)
+
 #give permissions to GPIO
 os.system('sudo chown root.gpio /dev/gpiomem')
 os.system('sudo chmod g+rw /dev/gpiomem')
@@ -60,8 +65,12 @@ while probei2c < 3:
             os.system('sudo modprobe i2c-dev')
             bus = smbus.SMBus(3) # Rev 2 Pi uses 1
         else:
-            os.system('sudo modprobe i2c-dev')
-            bus = smbus.SMBus(22) # Rev 2 Pi uses 1
+            if 'Raspberry Pi 4 Model B' in raspberrypiversion:
+                os.system('sudo modprobe i2c-dev')
+                bus = smbus.SMBus(22) # Rev 2 Pi uses 1
+            else:
+                os.system('sudo modprobe i2c-dev')
+                bus = smbus.SMBus(11) # Rev 2 Pi uses 1
         DEVICE = 0x20 # Device address (A0-A2)
         IODIRB = 0x0d # Pin pullups B-side
         IODIRA = 0x00 # Pin pullups A-side 0x0c
@@ -1860,7 +1869,7 @@ def main():
                         time.sleep(5)
                     except:
                         print('not exist')
-            organize(filmfolder,'onthefloor')
+            #organize(filmfolder,'onthefloor')
             scenes, shots, takes = countlast(filmname, filmfolder)
             loadfilmsettings = False
             rendermenu = True
@@ -3074,6 +3083,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         os.system('mv ' + foldername + filename + '.mp4 ' + onthefloor + '.mp4')
                         os.system('mv ' + foldername + filename + '.wav ' + onthefloor + '.wav')
                         os.system('mv ' + foldername + filename + '.jpeg ' + onthefloor + '.jpeg')
+                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
                         take = take - 1
                         if take == 0:
                             take = 1
@@ -3082,6 +3092,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3)+'/'
                         os.makedirs(onthefloor)
                         os.system('cp -r '+foldername+'* '+onthefloor)
+                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
                         os.system('rm -r '+foldername)
                         take = counttakes(filmname, filmfolder, scene, shot)
                     elif sceneshotortake == 'scene':
@@ -3090,6 +3101,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         writemessage('Throwing clips on the floor ' + str(scene))
                         foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
                         os.system('mv ' + foldername + '/* ' + onthefloor+'/' )
+                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
                         scene = countscenes(filmfolder, filmname)
                         shot = 1
                         take = 1
