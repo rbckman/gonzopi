@@ -5315,4 +5315,5 @@ if __name__ == '__main__':
         os.system('pkill arecord')
         os.system('pkill startinterface')
         os.system('pkill tarinagui')
+        os.system('sudo pkill -9 -f gonzopi_menu.py')
         print('Unexpected error : ', sys.exc_info()[0], sys.exc_info()[1])
