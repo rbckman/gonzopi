@@ -53,9 +53,9 @@ apt-get update
 apt-get upgrade -y
 if [ "$version" = "buster" ]
 then
-    apt-get -y install git python3-pip python-configparser ffmpeg mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake pmount python3-ifaddr
+    apt-get -y install git python3-pip python-configparser ffmpeg mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake pmount python3-ifaddr python3-pygame
 else
-    apt-get -y install git python3-pip python-configparser libav-tools mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake python3-ifaddr
+    apt-get -y install git python3-pip python-configparser libav-tools mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake python3-ifaddr python3-pygame
 fi
 echo "installing python-omxplayer-wrapper..."
 sudo pip3 install omxplayer-wrapper
@@ -129,7 +129,7 @@ cat <<'EOF' >> /boot/config.txt
 #uncomment for pi4
 #display_lcd_rotate=1
 start_x=1
-gpu_mem=256
+gpu_mem=128
 disable_splash=1
 force_turbo=1
 boot_delay=1
