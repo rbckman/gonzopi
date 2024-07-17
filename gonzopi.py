@@ -1308,7 +1308,7 @@ def main():
                         os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D dsnoop:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                         sound_start = time.time()
                         if onlysound != True:
-                            camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', quality=quality, level=profilelevel)
+                            camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel)
                             starttime = time.time()
                         os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
                         recording = True
