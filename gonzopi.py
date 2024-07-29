@@ -3036,11 +3036,11 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
     menu = '', ''
     settings = 'NO', 'YES'
     selected = 0
-    otf_scene = countscenes(filmfolder, 'onthefloor')
+    otf_scene = countscenes(filmfolder, filmname)
     otf_scene += 1
-    otf_shot = countshots('onthefloor', filmfolder, otf_scene)
+    otf_shot = countshots(filmname, filmfolder, otf_scene)
     otf_shot += 1
-    otf_take = counttakes('onthefloor', filmfolder, otf_scene, otf_shot)
+    otf_take = counttakes(filmname, filmfolder, otf_scene, otf_shot)
     otf_take += 1
     while True:
         writemenu(menu,settings,selected,header,showmenu)
@@ -3053,7 +3053,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                 selected = selected - 1
         elif pressed == 'middle':
             if selected == 1:
-                if filmname == 'onthefloor':
+                if '_onthefloor' in filmname:
                     if sceneshotortake == 'take':
                         os.system('rm ' + foldername + filename + '.h264')
                         os.system('rm ' + foldername + filename + '.mp4')
@@ -3070,14 +3070,13 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                     elif sceneshotortake == 'film':
                         foldername = filmfolder + filmname
                         os.system('rm -r ' + foldername)
-                        os.makedirs(filmfolder+'onthefloor')
                     return
                 else:
                     if sceneshotortake == 'take':
                         writemessage('Throwing take on the floor' + str(take))
-                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/take' + str(otf_take).zfill(3) 
-                        onthefloor_folder = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
-                        if os.path.isdir(onthefloor_folder) == False:
+                        #onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/take' + str(otf_take).zfill(3) 
+                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
+                        if os.path.isdir(onthefloor) == False:
                             os.makedirs(onthefloor)
                         os.system('mv ' + foldername + filename + '.h264 ' + onthefloor + '.h264')
                         os.system('mv ' + foldername + filename + '.mp4 ' + onthefloor + '.mp4')
