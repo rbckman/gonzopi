@@ -216,10 +216,12 @@ def main():
     storagedrives=[['sd',filmfolder]]
 
     #CHECK IF FILMING TO USB STORAGE
-    if os.path.exists('/dev/sda1') == False:
-        os.system('sudo umount /media/usb0')
-    if os.path.exists('/dev/sda2') == False:
-        os.system('sudo umount /media/usb1')
+    #if os.path.exists('/dev/sda1') == False:
+    #    os.system('sudo pumount /media/usb0')
+    #    os.system('sudo umount -l /media/usb0')
+    #if os.path.exists('/dev/sda2') == False:
+    #    os.system('sudo pumount /media/usb1')
+    #    os.system('sudo umount -l /media/usb1')
     filmfolderusb=usbfilmfolder(dsk)
     if filmfolderusb:
         filmfolder=filmfolderusb
@@ -4718,6 +4720,7 @@ def usbfilmfolder(dsk):
                 writemessage('Oh-no! dont know your filesystem')
                 waitforanykey()
             filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
+            os.system('sudo chmod 755 '+filmfolder)
             #run_command('pumount /media/usb'+str(usbmount))
             writemessage('Filming to USB'+str(usbmount))
             time.sleep(1)
