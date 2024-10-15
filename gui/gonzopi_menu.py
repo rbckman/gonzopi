@@ -188,33 +188,33 @@ while True:
                     render_menu(i, text_size, row1, y_offset3, WHITE, bakg)
                     row1 += read * space + morespace
             if header == 0 and selected < 420:
-                if linenr == 6+menuadd and i != '': ##show recording time if there is any
+                if linenr == 7+menuadd and i != '': ##show recording time if there is any
                     #render_subtitle(img, line, text_size, text_size_selected, rectime, y_offset2, 3);
                     color = RED
                     render_menu(i, text_size, rectime, y_offset2, color, bakg)
-                if linenr >= 2+menuadd and linenr <= 5+menuadd:
+                if linenr >= 2+menuadd and linenr <= 6+menuadd:
                     render_menu(i, text_size, row1, y_offset2, color, bakg)
                     #render_subtitle(img, line, text_size, text_size_selected, row1, y_offset2, color);
                     row1 += read * space + morespace
                     #print(str(row1))
-                if linenr >= 7+menuadd and linenr <= 12+menuadd:
+                if linenr >= 8+menuadd and linenr <= 13+menuadd:
                     if hidemenu == False:
                         render_menu(i, text_size, row2, y_offset3, color, bakg)
                     #render_subtitle(img, line, text_size, text_size_selected, row2, y_offset3, color);
                     row2 += read * space + morespace
                     #print(str(row2))
-                if linenr >= 13+menuadd and linenr <= 19+menuadd:
+                if linenr >= 14+menuadd and linenr <= 20+menuadd:
                     if hidemenu == False:
                         render_menu(i, text_size, row3, y_offset4, color, bakg)
                     #render_subtitle(img, line, text_size, text_size_selected, row3, y_offset4, color);
                     row3 += read * space + morespace
                     #print(str(row3))
-                if linenr >= 20+menuadd and linenr <= 28+menuadd:
+                if linenr >= 21+menuadd and linenr <= 29+menuadd:
                     if hidemenu == False:
                         render_menu(i, text_size, row4, y_offset5, color, bakg)
                     #render_subtitle(img, line, text_size, text_size_selected, row4, y_offset5, color);
                     row4 += read * space + morespace
-                if linenr >= 29+menuadd and linenr <= 40+menuadd:
+                if linenr >= 30+menuadd and linenr <= 41+menuadd:
                     if hidemenu == False:
                         render_menu(i, text_size, row5, y_offset6, color, bakg)
                     #render_subtitle(img, line, text_size, text_size_selected, row5, y_offset6, color);
