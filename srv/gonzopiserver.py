@@ -137,6 +137,7 @@ def sendtocamera(host, port, data):
 def getfilms(filmfolder):
     #get a list of films, in order of settings.p file last modified
     films_sorted = []
+    print(filmfolder)
     films = next(os.walk(filmfolder))[1]
     for i in films:
         if os.path.isfile(filmfolder + i + '/settings.p') == True:
