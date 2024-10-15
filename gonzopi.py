@@ -832,22 +832,6 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'DSK:':
                 print("usb filmfolder")
                 vumetermessage('checking usb mount...')
-                if os.path.exists('/dev/sdb1') == False:
-                    os.system('sudo umount /media/usb1')
-                    try:
-                        del storagedrives[2]
-                    except:
-                        pass
-                    dsk=0
-                    time.sleep(1)
-                if os.path.exists('/dev/sda1') == False:
-                    os.system('sudo umount /media/usb0')
-                    try:
-                        del storagedrives[1]
-                    except:
-                        pass
-                    dsk=0
-                    time.sleep(1) 
                 filmfolderusb=usbfilmfolder(dsk)
                 if filmfolderusb:
                     filmfolder=filmfolderusb
@@ -885,6 +869,18 @@ def main():
                 serverstate = gonzopiserver(False)
                 serverstate = gonzopiserver(True)
             #REMOVE DELETE
+            #dsk
+            elif pressed == 'remove' and menu[selected] == 'DSK:':
+                if dsk != 0:
+                    print("usb filmfolder")
+                    os.system('sudo pumount /media/usb'+str(dsk))
+                    os.system('sudo umount -l /media/usb'+str(dsk))
+                    try:
+                        del storagedrives[dsk]
+                    except:
+                        pass
+                    dsk=0
+                    time.sleep(1)
             #take
             elif pressed == 'remove' and menu[selected] == 'TAKE:':
                 remove(filmfolder, filmname, scene, shot, take, 'take')
@@ -4703,7 +4699,7 @@ def usbfilmfolder(dsk):
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         usbconnected = os.path.ismount('/media/usb'+str(usbmount))
-        if pressed == 'middle' or time.time() - waiting > 5:
+        if pressed == 'middle' or time.time() - waiting > 8:
             writemessage('canceling..')
             break
         time.sleep(0.02)
@@ -4723,7 +4719,7 @@ def usbfilmfolder(dsk):
             os.system('sudo chmod 755 '+filmfolder)
             #run_command('pumount /media/usb'+str(usbmount))
             writemessage('Filming to USB'+str(usbmount))
-            time.sleep(1)
+            #time.sleep(1)
             return filmfolder
         else:
             return
