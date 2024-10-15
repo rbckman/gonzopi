@@ -450,22 +450,22 @@ class api:
                         #    menudone=menudone+'<br>'
                         #if p == 30:
                         #    menudone=menudone+'<br>'
-                    if p == 3:
+                    if p == 4:
                         try:
                             film=i.split(':')[1].rstrip('\n')
                         except:
                             film=None
-                    if p == 4 and film != None:
+                    if p == 5 and film != None:
                         try:
                             scene=int(i.split(':')[1].split('/')[0])
                         except:
                             scene=1
-                    if p == 5 and film != None:
+                    if p == 6 and film != None:
                         try:
                             shot=int(i.split(':')[1].split('/')[0])
                         except:
                             shot=1
-                    if p == 6 and film != None:
+                    if p == 7 and film != None:
                         try:
                             take=int(i.split(':')[1].split('/')[0])
                         except:
@@ -478,13 +478,13 @@ class api:
             thumb = ''
             video = ''
             if film != None:
-                if selected == 3:
+                if selected == 4:
                     video = '/'+filmfolder + film +'/'+ film+'.mp4'
-                elif selected == 4:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
                 elif selected == 5:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
                 elif selected == 6:
+                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                elif selected == 7:
                     video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
                 else:
                     video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'

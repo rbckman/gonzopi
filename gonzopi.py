@@ -1920,7 +1920,8 @@ def main():
                         videosize=countsize(foldername + filename + '.mp4')
                         vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                     except:
-                        vumetermessage('not rendered')
+                        videosize=countsize(foldername + filename + '.h264')
+                        vumetermessage('not rendered, videosize: '+str(round(videosize/1000,2))+' Mb')
                 overlay = displayimage(camera, imagename, overlay, 3)
                 oldscene = scene
                 oldshot = shot
