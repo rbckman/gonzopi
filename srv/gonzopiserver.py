@@ -49,6 +49,7 @@ def usbfilmfolder():
 
 home = os.path.expanduser('~')
 menuold = []
+vumeterold = ''
 #configfile = home + '/.gonzopi/config.ini'
 #configdir = os.path.dirname(configfile)
 #config = configparser.ConfigParser()
@@ -370,7 +371,7 @@ class films:
 
 class api:
     def GET(self):
-        global menuold
+        global menuold, vumeterold
         i=web.input(func=None,selected=None)
         if i.func == 'record':
             sendtocamera(ip,port,'RECORD')
@@ -420,8 +421,9 @@ class api:
         menu=interface.readlines()
         vumeter=open('/dev/shm/vumeter','r')
         vumetermessage=vumeter.readlines()[0].rstrip('\n')
-        if menu != menuold:
+        if menu != menuold or vumetermessage != vumeterold:
             menuold=menu
+            vumeterold=vumetermessage
             print(menu)
             menudone=''
             p=0
