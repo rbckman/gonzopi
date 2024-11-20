@@ -57,6 +57,9 @@ os.system('sudo chmod g+rw /dev/gpiomem')
 #give permissions to RAM
 os.system('sudo chown -R pi /dev/shm')
 
+#make cpu freq performance
+os.system('sudo cpufreq-set -g performance')
+
 #I2CBUTTONS
 probei2c = 0
 while probei2c < 3:
