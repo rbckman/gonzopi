@@ -10,8 +10,11 @@
 # █▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█▄█  █▄▄█▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█▄▄▄█   █▄▄▄█
 
 # https://gonzopi.org
-
-import picamerax as picamera
+cameramode=True
+try:
+    import picamerax as picamera
+except:
+    cameramode=False
 import numpy as np
 import string
 import os
@@ -20,17 +23,26 @@ import datetime
 import multiprocessing as mp
 from subprocess import call
 from subprocess import Popen
-from omxplayer import OMXPlayer
+omxplayermode=True
+try:
+    from omxplayer import OMXPlayer
+except:
+    omxplayermode=False
 from multiprocessing import Process, Queue
 import subprocess
 import sys
 import pickle
-import RPi.GPIO as GPIO
+rpimode=True
+try:
+    import RPi.GPIO as GPIO
+except:
+    rpimode=False
 from PIL import Image
 import socket
 import configparser
 import shortuuid
-import smbus
+if rpimode == True:
+    import smbus
 import ifaddr
 import web
 
@@ -45,56 +57,59 @@ pipe = subprocess.check_output('lsb_release -c -s', shell=True)
 debianversion = pipe.decode().strip()
 print('running debian ' + debianversion)
 
-#CHECK RASPBERRY PI VERSION
-pipe = subprocess.check_output('cat /sys/firmware/devicetree/base/model', shell=True)
-raspberrypiversion = pipe.decode().strip()
-print('on ' + raspberrypiversion)
+if rpimode:
+    #CHECK RASPBERRY PI VERSION
+    pipe = subprocess.check_output('cat /sys/firmware/devicetree/base/model', shell=True)
+    raspberrypiversion = pipe.decode().strip()
+    print('on ' + raspberrypiversion)
 
-#give permissions to GPIO
-os.system('sudo chown root.gpio /dev/gpiomem')
-os.system('sudo chmod g+rw /dev/gpiomem')
+    #give permissions to GPIO
+    os.system('sudo chown root.gpio /dev/gpiomem')
+    os.system('sudo chmod g+rw /dev/gpiomem')
 
-#give permissions to RAM
-os.system('sudo chown -R pi /dev/shm')
+    #give permissions to RAM
+    os.system('sudo chown -R pi /dev/shm')
 
-#make cpu freq performance
-os.system('sudo cpufreq-set -g performance')
+    #make cpu freq performance
+    os.system('sudo cpufreq-set -g performance')
 
-#I2CBUTTONS
-probei2c = 0
-while probei2c < 3:
-    try:
-        if debianversion == "stretch":
-            os.system('sudo modprobe i2c-dev')
-            bus = smbus.SMBus(3) # Rev 2 Pi uses 1
-        else:
-            if 'Raspberry Pi 4 Model B' in raspberrypiversion:
+    #I2CBUTTONS
+    probei2c = 0
+    while probei2c < 3:
+        try:
+            if debianversion == "stretch":
                 os.system('sudo modprobe i2c-dev')
-                bus = smbus.SMBus(22) # Rev 2 Pi uses 1
+                bus = smbus.SMBus(3) # Rev 2 Pi uses 1
             else:
-                os.system('sudo modprobe i2c-dev')
-                bus = smbus.SMBus(11) # Rev 2 Pi uses 1
-        DEVICE = 0x20 # Device address (A0-A2)
-        IODIRB = 0x0d # Pin pullups B-side
-        IODIRA = 0x00 # Pin pullups A-side 0x0c
-        IODIRApullup = 0x0c # Pin pullups A-side 0x0c
-        GPIOB  = 0x13 # Register B-side for inputs
-        GPIOA  = 0x12 # Register A-side for inputs
-        OLATA  = 0x14 # Register for outputs
-        bus.write_byte_data(DEVICE,IODIRB,0xFF) # set all gpiob to input
-        bus.write_byte_data(DEVICE,IODIRApullup,0xF3) # set two pullup inputs and two outputs 
-        bus.write_byte_data(DEVICE,IODIRA,0xF3) # set two inputs and two outputs 
-        bus.write_byte_data(DEVICE,OLATA,0x4)
-        print("yes, found em i2c buttons!")
-        i2cbuttons = True
-        break
-    except:
-        print("could not find i2c buttons!! running in keyboard only mode")
-        print("trying again...")
-        i2cbuttons = False
-        probei2c += 1
-        time.sleep(1)
-        bus=''
+                if 'Raspberry Pi 4 Model B' in raspberrypiversion:
+                    os.system('sudo modprobe i2c-dev')
+                    bus = smbus.SMBus(22) # Rev 2 Pi uses 1
+                else:
+                    os.system('sudo modprobe i2c-dev')
+                    bus = smbus.SMBus(11) # Rev 2 Pi uses 1
+            DEVICE = 0x20 # Device address (A0-A2)
+            IODIRB = 0x0d # Pin pullups B-side
+            IODIRA = 0x00 # Pin pullups A-side 0x0c
+            IODIRApullup = 0x0c # Pin pullups A-side 0x0c
+            GPIOB  = 0x13 # Register B-side for inputs
+            GPIOA  = 0x12 # Register A-side for inputs
+            OLATA  = 0x14 # Register for outputs
+            bus.write_byte_data(DEVICE,IODIRB,0xFF) # set all gpiob to input
+            bus.write_byte_data(DEVICE,IODIRApullup,0xF3) # set two pullup inputs and two outputs 
+            bus.write_byte_data(DEVICE,IODIRA,0xF3) # set two inputs and two outputs 
+            bus.write_byte_data(DEVICE,OLATA,0x4)
+            print("yes, found em i2c buttons!")
+            i2cbuttons = True
+            break
+        except:
+            print("could not find i2c buttons!! running in keyboard only mode")
+            print("trying again...")
+            i2cbuttons = False
+            probei2c += 1
+            time.sleep(1)
+            bus=''
+else:
+    i2cbuttons = False
 
 #MAIN
 def main():
@@ -195,13 +210,16 @@ def main():
     f = open(gonzopifolder + '/VERSION')
     gonzopiversion = f.readline()
     gonzopivername = f.readline()
-
-    #START INTERFACE
-    startinterface()
-
     db=''
-    #FIRE UP CAMERA
-    camera = startcamera(lens,fps)
+
+    if rpimode:
+        #START INTERFACE
+        startinterface()
+        #FIRE UP CAMERA
+        camera = startcamera(lens,fps)
+    else:
+        camera=None
+
     #GET FILMFOLDER AND CAMERA VERSION
     camera_model, camera_revision , filmfolder = getconfig(camera)
     if os.path.isdir(filmfolder) == False:
@@ -210,10 +228,11 @@ def main():
     #SYSTEM CONFIGS (turn off hdmi)
     #run_command('tvservice -o')
     #Kernel page cache optimization for sd card
-    run_command('sudo ' + gonzopifolder + '/extras/sdcardhack.sh')
-    #Make screen shut off work and run full brightness
-    run_command('gpio -g mode 19 pwm ')
-    run_command('gpio -g pwm 19 1023')
+    if rpimode:
+        run_command('sudo ' + gonzopifolder + '/extras/sdcardhack.sh')
+        #Make screen shut off work and run full brightness
+        run_command('gpio -g mode 19 pwm ')
+        run_command('gpio -g pwm 19 1023')
     
     #STORAGE DRIVES
     storagedrives=[['sd',filmfolder]]
@@ -307,1730 +326,1731 @@ def main():
     wifistate_old='off'
 
 
-    #--------------MAIN LOOP---------------#
-    while True:
-        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
-        if pressagain != '':
-            pressed = pressagain
-            pressagain = ''
-        #event = screen.getch()
-        if wifistate != wifistate_old:
-            if wifistate == 'on':
-                run_command('sudo iwconfig wlan0 txpower auto')
-            elif wifistate == 'off':
-                run_command('sudo iwconfig wlan0 txpower off')
-            wifistate_old = wifistate
-        if serverstate != serverstate_old:
-            if serverstate == 'on':
-                gonzopiserver(True)
-            elif serverstate == 'off':
-                gonzopiserver(False)
-            serverstate_old=serverstate
-        if recording == False:
-            #SHUTDOWN
-            if pressed == 'middle' and menu[selected] == 'SHUTDOWN':
-                writemessage('Hold on shutting down...')
-                time.sleep(1)
-                run_command('sudo shutdown -h now')
-            #MODE
-            elif pressed == 'changemode':
-                if cammode == 'film':
-                    cammode = 'picture'
-                    vumetermessage('changing to picture mode')
-                elif cammode == 'picture':
-                    cammode = 'film'
-                    vumetermessage('changing to film mode')
-                camera.stop_preview()
-                camera.close()
-                camera = startcamera(lens,fps)
-                loadfilmsettings = True
-            #PICTURE
-            elif pressed == 'picture':
-                if os.path.isdir(foldername) == False:
-                    os.makedirs(foldername)
-                picture = foldername +'picture' + str(take).zfill(3) + '.jpeg'
-                run_command('touch ' + foldername + '.placeholder')
-                print('taking picture')
-                camera.capture(picture,format="jpeg",use_video_port=True) 
-            #PEAKING
-            elif pressed == 'peak' and recordable == True:
-                if shot > 1:
-                    peakshot = shot - 1
-                    peaktake = counttakes(filmname, filmfolder, scene, peakshot)
-                p_imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(peakshot).zfill(3) + '/take' + str(peaktake).zfill(3) + '.jpeg'
-                overlay = displayimage(camera, p_imagename, overlay, 3)
-                while holdbutton == 'peak':
-                    pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
-                    vumetermessage('peaking ' + str(peakshot))
-                    time.sleep(0.03)
-                overlay = removeimage(camera, overlay)
-            #SHOWHELP
-            elif pressed == 'showhelp':
-                vumetermessage('Button layout')
-                if showhelp == False:
-                    overlay2 = removeimage(camera, overlay2)
-                    overlay2 = displayimage(camera, gonzopifolder+'/extras/buttons.png', overlay, 4)
-                    showhelp = True
-                elif showhelp == True:
-                    overlay2 = removeimage(camera, overlay2)
-                    updatethumb =  True
-                    showhelp = False
-                #while holdbutton == 'showhelp' or pressed == 'H':
-                #    pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
-                #    vumetermessage('Button layout')
-                #    time.sleep(0.03)
-            #TIMELAPSE
-            elif pressed == 'middle' and menu[selected] == 'TIMELAPSE':
-                overlay = removeimage(camera, overlay)
-                takes = counttakes(filmname, filmfolder, scene, shot)
-                if takes > 0:
-                    shot = countshots(filmname, filmfolder, scene) + 1
-                    take = 1
-                foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                filename = 'take' + str(take).zfill(3)
-                renderedfilename, between, duration = timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlight)
-                if renderedfilename != '':
-                    #render thumbnail
-                    #writemessage('creating thumbnail')
-                    #run_command('avconv -i ' + foldername + filename  + '.mp4 -frames 1 -vf scale=800:460 ' + foldername + filename + '.jpeg')
-                    updatethumb =  True
-            #VIEW SCENE
-            elif pressed == 'view' and menu[selected] == 'SCENE:':
-                writemessage('Loading scene...')
-                organize(filmfolder, filmname)
-                filmfiles = shotfiles(filmfolder, filmname, scene)
-                vumetermessage('press middlebutton to cancel')
-                if len(filmfiles) > 0:
-                    #Check if rendered video exist
+    if rpimode:
+        #--------------Rpi MAIN LOOP---------------#
+        while True:
+            pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+            if pressagain != '':
+                pressed = pressagain
+                pressagain = ''
+            #event = screen.getch()
+            if wifistate != wifistate_old:
+                if wifistate == 'on':
+                    run_command('sudo iwconfig wlan0 txpower auto')
+                elif wifistate == 'off':
+                    run_command('sudo iwconfig wlan0 txpower off')
+                wifistate_old = wifistate
+            if serverstate != serverstate_old:
+                if serverstate == 'on':
+                    gonzopiserver(True)
+                elif serverstate == 'off':
+                    gonzopiserver(False)
+                serverstate_old=serverstate
+            if recording == False:
+                #SHUTDOWN
+                if pressed == 'middle' and menu[selected] == 'SHUTDOWN':
+                    writemessage('Hold on shutting down...')
+                    time.sleep(1)
+                    run_command('sudo shutdown -h now')
+                #MODE
+                elif pressed == 'changemode':
+                    if cammode == 'film':
+                        cammode = 'picture'
+                        vumetermessage('changing to picture mode')
+                    elif cammode == 'picture':
+                        cammode = 'film'
+                        vumetermessage('changing to film mode')
                     camera.stop_preview()
-                    #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
-                    renderfilename = renderfilm(filmfolder, filmname, comp, scene, True)
-                    if renderfilename != '':
-                        remove_shots = playdub(filmname,renderfilename, 'film')
-                        #fastedit (maybe deploy sometime)
-                        #if remove_shots != []:
-                        #    for i in remove_shots:
-                        #        remove(filmfolder, filmname, scene, i, take, 'shot')
-                        #    organize(filmfolder, filmname)
-                        #    updatethumb = True
-                        #    #loadfilmsettings = True
-                        #    time.sleep(0.5)
-                        #else:
-                        #    print('nothing to remove')
-                        camera.start_preview()
-                else:
-                    vumetermessage("There's absolutely nothing in this scene! hit rec!")
-                updatethumb=True
-                rendermenu = True
-            #VIEW FILM
-            elif pressed == 'view' and menu[selected] == 'FILM:':
-                writemessage('Loading film...')
-                organize(filmfolder, filmname)
-                filmfiles = viewfilm(filmfolder, filmname)
-                vumetermessage('press middlebutton to cancel')
-                if len(filmfiles) > 0:
-                    camera.stop_preview()
-                    #removeimage(camera, overlay)
-                    renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
-                    if renderfilename != '':
-                        remove_shots = playdub(filmname,renderfilename, 'film')
-                    #overlay = displayimage(camera, imagename, overlay, 3)
-                    camera.start_preview()
-                else:
-                    vumetermessage('wow, shoot first! there is zero, nada, zip footage to watch now... just hit rec!')
-                updatethumb=True
-                rendermenu = True
-            #VIEW SHOT OR TAKE
-            elif pressed == 'view':
-                writemessage('Loading clip...')
-                organize(filmfolder, filmname)
-                takes = counttakes(filmname, filmfolder, scene, shot)
-                vumetermessage('press middlebutton to cancel')
-                if takes > 0:
-                    removeimage(camera, overlay)
-                    camera.stop_preview()
-                    foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    camera.close()
+                    camera = startcamera(lens,fps)
+                    loadfilmsettings = True
+                #PICTURE
+                elif pressed == 'picture':
+                    if os.path.isdir(foldername) == False:
+                        os.makedirs(foldername)
+                    picture = foldername +'picture' + str(take).zfill(3) + '.jpeg'
+                    run_command('touch ' + foldername + '.placeholder')
+                    print('taking picture')
+                    camera.capture(picture,format="jpeg",use_video_port=True) 
+                #PEAKING
+                elif pressed == 'peak' and recordable == True:
+                    if shot > 1:
+                        peakshot = shot - 1
+                        peaktake = counttakes(filmname, filmfolder, scene, peakshot)
+                    p_imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(peakshot).zfill(3) + '/take' + str(peaktake).zfill(3) + '.jpeg'
+                    overlay = displayimage(camera, p_imagename, overlay, 3)
+                    while holdbutton == 'peak':
+                        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+                        vumetermessage('peaking ' + str(peakshot))
+                        time.sleep(0.03)
+                    overlay = removeimage(camera, overlay)
+                #SHOWHELP
+                elif pressed == 'showhelp':
+                    vumetermessage('Button layout')
+                    if showhelp == False:
+                        overlay2 = removeimage(camera, overlay2)
+                        overlay2 = displayimage(camera, gonzopifolder+'/extras/buttons.png', overlay, 4)
+                        showhelp = True
+                    elif showhelp == True:
+                        overlay2 = removeimage(camera, overlay2)
+                        updatethumb =  True
+                        showhelp = False
+                    #while holdbutton == 'showhelp' or pressed == 'H':
+                    #    pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+                    #    vumetermessage('Button layout')
+                    #    time.sleep(0.03)
+                #TIMELAPSE
+                elif pressed == 'middle' and menu[selected] == 'TIMELAPSE':
+                    overlay = removeimage(camera, overlay)
+                    takes = counttakes(filmname, filmfolder, scene, shot)
+                    if takes > 0:
+                        shot = countshots(filmname, filmfolder, scene) + 1
+                        take = 1
+                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                     filename = 'take' + str(take).zfill(3)
-                    #compileshot(foldername + filename,filmfolder,filmname)
-                    renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
-                    if renderfilename != '':
-                        trim = playdub(filmname,foldername + filename, 'shot')
-                        if trim[0] == 'beginning' or trim[0] == 'end':
-                            writemessage('Cutting clip...')
-                            take = counttakes(filmname, filmfolder, scene, shot)+1
-                            trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername, foldername + filename, trim_filename, trim[0], trim[1])
-                        elif trim[0] >= trim[1]:
-                            trim = [trim[0],0]
-                        elif trim[0] != 0 and trim[1] != 0:
-                            writemessage('Cutting clip...')
-                            take = counttakes(filmname, filmfolder, scene, shot)+1
-                            trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
-                            take = counttakes(filmname, filmfolder, scene, shot)+1
-                            trim_filename2 = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername, trim_filename, trim_filename2, 'beginning', trim[0])
-                        elif trim[0] == 0 and trim[1] != 0:
-                            writemessage('Cutting clip...')
-                            take = counttakes(filmname, filmfolder, scene, shot)+1
-                            trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
-                        if trim[0] != 0 and trim[1] == 0:
-                            writemessage('Cutting clip...')
-                            take = counttakes(filmname, filmfolder, scene, shot)+1
-                            trim_filename = foldername + 'take' + str(take).zfill(3)
-                            videotrim(foldername, foldername + filename, trim_filename, 'beginning', trim[0])
-                        imagename = foldername + filename + '.jpeg'
-                        overlay = displayimage(camera, imagename, overlay, 3)
+                    renderedfilename, between, duration = timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlight)
+                    if renderedfilename != '':
+                        #render thumbnail
+                        #writemessage('creating thumbnail')
+                        #run_command('avconv -i ' + foldername + filename  + '.mp4 -frames 1 -vf scale=800:460 ' + foldername + filename + '.jpeg')
+                        updatethumb =  True
+                #VIEW SCENE
+                elif pressed == 'view' and menu[selected] == 'SCENE:':
+                    writemessage('Loading scene...')
+                    organize(filmfolder, filmname)
+                    filmfiles = shotfiles(filmfolder, filmname, scene)
+                    vumetermessage('press middlebutton to cancel')
+                    if len(filmfiles) > 0:
+                        #Check if rendered video exist
+                        camera.stop_preview()
+                        #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, scene, True)
+                        if renderfilename != '':
+                            remove_shots = playdub(filmname,renderfilename, 'film')
+                            #fastedit (maybe deploy sometime)
+                            #if remove_shots != []:
+                            #    for i in remove_shots:
+                            #        remove(filmfolder, filmname, scene, i, take, 'shot')
+                            #    organize(filmfolder, filmname)
+                            #    updatethumb = True
+                            #    #loadfilmsettings = True
+                            #    time.sleep(0.5)
+                            #else:
+                            #    print('nothing to remove')
+                            camera.start_preview()
+                    else:
+                        vumetermessage("There's absolutely nothing in this scene! hit rec!")
+                    updatethumb=True
+                    rendermenu = True
+                #VIEW FILM
+                elif pressed == 'view' and menu[selected] == 'FILM:':
+                    writemessage('Loading film...')
+                    organize(filmfolder, filmname)
+                    filmfiles = viewfilm(filmfolder, filmname)
+                    vumetermessage('press middlebutton to cancel')
+                    if len(filmfiles) > 0:
+                        camera.stop_preview()
+                        #removeimage(camera, overlay)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
+                        if renderfilename != '':
+                            remove_shots = playdub(filmname,renderfilename, 'film')
+                        #overlay = displayimage(camera, imagename, overlay, 3)
                         camera.start_preview()
                     else:
-                        vumetermessage('nothing here! hit rec!')
-                    rendermenu = True
+                        vumetermessage('wow, shoot first! there is zero, nada, zip footage to watch now... just hit rec!')
                     updatethumb=True
-            #DUB SHOT
-            elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
-                newdub = clipsettings(filmfolder, filmname, scene, shot, take, plughw)
-                take = counttakes(filmname, filmfolder, scene, shot)
-                if newdub:
-                    camera.stop_preview()
-                    #save original sound
-                    dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/dub/'
-                    saveoriginal = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take'+str(take).zfill(3)+'.wav'
-                    dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
-                    foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                    filename = 'take' + str(take).zfill(3)
-                    if dubfiles==[]:
-                        print('no dubs, copying original sound to original')
-                        os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
-                        time.sleep(0.2)
-                    renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
-                    playdub(filmname,renderfilename, 'dub')
-                    #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
-                    #add audio/video start delay sync
-                    run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
-                    run_command('mv /dev/shm/temp.wav '+ newdub)
-                    audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
-                    vumetermessage('new shot dubbing made!')
-                    #rerender audio
-                    os.system('rm ' + filmfolder + filmname + '/.audiohash')
-                    camera.start_preview()
-                    time.sleep(1)
-                else:
-                    vumetermessage('see ya around!')
-                rendermenu = True
-            #DUB SCENE
-            elif pressed == 'middle' and menu[selected] == 'SCENE:':
-                newdub = clipsettings(filmfolder, filmname, scene, 0, take, plughw)
-                if newdub:
-                    camera.stop_preview()
-                    renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
-                    playdub(filmname,renderfilename, 'dub')
-                    #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
-                    #add audio/video start delay sync
-                    run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
-                    run_command('mv /dev/shm/temp.wav '+ newdub)
-                    audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
-                    vumetermessage('new scene dubbing made!')
-                    #rerender audio
-                    os.system('rm ' + filmfolder + filmname + '/.audiohash')
-                    camera.start_preview()
-                    time.sleep(1)
-                else:
-                    vumetermessage('see ya around!')
-                rendermenu = True
-            #DUB FILM
-            elif pressed == 'middle' and menu[selected] == 'FILM:':
-                newdub = clipsettings(filmfolder, filmname, 0, 0, take, plughw)
-                if newdub:
-                    camera.stop_preview()
-                    renderfilename = renderfilm(filmfolder, filmname, comp, 0, False)
-                    playdub(filmname,renderfilename, 'dub')
-                    run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
-                    vumetermessage('new film dubbing made!')
-                    camera.start_preview()
-                    time.sleep(1)
-                else:
-                    vumetermessage('see ya around!')
-                rendermenu = True
-            #BACKUP
-            elif pressed == 'middle' and menu[selected] == 'BACKUP':
-                copytousb(filmfolder)
-                rendermenu = True
-            #UPLOAD
-            elif pressed == 'middle' and menu[selected] == 'UPLOAD':
-                if webz_on() == True:
-                    filmfiles = viewfilm(filmfolder, filmname)
-                    if len(filmfiles) > 0:
-                        renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
-                        cmd = uploadfilm(renderfilename, filmname)
-                        if cmd != None:
-                            stopinterface(camera)
-                            try:
-                                run_command(cmd)
-                            except:
-                                logger.warning('uploadfilm bugging')
-                            startinterface()
-                            camera = startcamera(lens,fps)
-                            loadfilmsettings = True
-                        selectedaction = 0
-                rendermenu = True
-            #LOAD FILM
-            elif pressed == 'middle' and menu[selected] == 'LOAD':
-                filmname = loadfilm(filmname, filmfolder, camera, overlay)
-                loadfilmsettings = True
-            #UPDATE
-            elif pressed == 'middle' and menu[selected] == 'UPDATE':
-                if webz_on() == True:
-                    stopinterface(camera)
-                    gonzopiversion, gonzopivername = update(gonzopiversion, gonzopivername)
-                    startinterface()
-                    camera = startcamera(lens,fps)
-                    loadfilmsettings = True
-                    selectedaction = 0
-                rendermenu = True
-            #WIFI
-            elif pressed == 'middle' and menu[selected] == 'WIFI:':
-                stopinterface(camera)
-                run_command('wicd-curses')
-                startinterface()
-                camera = startcamera(lens,fps)
-                loadfilmsettings = True
-                rendermenu = True
-            #NEW FILM
-            elif pressed == 'middle' and menu[selected] == 'NEW' or filmname == '' or pressed == 'new_film':
-                filmname_exist=False
-                if newfilmname == '':
-                    newfilmname = nameyourfilm(filmfolder, filmname, abc, True)
-                allfilm = getfilms(filmfolder)
-                for i in allfilm:
-                    if i[0] == newfilmname:
-                        filmname_exist=True
-                if filmname != newfilmname and filmname_exist==False:
-                    filmname = newfilmname
-                    os.makedirs(filmfolder + filmname)
-                    vumetermessage('Good luck with your film ' + filmname + '!')
-                    #make a filmhash
-                    print('making filmhash...')
-                    filmhash = shortuuid.uuid()
-                    with open(filmfolder + filmname + '/.filmhash', 'w') as f:
-                        f.write(filmhash)
-                    updatethumb = True
                     rendermenu = True
-                    scene = 1
-                    shot = 1
-                    take = 1
-                    #selectedaction = 0
-                    newfilmname = ''
-                else:
-                    print(term.clear)
-                    filmname = newfilmname
-                    newfilmname = ''
-                    vumetermessage('film already exist!')
-                    logger.info('film already exist!')
-                    updatethumb = True
-                    loadfilmsettings = True
-                    rendermenu = True
-            #EDIT FILM NAME
-            elif pressed == 'middle' and menu[selected] == 'TITLE' or filmname == '':
-                newfilmname = nameyourfilm(filmfolder, filmname, abc, False)
-                if filmname != newfilmname:
-                    os.system('mv ' + filmfolder + filmname + ' ' + filmfolder + newfilmname)
-                    filmname = newfilmname
-                    db = get_film_files(filmname,filmfolder,db)
-                    vumetermessage('Film title changed to ' + filmname + '!')
-                else:
-                    vumetermessage('')
-                rendermenu = True
-            #(YANK) COPY FILM
-            elif pressed == 'copy' and menu[selected] == 'FILM:' and recordable == False:
-                copying = 'film'
-                yanked = filmfolder + filmname
-                vumetermessage('Film ' + filmname + ' copied! (I)nsert button to place it...')
-            #(YANK) COPY TAKE
-            elif pressed == 'copy' and menu[selected] == 'TAKE:' and recordable == False:
-                copying = 'take'
-                yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)+'/take' + str(take).zfill(3)
-                vumetermessage('Take ' + str(take) + ' copied! (I)nsert button to place it...')
-            #(YANK) COPY SHOT
-            elif pressed == 'copy' and menu[selected] == 'SHOT:':
-                copying = 'shot'
-                yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
-                vumetermessage('Shot ' + str(shot) + ' copied! (I)nsert button to place it...')
-            #(YANK) COPY SCENE
-            elif pressed == 'copy' and menu[selected] == 'SCENE:':
-                copying = 'scene'
-                yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
-                vumetermessage('Scene ' + str(scene) + ' copied! (I)nsert button to place it...')
-            #(CUT) MOVE TAKE
-            elif pressed == 'move' and menu[selected] == 'TAKE:' and recordable == False:
-                copying = 'take'
-                moving = True
-                yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)+'/take' + str(take).zfill(3)
-                vumetermessage('Moving shot ' + str(shot) + ' (I)nsert button to place it...')
-            #(CUT) MOVE SHOT
-            elif pressed == 'move' and menu[selected] == 'SHOT:':
-                copying='shot'
-                moving = True
-                yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
-                vumetermessage('Moving shot ' + str(shot) + ' (I)nsert button to place it...')
-            #(CUT) MOVE SCENE
-            elif pressed == 'move' and menu[selected] == 'SCENE:':
-                copying='scene'
-                moving = True
-                yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
-                vumetermessage('Moving scene ' + str(scene) + ' (I)nsert button to place it...')
-            #PASTE SHOT and PASTE SCENE
-            elif pressed == 'insert' and yanked:
-                if copying == 'take':
+                #VIEW SHOT OR TAKE
+                elif pressed == 'view':
+                    writemessage('Loading clip...')
+                    organize(filmfolder, filmname)
+                    takes = counttakes(filmname, filmfolder, scene, shot)
+                    vumetermessage('press middlebutton to cancel')
+                    if takes > 0:
+                        removeimage(camera, overlay)
+                        camera.stop_preview()
+                        foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                        filename = 'take' + str(take).zfill(3)
+                        #compileshot(foldername + filename,filmfolder,filmname)
+                        renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
+                        if renderfilename != '':
+                            trim = playdub(filmname,foldername + filename, 'shot')
+                            if trim[0] == 'beginning' or trim[0] == 'end':
+                                writemessage('Cutting clip...')
+                                take = counttakes(filmname, filmfolder, scene, shot)+1
+                                trim_filename = foldername + 'take' + str(take).zfill(3)
+                                videotrim(foldername, foldername + filename, trim_filename, trim[0], trim[1])
+                            elif trim[0] >= trim[1]:
+                                trim = [trim[0],0]
+                            elif trim[0] != 0 and trim[1] != 0:
+                                writemessage('Cutting clip...')
+                                take = counttakes(filmname, filmfolder, scene, shot)+1
+                                trim_filename = foldername + 'take' + str(take).zfill(3)
+                                videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
+                                take = counttakes(filmname, filmfolder, scene, shot)+1
+                                trim_filename2 = foldername + 'take' + str(take).zfill(3)
+                                videotrim(foldername, trim_filename, trim_filename2, 'beginning', trim[0])
+                            elif trim[0] == 0 and trim[1] != 0:
+                                writemessage('Cutting clip...')
+                                take = counttakes(filmname, filmfolder, scene, shot)+1
+                                trim_filename = foldername + 'take' + str(take).zfill(3)
+                                videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
+                            if trim[0] != 0 and trim[1] == 0:
+                                writemessage('Cutting clip...')
+                                take = counttakes(filmname, filmfolder, scene, shot)+1
+                                trim_filename = foldername + 'take' + str(take).zfill(3)
+                                videotrim(foldername, foldername + filename, trim_filename, 'beginning', trim[0])
+                            imagename = foldername + filename + '.jpeg'
+                            overlay = displayimage(camera, imagename, overlay, 3)
+                            camera.start_preview()
+                        else:
+                            vumetermessage('nothing here! hit rec!')
+                        rendermenu = True
+                        updatethumb=True
+                #DUB SHOT
+                elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
+                    newdub = clipsettings(filmfolder, filmname, scene, shot, take, plughw)
                     take = counttakes(filmname, filmfolder, scene, shot)
-                    take=take+1
-                    vumetermessage('Pasting take, please wait...')
-                    paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
-                    #try:
-                    #    os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot'+ str(shot).zfill(3))
-                    #except:
-                    #    pass
-                    os.system('cp ' + yanked + '.mp4 ' + paste + '.mp4')
-                    os.system('cp ' + yanked + '.jpeg ' + paste + '.jpeg')
-                    os.system('cp ' + yanked + '.h264 ' + paste + '.h264')
-                    os.system('cp ' + yanked + '.wav ' + paste + '.wav')
-                    paste = ''
-                    if moving == True:
-                        os.system('rm -r ' + yanked + '*')
-                elif copying == 'shot':
-                    vumetermessage('Pasting shot, please wait...')
-                    paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
-                    try:
-                        os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3))
-                    except:
-                        pass
-                    os.system('cp -r ' + yanked + ' ' + paste)
-                    if moving == True:
-                        os.system('rm -r ' + yanked+'/*')
-                        #Remove hidden placeholder
-                        #os.system('rm ' + yanked + '/.placeholder')
-                elif copying == 'scene':
-                    vumetermessage('Pasting scene, please wait...')
-                    paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
-                    os.system('cp -r ' + yanked + ' ' + paste)
-                    if moving == True:
-                        os.system('rm -r ' + yanked+'/*')
-                        #Remove hidden placeholder
-                        #os.system('rm ' + yanked + '/.placeholder')
-                elif copying == 'film':
-                    vumetermessage('Pasting film, please wait...')
-                    paste = filmfolder+filmname+'_copy'
-                    os.system('cp -r ' + yanked + ' ' + paste)
-                    try:
-                        run_command('rsync -avr --update --progress --files-from='+yanked+'/.origin_videos --no-relative / ' +filmfolder+'.videos/')
-                    except:
-                        logger.info('no origin videos')
-                    #if moving == True:
-                        #os.system('rm -r ' + yanked)
-                        #Remove hidden placeholder
-                        #os.system('rm ' + yanked + '/.placeholder')
-                add_organize(filmfolder, filmname)
-                organize(filmfolder, filmname)
-                organize(filmfolder, filmname)
-                updatethumb = True
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                if scene > scenes:
-                    scene = scenes
-                if shot > shots:
-                    shot = shots
-                yanked = ''
-                copying = ''
-                moving = False
-                vumetermessage('Pasted!')
-                #time.sleep(3)
-            #INSERT SHOT
-            elif pressed == 'insert' and menu[selected] != 'SCENE:' and yanked == '':
-                insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
-                try:
-                    os.makedirs(insertshot)
-                except:
-                    print('is there already prob')
-                add_organize(filmfolder, filmname)
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                vumetermessage('Shot ' + str(shot) + ' inserted')
-                updatethumb = True
-                time.sleep(1)
-            #INSERT SHOT TO LAST SHOT
-            elif pressed == 'insert_shot':
-                logger.info('inserting shot')
-                shot = countshots(filmname, filmfolder, scene)
-                shot=shot+1
-                insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
-                try:
-                    os.makedirs(insertshot)
-                except:
-                    print('is there already prob')
-                add_organize(filmfolder, filmname)
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                vumetermessage('Shot ' + str(shot) + ' inserted')
-                updatethumb = True
-            #INSERT TAKE
-            elif pressed == 'insert_take':
-                logger.info('inserting take')
-                insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
-                try:
-                    os.makedirs(insertshot)
-                    run_command('touch ' + insertshot + '/.placeholder')
-                except:
-                    print('is there already prob')
-                add_organize(filmfolder, filmname)
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                vumetermessage('Take ' + str(shot) + ' inserted')
-                updatethumb = True
-                #time.sleep(1)
-            #INSERT SCENE
-            elif pressed == 'insert' and menu[selected] == 'SCENE:' and recordable == False and yanked == '':
-                insertscene = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_insert'
-                logger.info("inserting scene")
-                os.makedirs(insertscene)
-                add_organize(filmfolder, filmname)
-                take = 1
-                shot = 1
-                updatethumb = True
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                vumetermessage('Scene ' + str(scene) + ' inserted')
-                time.sleep(1)
-            #NEW SCENE
-            elif pressed == 'new_scene':
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                vumetermessage('got new scene')
-                scene=scenes+1
-                shot=1
-                take=1
-            #DEVELOP
-            elif event == 'D':
-                try:
+                    if newdub:
+                        camera.stop_preview()
+                        #save original sound
+                        dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/dub/'
+                        saveoriginal = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take'+str(take).zfill(3)+'.wav'
+                        dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
+                        foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                        filename = 'take' + str(take).zfill(3)
+                        if dubfiles==[]:
+                            print('no dubs, copying original sound to original')
+                            os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
+                            time.sleep(0.2)
+                        renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
+                        playdub(filmname,renderfilename, 'dub')
+                        #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
+                        #add audio/video start delay sync
+                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
+                        run_command('mv /dev/shm/temp.wav '+ newdub)
+                        audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
+                        vumetermessage('new shot dubbing made!')
+                        #rerender audio
+                        os.system('rm ' + filmfolder + filmname + '/.audiohash')
+                        camera.start_preview()
+                        time.sleep(1)
+                    else:
+                        vumetermessage('see ya around!')
+                    rendermenu = True
+                #DUB SCENE
+                elif pressed == 'middle' and menu[selected] == 'SCENE:':
+                    newdub = clipsettings(filmfolder, filmname, scene, 0, take, plughw)
+                    if newdub:
+                        camera.stop_preview()
+                        renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
+                        playdub(filmname,renderfilename, 'dub')
+                        #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
+                        #add audio/video start delay sync
+                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
+                        run_command('mv /dev/shm/temp.wav '+ newdub)
+                        audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
+                        vumetermessage('new scene dubbing made!')
+                        #rerender audio
+                        os.system('rm ' + filmfolder + filmname + '/.audiohash')
+                        camera.start_preview()
+                        time.sleep(1)
+                    else:
+                        vumetermessage('see ya around!')
+                    rendermenu = True
+                #DUB FILM
+                elif pressed == 'middle' and menu[selected] == 'FILM:':
+                    newdub = clipsettings(filmfolder, filmname, 0, 0, take, plughw)
+                    if newdub:
+                        camera.stop_preview()
+                        renderfilename = renderfilm(filmfolder, filmname, comp, 0, False)
+                        playdub(filmname,renderfilename, 'dub')
+                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
+                        vumetermessage('new film dubbing made!')
+                        camera.start_preview()
+                        time.sleep(1)
+                    else:
+                        vumetermessage('see ya around!')
+                    rendermenu = True
+                #BACKUP
+                elif pressed == 'middle' and menu[selected] == 'BACKUP':
+                    copytousb(filmfolder)
+                    rendermenu = True
+                #UPLOAD
+                elif pressed == 'middle' and menu[selected] == 'UPLOAD':
+                    if webz_on() == True:
+                        filmfiles = viewfilm(filmfolder, filmname)
+                        if len(filmfiles) > 0:
+                            renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
+                            cmd = uploadfilm(renderfilename, filmname)
+                            if cmd != None:
+                                stopinterface(camera)
+                                try:
+                                    run_command(cmd)
+                                except:
+                                    logger.warning('uploadfilm bugging')
+                                startinterface()
+                                camera = startcamera(lens,fps)
+                                loadfilmsettings = True
+                            selectedaction = 0
+                    rendermenu = True
+                #LOAD FILM
+                elif pressed == 'middle' and menu[selected] == 'LOAD':
+                    filmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    loadfilmsettings = True
+                #UPDATE
+                elif pressed == 'middle' and menu[selected] == 'UPDATE':
+                    if webz_on() == True:
+                        stopinterface(camera)
+                        gonzopiversion, gonzopivername = update(gonzopiversion, gonzopivername)
+                        startinterface()
+                        camera = startcamera(lens,fps)
+                        loadfilmsettings = True
+                        selectedaction = 0
+                    rendermenu = True
+                #WIFI
+                elif pressed == 'middle' and menu[selected] == 'WIFI:':
                     stopinterface(camera)
-                    code.interact(local=locals())
+                    run_command('wicd-curses')
                     startinterface()
                     camera = startcamera(lens,fps)
-                    loadfilmsetings = True
-                except:
-                    writemessage('hmm.. couldnt enter developer mode')
-            #TURN OFF SCREEN
-            elif pressed == 'screen':
-                if backlight == False:
-                    # requires wiringpi installed
-                    run_command('gpio -g pwm 19 1023')
-                    backlight = True
-                    camera.start_preview()
-                elif backlight == True:
-                    run_command('gpio -g pwm 19 0')
-                    backlight = False
-                    camera.stop_preview()
-            elif pressed == 'showmenu':
-                if showmenu == 1:
-                    # requires wiringpi installed
-                    showmenu = 0
-                    showmenu_settings = False
-                elif showmenu == 0:
-                    showmenu = 1
-                    showmenu_settings = True
-            #DSK
-            elif pressed == 'middle' and menu[selected] == 'DSK:':
-                print("usb filmfolder")
-                vumetermessage('checking usb mount...')
-                filmfolderusb=usbfilmfolder(dsk)
-                if filmfolderusb:
-                    filmfolder=filmfolderusb
-                    if dsk < 1:
-                        storagedrives.append(['usb0',filmfolder])
-                        dsk=1
+                    loadfilmsettings = True
+                    rendermenu = True
+                #NEW FILM
+                elif pressed == 'middle' and menu[selected] == 'NEW' or filmname == '' or pressed == 'new_film':
+                    filmname_exist=False
+                    if newfilmname == '':
+                        newfilmname = nameyourfilm(filmfolder, filmname, abc, True)
+                    allfilm = getfilms(filmfolder)
+                    for i in allfilm:
+                        if i[0] == newfilmname:
+                            filmname_exist=True
+                    if filmname != newfilmname and filmname_exist==False:
+                        filmname = newfilmname
+                        os.makedirs(filmfolder + filmname)
+                        vumetermessage('Good luck with your film ' + filmname + '!')
+                        #make a filmhash
+                        print('making filmhash...')
+                        filmhash = shortuuid.uuid()
+                        with open(filmfolder + filmname + '/.filmhash', 'w') as f:
+                            f.write(filmhash)
+                        updatethumb = True
+                        rendermenu = True
+                        scene = 1
+                        shot = 1
+                        take = 1
+                        #selectedaction = 0
+                        newfilmname = ''
+                    else:
+                        print(term.clear)
+                        filmname = newfilmname
+                        newfilmname = ''
+                        vumetermessage('film already exist!')
+                        logger.info('film already exist!')
+                        updatethumb = True
                         loadfilmsettings = True
-                    elif dsk > 0:
-                        storagedrives.append(['usb1',filmfolder])
-                        dsk=2
-                        loadfilmsettings = True
-                else:
-                    camera_model, camera_revision , filmfolder = getconfig(camera)
+                        rendermenu = True
+                #EDIT FILM NAME
+                elif pressed == 'middle' and menu[selected] == 'TITLE' or filmname == '':
+                    newfilmname = nameyourfilm(filmfolder, filmname, abc, False)
+                    if filmname != newfilmname:
+                        os.system('mv ' + filmfolder + filmname + ' ' + filmfolder + newfilmname)
+                        filmname = newfilmname
+                        db = get_film_files(filmname,filmfolder,db)
+                        vumetermessage('Film title changed to ' + filmname + '!')
+                    else:
+                        vumetermessage('')
+                    rendermenu = True
+                #(YANK) COPY FILM
+                elif pressed == 'copy' and menu[selected] == 'FILM:' and recordable == False:
+                    copying = 'film'
+                    yanked = filmfolder + filmname
+                    vumetermessage('Film ' + filmname + ' copied! (I)nsert button to place it...')
+                #(YANK) COPY TAKE
+                elif pressed == 'copy' and menu[selected] == 'TAKE:' and recordable == False:
+                    copying = 'take'
+                    yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)+'/take' + str(take).zfill(3)
+                    vumetermessage('Take ' + str(take) + ' copied! (I)nsert button to place it...')
+                #(YANK) COPY SHOT
+                elif pressed == 'copy' and menu[selected] == 'SHOT:':
+                    copying = 'shot'
+                    yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
+                    vumetermessage('Shot ' + str(shot) + ' copied! (I)nsert button to place it...')
+                #(YANK) COPY SCENE
+                elif pressed == 'copy' and menu[selected] == 'SCENE:':
+                    copying = 'scene'
+                    yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
+                    vumetermessage('Scene ' + str(scene) + ' copied! (I)nsert button to place it...')
+                #(CUT) MOVE TAKE
+                elif pressed == 'move' and menu[selected] == 'TAKE:' and recordable == False:
+                    copying = 'take'
+                    moving = True
+                    yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)+'/take' + str(take).zfill(3)
+                    vumetermessage('Moving shot ' + str(shot) + ' (I)nsert button to place it...')
+                #(CUT) MOVE SHOT
+                elif pressed == 'move' and menu[selected] == 'SHOT:':
+                    copying='shot'
+                    moving = True
+                    yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
+                    vumetermessage('Moving shot ' + str(shot) + ' (I)nsert button to place it...')
+                #(CUT) MOVE SCENE
+                elif pressed == 'move' and menu[selected] == 'SCENE:':
+                    copying='scene'
+                    moving = True
+                    yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
+                    vumetermessage('Moving scene ' + str(scene) + ' (I)nsert button to place it...')
+                #PASTE SHOT and PASTE SCENE
+                elif pressed == 'insert' and yanked:
+                    if copying == 'take':
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                        take=take+1
+                        vumetermessage('Pasting take, please wait...')
+                        paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
+                        #try:
+                        #    os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot'+ str(shot).zfill(3))
+                        #except:
+                        #    pass
+                        os.system('cp ' + yanked + '.mp4 ' + paste + '.mp4')
+                        os.system('cp ' + yanked + '.jpeg ' + paste + '.jpeg')
+                        os.system('cp ' + yanked + '.h264 ' + paste + '.h264')
+                        os.system('cp ' + yanked + '.wav ' + paste + '.wav')
+                        paste = ''
+                        if moving == True:
+                            os.system('rm -r ' + yanked + '*')
+                    elif copying == 'shot':
+                        vumetermessage('Pasting shot, please wait...')
+                        paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
+                        try:
+                            os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3))
+                        except:
+                            pass
+                        os.system('cp -r ' + yanked + ' ' + paste)
+                        if moving == True:
+                            os.system('rm -r ' + yanked+'/*')
+                            #Remove hidden placeholder
+                            #os.system('rm ' + yanked + '/.placeholder')
+                    elif copying == 'scene':
+                        vumetermessage('Pasting scene, please wait...')
+                        paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
+                        os.system('cp -r ' + yanked + ' ' + paste)
+                        if moving == True:
+                            os.system('rm -r ' + yanked+'/*')
+                            #Remove hidden placeholder
+                            #os.system('rm ' + yanked + '/.placeholder')
+                    elif copying == 'film':
+                        vumetermessage('Pasting film, please wait...')
+                        paste = filmfolder+filmname+'_copy'
+                        os.system('cp -r ' + yanked + ' ' + paste)
+                        try:
+                            run_command('rsync -avr --update --progress --files-from='+yanked+'/.origin_videos --no-relative / ' +filmfolder+'.videos/')
+                        except:
+                            logger.info('no origin videos')
+                        #if moving == True:
+                            #os.system('rm -r ' + yanked)
+                            #Remove hidden placeholder
+                            #os.system('rm ' + yanked + '/.placeholder')
+                    add_organize(filmfolder, filmname)
+                    organize(filmfolder, filmname)
+                    organize(filmfolder, filmname)
+                    updatethumb = True
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if scene > scenes:
+                        scene = scenes
+                    if shot > shots:
+                        shot = shots
+                    yanked = ''
+                    copying = ''
+                    moving = False
+                    vumetermessage('Pasted!')
+                    #time.sleep(3)
+                #INSERT SHOT
+                elif pressed == 'insert' and menu[selected] != 'SCENE:' and yanked == '':
+                    insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
+                    try:
+                        os.makedirs(insertshot)
+                    except:
+                        print('is there already prob')
+                    add_organize(filmfolder, filmname)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    vumetermessage('Shot ' + str(shot) + ' inserted')
+                    updatethumb = True
+                    time.sleep(1)
+                #INSERT SHOT TO LAST SHOT
+                elif pressed == 'insert_shot':
+                    logger.info('inserting shot')
+                    shot = countshots(filmname, filmfolder, scene)
+                    shot=shot+1
+                    insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
+                    try:
+                        os.makedirs(insertshot)
+                    except:
+                        print('is there already prob')
+                    add_organize(filmfolder, filmname)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    vumetermessage('Shot ' + str(shot) + ' inserted')
+                    updatethumb = True
+                #INSERT TAKE
+                elif pressed == 'insert_take':
+                    logger.info('inserting take')
+                    insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3)
+                    try:
+                        os.makedirs(insertshot)
+                        run_command('touch ' + insertshot + '/.placeholder')
+                    except:
+                        print('is there already prob')
+                    add_organize(filmfolder, filmname)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    vumetermessage('Take ' + str(shot) + ' inserted')
+                    updatethumb = True
+                    #time.sleep(1)
+                #INSERT SCENE
+                elif pressed == 'insert' and menu[selected] == 'SCENE:' and recordable == False and yanked == '':
+                    insertscene = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_insert'
+                    logger.info("inserting scene")
+                    os.makedirs(insertscene)
+                    add_organize(filmfolder, filmname)
+                    take = 1
+                    shot = 1
+                    updatethumb = True
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    vumetermessage('Scene ' + str(scene) + ' inserted')
+                    time.sleep(1)
+                #NEW SCENE
+                elif pressed == 'new_scene':
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    vumetermessage('got new scene')
+                    scene=scenes+1
+                    shot=1
+                    take=1
+                #DEVELOP
+                elif event == 'D':
+                    try:
+                        stopinterface(camera)
+                        code.interact(local=locals())
+                        startinterface()
+                        camera = startcamera(lens,fps)
+                        loadfilmsetings = True
+                    except:
+                        writemessage('hmm.. couldnt enter developer mode')
+                #TURN OFF SCREEN
+                elif pressed == 'screen':
+                    if backlight == False:
+                        # requires wiringpi installed
+                        run_command('gpio -g pwm 19 1023')
+                        backlight = True
+                        camera.start_preview()
+                    elif backlight == True:
+                        run_command('gpio -g pwm 19 0')
+                        backlight = False
+                        camera.stop_preview()
+                elif pressed == 'showmenu':
+                    if showmenu == 1:
+                        # requires wiringpi installed
+                        showmenu = 0
+                        showmenu_settings = False
+                    elif showmenu == 0:
+                        showmenu = 1
+                        showmenu_settings = True
+                #DSK
+                elif pressed == 'middle' and menu[selected] == 'DSK:':
+                    print("usb filmfolder")
+                    vumetermessage('checking usb mount...')
+                    filmfolderusb=usbfilmfolder(dsk)
+                    if filmfolderusb:
+                        filmfolder=filmfolderusb
+                        if dsk < 1:
+                            storagedrives.append(['usb0',filmfolder])
+                            dsk=1
+                            loadfilmsettings = True
+                        elif dsk > 0:
+                            storagedrives.append(['usb1',filmfolder])
+                            dsk=2
+                            loadfilmsettings = True
+                    else:
+                        camera_model, camera_revision , filmfolder = getconfig(camera)
+                        if os.path.isdir(filmfolder) == False:
+                            os.makedirs(filmfolder)
+                    #COUNT DISKSPACE
+                    #sudo mkfs -t ext4 /dev/sdb1
+                    disk = os.statvfs(filmfolder)
+                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                    #LOAD FILM AND SCENE SETTINGS
+                    try:
+                        filmname = getfilms(filmfolder)[0][0]
+                    except:
+                        filmname = 'onthefloor' 
+                    try:
+                        filmname_back = getfilms(filmfolder)[0][1]
+                    except:
+                        filmname_back = 'onthefloor' 
                     if os.path.isdir(filmfolder) == False:
                         os.makedirs(filmfolder)
-                #COUNT DISKSPACE
-                #sudo mkfs -t ext4 /dev/sdb1
-                disk = os.statvfs(filmfolder)
-                diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                #LOAD FILM AND SCENE SETTINGS
-                try:
-                    filmname = getfilms(filmfolder)[0][0]
-                except:
-                    filmname = 'onthefloor' 
-                try:
-                    filmname_back = getfilms(filmfolder)[0][1]
-                except:
-                    filmname_back = 'onthefloor' 
-                if os.path.isdir(filmfolder) == False:
-                    os.makedirs(filmfolder)
-                #loadfilmsettings = True
-                updatethumb = True
-                rendermenu = True
-                #cleanupdisk(filmname,filmfolder)
-                serverstate = gonzopiserver(False)
-                serverstate = gonzopiserver(True)
-            #REMOVE DELETE
-            #dsk
-            elif pressed == 'remove' and menu[selected] == 'DSK:':
-                if dsk != 0:
-                    print("usb filmfolder")
-                    os.system('sudo pumount /media/usb'+str(dsk))
-                    os.system('sudo umount -l /media/usb'+str(dsk))
-                    try:
-                        del storagedrives[dsk]
-                    except:
-                        pass
-                    dsk=0
-                    time.sleep(1)
-            #take
-            elif pressed == 'remove' and menu[selected] == 'TAKE:':
-                remove(filmfolder, filmname, scene, shot, take, 'take')
-                organize(filmfolder, filmname)
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                take = counttakes(filmname, filmfolder, scene, shot)
-                updatethumb = True
-                rendermenu = True
-                #loadfilmsettings = True
-                time.sleep(0.2)
-            #shot
-            elif pressed == 'remove' and menu[selected] == 'SHOT:':
-                remove(filmfolder, filmname, scene, shot, take, 'shot')
-                organize(filmfolder, filmname)
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                take = counttakes(filmname, filmfolder, scene, shot)
-                updatethumb = True
-                rendermenu = True
-                #loadfilmsettings = True
-                time.sleep(0.2)
-            #scene
-            elif pressed == 'remove' and menu[selected] == 'SCENE:' or pressed=='remove_now':
-                remove(filmfolder, filmname, scene, shot, take, 'scene')
-                organize(filmfolder, filmname)
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                shot = countshots(filmname, filmfolder, scene)
-                take = counttakes(filmname, filmfolder, scene, shot)
-                updatethumb = True
-                rendermenu = True
-                #loadfilmsettings = True
-                time.sleep(0.2)
-            #film
-            elif pressed == 'remove' and menu[selected] == 'FILM:':
-                remove(filmfolder, filmname, scene, shot, take, 'film')
-                filmname = getfilms(filmfolder)[0][0]
-                if filmname == '':
-                    filmname = nameyourfilm(filmfolder,filmname,abc, True)
-                else:
-                    scene, shot, take = countlast(filmname, filmfolder)
-                    loadfilmsettings = True
+                    #loadfilmsettings = True
                     updatethumb = True
                     rendermenu = True
+                    #cleanupdisk(filmname,filmfolder)
+                    serverstate = gonzopiserver(False)
+                    serverstate = gonzopiserver(True)
+                #REMOVE DELETE
+                #dsk
+                elif pressed == 'remove' and menu[selected] == 'DSK:':
+                    if dsk != 0:
+                        print("usb filmfolder")
+                        os.system('sudo pumount /media/usb'+str(dsk))
+                        os.system('sudo umount -l /media/usb'+str(dsk))
+                        try:
+                            del storagedrives[dsk]
+                        except:
+                            pass
+                        dsk=0
+                        time.sleep(1)
+                #take
+                elif pressed == 'remove' and menu[selected] == 'TAKE:':
+                    remove(filmfolder, filmname, scene, shot, take, 'take')
+                    organize(filmfolder, filmname)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    take = counttakes(filmname, filmfolder, scene, shot)
+                    updatethumb = True
+                    rendermenu = True
+                    #loadfilmsettings = True
                     time.sleep(0.2)
-            elif pressed == 'remove' and menu[selected] == 'CAMERA:':
-                if camselected != 0:
-                    cameras.pop(camselected)
-                    newselected=0
-            elif pressed == 'middle' and menu[selected] == 'Add CAMERA':
-                if networks != []:
-                    newcamera = newcamera_ip(numbers_only, network)
-                    if newcamera != '':
-                        if newcamera not in cameras and newcamera not in networks:
-                            sendtocamera(newcamera,port,'NEWFILM:'+filmname)
-                            time.sleep(0.2)
-                            sendtocamera(newcamera,port,'Q:'+str(quality))
-                            time.sleep(0.2)
-                            sendtocamera(newcamera,port,'SHOT:'+str(shot))
-                            time.sleep(0.2)
-                            sendtocamera(newcamera,port,'SCENE:'+str(scene))
-                            time.sleep(0.2)
-                            sendtocamera(newcamera,port,'MAKEPLACEHOLDERS:'+str(scenes)+'|'+str(shots))
-                            cameras.append(newcamera)
-                            rendermenu = True
-                            #newselected=newselected+1
-                            camera_recording=None
-                            vumetermessage("New camera! "+newcamera)
-                else:
-                    vumetermessage('No network!')
-            elif 'SYNCIP:' in pressed:
-                msg = pressed.split(':')[1]
-                syncfolder=msg.split('|')[1]
-                ip = msg.split('|')[0]
-                vumetermessage('SYNCING!')
-                stopinterface(camera)
-                video_files=shotfiles(filmfolder, filmname, scene)
-                for i in video_files:
-                    compileshot(i,filmfolder,filmname)
-                    logger.info('SYNCING:'+i)
-                organize(filmfolder, filmname)
-                if not os.path.isfile('/home/pi/.ssh/id_rsa'):
-                    run_command('ssh-keygen')
-                run_command('ssh-copy-id pi@'+ip)
-                try:
-                    run_command('rsync -avr --update --progress --files-from='+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos --no-relative / pi@'+ip+':'+syncfolder+'.videos/')
-                except:
-                    logger.info('no origin videos')
-                #run_command('scp -r '+filmfolder+filmname+'/'+'scene'+str(scene).zfill(3)+' pi@'+ip+':'+filmfolder+filmname+'/')
-                sendtocamera(ip,port,'SYNCDONE:'+cameras[0]+'|'+filmfolder)
-                startinterface()
-                camera = startcamera(lens,fps)
-                loadfilmsettings = True
-                rendermenu = True
-            elif 'SYNCDONE:' in pressed:
-                stopinterface(camera)
-                msg = pressed.split(':')[1]
-                syncfolder=msg.split('|')[1]
-                ip = msg.split('|')[0]
-                logger.info('SYNCING from ip:'+ip)
-                run_command('ssh-copy-id pi@'+ip)
-                try:
-                    run_command('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
-                except:
-                    logger.info('no files')
-                with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
-                    if f:
-                        scene_origin_files = [line.rstrip() for line in f]
-                #a=0
-                #for i in cameras:
-                #    if a != 0:
-                #        run_command('rsync -avr --update --progress '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ pi@'+i+':'+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
-                #        time.sleep(3)
-                #    a=a+1
-                startinterface()
-                camera = startcamera(lens,fps)
-                loadfilmsettings = True
-                rendermenu = True
-                vumetermessage('SYNC DONE!')
-            elif 'RETAKE' in pressed:
-                pressed="retake_now"
-            elif 'RETAKE:' in pressed:
-                shot=pressed.split(':')[1]
-                shot=int(shot)
-                retake = True
-                pressed="retake_now"
-            elif 'SCENE:' in pressed:
-                scene=pressed.split(':')[1]
-                scene=int(scene)
-                shot = countshots(filmname, filmfolder, scene)
-                take = counttakes(filmname, filmfolder, scene, shot)
-            elif 'SHOT:' in pressed:
-                shot=pressed.split(':')[1]
-                shot=int(shot)
-                take = counttakes(filmname, filmfolder, scene, shot)
-            elif 'REMOVE:' in pressed:
-                scene=pressed.split(':')[1]
-                scene=int(scene)
-                shot = countshots(filmname, filmfolder, scene)
-                take = counttakes(filmname, filmfolder, scene, shot)
-                pressagain='remove_now'
-            elif 'Q:' in pressed:
-                qual=pressed.split(':')[1]
-                quality=int(qual)
-                vumetermessage('Quality changed to '+str(quality))
+                #shot
+                elif pressed == 'remove' and menu[selected] == 'SHOT:':
+                    remove(filmfolder, filmname, scene, shot, take, 'shot')
+                    organize(filmfolder, filmname)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    take = counttakes(filmname, filmfolder, scene, shot)
+                    updatethumb = True
+                    rendermenu = True
+                    #loadfilmsettings = True
+                    time.sleep(0.2)
+                #scene
+                elif pressed == 'remove' and menu[selected] == 'SCENE:' or pressed=='remove_now':
+                    remove(filmfolder, filmname, scene, shot, take, 'scene')
+                    organize(filmfolder, filmname)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    shot = countshots(filmname, filmfolder, scene)
+                    take = counttakes(filmname, filmfolder, scene, shot)
+                    updatethumb = True
+                    rendermenu = True
+                    #loadfilmsettings = True
+                    time.sleep(0.2)
+                #film
+                elif pressed == 'remove' and menu[selected] == 'FILM:':
+                    remove(filmfolder, filmname, scene, shot, take, 'film')
+                    filmname = getfilms(filmfolder)[0][0]
+                    if filmname == '':
+                        filmname = nameyourfilm(filmfolder,filmname,abc, True)
+                    else:
+                        scene, shot, take = countlast(filmname, filmfolder)
+                        loadfilmsettings = True
+                        updatethumb = True
+                        rendermenu = True
+                        time.sleep(0.2)
+                elif pressed == 'remove' and menu[selected] == 'CAMERA:':
+                    if camselected != 0:
+                        cameras.pop(camselected)
+                        newselected=0
+                elif pressed == 'middle' and menu[selected] == 'Add CAMERA':
+                    if networks != []:
+                        newcamera = newcamera_ip(numbers_only, network)
+                        if newcamera != '':
+                            if newcamera not in cameras and newcamera not in networks:
+                                sendtocamera(newcamera,port,'NEWFILM:'+filmname)
+                                time.sleep(0.2)
+                                sendtocamera(newcamera,port,'Q:'+str(quality))
+                                time.sleep(0.2)
+                                sendtocamera(newcamera,port,'SHOT:'+str(shot))
+                                time.sleep(0.2)
+                                sendtocamera(newcamera,port,'SCENE:'+str(scene))
+                                time.sleep(0.2)
+                                sendtocamera(newcamera,port,'MAKEPLACEHOLDERS:'+str(scenes)+'|'+str(shots))
+                                cameras.append(newcamera)
+                                rendermenu = True
+                                #newselected=newselected+1
+                                camera_recording=None
+                                vumetermessage("New camera! "+newcamera)
+                    else:
+                        vumetermessage('No network!')
+                elif 'SYNCIP:' in pressed:
+                    msg = pressed.split(':')[1]
+                    syncfolder=msg.split('|')[1]
+                    ip = msg.split('|')[0]
+                    vumetermessage('SYNCING!')
+                    stopinterface(camera)
+                    video_files=shotfiles(filmfolder, filmname, scene)
+                    for i in video_files:
+                        compileshot(i,filmfolder,filmname)
+                        logger.info('SYNCING:'+i)
+                    organize(filmfolder, filmname)
+                    if not os.path.isfile('/home/pi/.ssh/id_rsa'):
+                        run_command('ssh-keygen')
+                    run_command('ssh-copy-id pi@'+ip)
+                    try:
+                        run_command('rsync -avr --update --progress --files-from='+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos --no-relative / pi@'+ip+':'+syncfolder+'.videos/')
+                    except:
+                        logger.info('no origin videos')
+                    #run_command('scp -r '+filmfolder+filmname+'/'+'scene'+str(scene).zfill(3)+' pi@'+ip+':'+filmfolder+filmname+'/')
+                    sendtocamera(ip,port,'SYNCDONE:'+cameras[0]+'|'+filmfolder)
+                    startinterface()
+                    camera = startcamera(lens,fps)
+                    loadfilmsettings = True
+                    rendermenu = True
+                elif 'SYNCDONE:' in pressed:
+                    stopinterface(camera)
+                    msg = pressed.split(':')[1]
+                    syncfolder=msg.split('|')[1]
+                    ip = msg.split('|')[0]
+                    logger.info('SYNCING from ip:'+ip)
+                    run_command('ssh-copy-id pi@'+ip)
+                    try:
+                        run_command('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
+                    except:
+                        logger.info('no files')
+                    with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
+                        if f:
+                            scene_origin_files = [line.rstrip() for line in f]
+                    #a=0
+                    #for i in cameras:
+                    #    if a != 0:
+                    #        run_command('rsync -avr --update --progress '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ pi@'+i+':'+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
+                    #        time.sleep(3)
+                    #    a=a+1
+                    startinterface()
+                    camera = startcamera(lens,fps)
+                    loadfilmsettings = True
+                    rendermenu = True
+                    vumetermessage('SYNC DONE!')
+                elif 'RETAKE' in pressed:
+                    pressed="retake_now"
+                elif 'RETAKE:' in pressed:
+                    shot=pressed.split(':')[1]
+                    shot=int(shot)
+                    retake = True
+                    pressed="retake_now"
+                elif 'SCENE:' in pressed:
+                    scene=pressed.split(':')[1]
+                    scene=int(scene)
+                    shot = countshots(filmname, filmfolder, scene)
+                    take = counttakes(filmname, filmfolder, scene, shot)
+                elif 'SHOT:' in pressed:
+                    shot=pressed.split(':')[1]
+                    shot=int(shot)
+                    take = counttakes(filmname, filmfolder, scene, shot)
+                elif 'REMOVE:' in pressed:
+                    scene=pressed.split(':')[1]
+                    scene=int(scene)
+                    shot = countshots(filmname, filmfolder, scene)
+                    take = counttakes(filmname, filmfolder, scene, shot)
+                    pressagain='remove_now'
+                elif 'Q:' in pressed:
+                    qual=pressed.split(':')[1]
+                    quality=int(qual)
+                    vumetermessage('Quality changed to '+str(quality))
+                elif 'CAMERA:' in pressed:
+                    newselected_maybe=int(pressed.split(':')[1])
+                    if len(cameras) > newselected_maybe:
+                        newselected=newselected_maybe
+                elif 'MAKEPLACEHOLDERS:' in pressed:
+                    scenesshots=pressed.split(':')[1]
+                    pscene=int(scenesshots.split('|')[0])
+                    pshots=int(scenesshots.split('|')[1])
+                    #to not throw away empty shots, make placeholders
+                    for i in range(pshots):
+                        placeholders=filmfolder + filmname + '/scene' +  str(pscene).zfill(3) + '/shot' + str(i+1).zfill(3)
+                        try:
+                            os.makedirs(placeholders)
+                        except:
+                            logger.info('scene or shot already there!')
+                        run_command('touch ' + placeholders + '/.placeholder')
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
+                    rendermenu = True
+                    vumetermessage('CONNECTED TO MASTER TARINA!')
+            #SHOWTARINACTRL
+            if recordwithports: 
+                if pressed == 'middle' and menu[selected] == "New FILM":
+                    newfilmname = nameyourfilm(filmfolder, filmname, abc, True)
+                    a=0
+                    for i in cameras:
+                        if i not in camerasoff:
+                            sendtocamera(i,port,'NEWFILM:'+newfilmname)
+                        a=a+1
+                elif pressed == "retake":
+                    a=0
+                    for i in cameras:
+                        if i not in camerasoff:
+                            if a == camselected:
+                                if camera_recording == a:
+                                    if a==0:
+                                        if recording == True:
+                                            pressed="retake_now"
+                                            retake = True
+                                            camera_recording=None
+                                    else:
+                                        sendtocamera(i,port,'STOPRETAKE')
+                                    camera_recording=None
+                                else:
+                                    if a==0:
+                                        if recording == False:
+                                            pressed="retake_now"
+                                            retake = True
+                                            camera_recording=0
+                                    else:
+                                        sendtocamera(i,port,'RETAKE:'+str(shot))
+                                        camera_recording=camselected
+                            else:
+                                if a==0:
+                                    pressagain='insert_take'
+                                else:
+                                    sendtocamera(i,port,'TAKEPLACEHOLDER')
+                            a=a+1
+                elif pressed == "middle" and menu[selected]=="Sync SCENE":
+                    for i in cameras:
+                        if i != cameras[0]:
+                            vumetermessage('Hold on syncing!')
+                            sendtocamera(i,port,'SYNCIP:'+cameras[0]+'|'+filmfolder)
+                            time.sleep(1)
+                elif pressed == "middle" and menu[selected]=='New SCENE':
+                    a=0
+                    for i in cameras:
+                        if i not in camerasoff:
+                            if a==0:
+                                pressagain="new_scene"
+                            else:
+                                sendtocamera(i,port,'NEWSCENE')
+                        a=a+1
+                elif pressed == "record" and camera_recording != None:
+                    if camera_recording == 0:
+                        if recording == True:
+                            pressed='record_now'
+                    else:
+                        sendtocamera(cameras[camera_recording],port,'STOP')
+                    camera_recording=None
+                elif pressed == "record" and camera_recording == None:
+                    a=0
+                    for i in cameras:
+                        if i not in camerasoff:
+                            if a == camselected:
+                                if camselected==0:
+                                    pressed='record_now'
+                                else:
+                                    sendtocamera(i,port,'REC')
+                                camera_recording=camselected
+                            else:
+                                if a==0:
+                                    pressagain='insert_shot'
+                                else:
+                                    sendtocamera(i,port,'PLACEHOLDER')
+                            a=a+1
+                elif pressed == "remove" and menu[selected]=='SCENE:':
+                    a=0
+                    for i in cameras:
+                        if a!=0:
+                            sendtocamera(i,port,'REMOVE:'+str(scene))
+                        a=a+1
+                elif pressed == "up" and menu[selected]=='SCENE:':
+                    a=0
+                    for i in cameras:
+                        if a!=0:
+                            sendtocamera(i,port,'SCENE:'+str(scene+1))
+                        a=a+1
+                elif pressed == "down" and menu[selected]=='SCENE:':
+                    a=0
+                    for i in cameras:
+                        if a!=0:
+                            sendtocamera(i,port,'SCENE:'+str(scene-1))
+                        a=a+1
+                elif pressed == "up" and menu[selected]=='SHOT:':
+                    a=0
+                    for i in cameras:
+                        if a!=0:
+                            sendtocamera(i,port,'SHOT:'+str(shot+1))
+                        a=a+1
+                elif pressed == "down" and menu[selected]=='SHOT:':
+                    a=0
+                    for i in cameras:
+                        if a!=0:
+                            sendtocamera(i,port,'SHOT:'+str(shot-1))
+                        a=a+1
+                elif pressed == "up" and menu[selected]=='Q:':
+                    a=0
+                    for i in cameras:
+                        if a!=0:
+                            sendtocamera(i,port,'Q:'+str(quality+1))
+                        a=a+1
+                elif pressed == "down" and menu[selected]=='Q:':
+                    a=0
+                    for i in cameras:
+                        if a!=0:
+                            sendtocamera(i,port,'Q:'+str(quality-1))
+                        a=a+1
+                elif event == "0":
+                    newselected = 0
+                elif event == "1":
+                    if len(cameras) > 1:
+                        newselected = 1
+                elif event == "2":
+                    if len(cameras) > 2:
+                        newselected = 2
+                elif event == "3":
+                    if len(cameras) > 3:
+                        newselected = 3
+                elif event == "4":
+                    if len(cameras) > 4:
+                        newselected = 4
+                elif event == "5":
+                    if len(cameras) > 5:
+                        newselected = 5
+                elif event == "6":
+                    if len(cameras) > 6:
+                        newselected = 6
+                elif event == "7":
+                    if len(cameras) > 7:
+                        newselected = 7
+                elif event == "8":
+                    if len(cameras) > 8:
+                        newselected = 8
+                elif event == "9":
+                    if len(cameras) > 9:
+                        newselected = 9
+                elif event == "-":
+                    if cameras[camselected] not in camerasoff:
+                        camerasoff.append(cameras[camselected])
+                elif event == "+":
+                    if cameras[camselected] in camerasoff:
+                        camerasoff.remove(cameras[camselected])
+                elif camselected != newselected:
+                    if camera_recording != None:
+                        #change camera
+                        a=0
+                        for c in cameras:
+                            if c not in camerasoff:
+                                if a == camselected:
+                                    if a == 0:
+                                        #pressed='record_now'
+                                        #pressagain='insert_shot'
+                                        delayedstop=c
+                                    else:
+                                        #sendtocamera(c,port,'STOP')
+                                        #time.sleep(sleep)
+                                        #sendtocamera(c,port,'PLACEHOLDER')
+                                        delayedstop=c
+                                elif a == newselected:
+                                    if a == 0:
+                                        if recording == False:
+                                            pressed='record_now'
+                                    else:
+                                        sendtocamera(c,port,'REC')
+                                    camera_recording=newselected
+                                else:
+                                    if a == 0:
+                                        pressagain='insert_shot'
+                                    else:
+                                        sendtocamera(c,port,'PLACEHOLDER')
+                                    #time.sleep(2)
+                                a=a+1
+                        if delayedstop:
+                            time.sleep(0.05)
+                            if delayedstop==cameras[0]:
+                                if recording == True:
+                                    pressed='record_now'
+                                pressagain='insert_shot'
+                            else:
+                                sendtocamera(delayedstop,port,'STOP')
+                                time.sleep(sleep)
+                                sendtocamera(delayedstop,port,'PLACEHOLDER')
+                    camselected=newselected
+                    rendermenu = True
+                    #vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected+' camselected:'+str(camselected))
+                    if len(cameras) > 1:
+                        vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
+                    else:
+                        vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
+
+
+            #RECORD AND PAUSE
+            if beepcountdown > 1:
+                if time.time() - lastbeep  > 1:
+                    beep(bus)
+                    beepcountdown -= 1
+                    lastbeep = time.time()
+                    logger.info('beepcountdown: ' + str(beepcountdown))
+                    vumetermessage('Filming in ' + str(beepcountdown) + ' seconds, press record again to cancel       ')
+            elif beepcountdown > 0:
+                if time.time() - float(lastbeep) > 0.1:
+                    beep(bus)
+                    vumetermessage('Get ready!!')
+                if time.time() - lastbeep > 1:
+                    longbeep(bus)
+                    beepcountdown = 0
+                    if recordwithports == True:
+                        if retake == True:
+                            pressed = 'retake_now'
+                            retake = False
+                        else:
+                            pressed = 'record_now'
+                    else:
+                        pressed = 'record'
+                    print('exhausted from all beepings')
             elif 'CAMERA:' in pressed:
                 newselected_maybe=int(pressed.split(':')[1])
                 if len(cameras) > newselected_maybe:
                     newselected=newselected_maybe
-            elif 'MAKEPLACEHOLDERS:' in pressed:
-                scenesshots=pressed.split(':')[1]
-                pscene=int(scenesshots.split('|')[0])
-                pshots=int(scenesshots.split('|')[1])
-                #to not throw away empty shots, make placeholders
-                for i in range(pshots):
-                    placeholders=filmfolder + filmname + '/scene' +  str(pscene).zfill(3) + '/shot' + str(i+1).zfill(3)
-                    try:
-                        os.makedirs(placeholders)
-                    except:
-                        logger.info('scene or shot already there!')
-                    run_command('touch ' + placeholders + '/.placeholder')
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
-                rendermenu = True
-                vumetermessage('CONNECTED TO MASTER TARINA!')
-        #SHOWTARINACTRL
-        if recordwithports: 
-            if pressed == 'middle' and menu[selected] == "New FILM":
-                newfilmname = nameyourfilm(filmfolder, filmname, abc, True)
-                a=0
-                for i in cameras:
-                    if i not in camerasoff:
-                        sendtocamera(i,port,'NEWFILM:'+newfilmname)
-                    a=a+1
-            elif pressed == "retake":
-                a=0
-                for i in cameras:
-                    if i not in camerasoff:
-                        if a == camselected:
-                            if camera_recording == a:
-                                if a==0:
-                                    if recording == True:
-                                        pressed="retake_now"
-                                        retake = True
-                                        camera_recording=None
-                                else:
-                                    sendtocamera(i,port,'STOPRETAKE')
-                                camera_recording=None
-                            else:
-                                if a==0:
-                                    if recording == False:
-                                        pressed="retake_now"
-                                        retake = True
-                                        camera_recording=0
-                                else:
-                                    sendtocamera(i,port,'RETAKE:'+str(shot))
-                                    camera_recording=camselected
+            if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclenght != 0 and t > reclenght:
+                overlay = removeimage(camera, overlay)
+                if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
+                    #camera_recording=0
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
+                    if pressed == "record":
+                        #shot = shots+1
+                        take = takes+1
+                    elif pressed == "retake":
+                        take = takes+1
+                    elif pressed == 'record_now':
+                        shot=shots+1
+                        take=1
+                    elif pressed == 'retake_now':
+                        takes = counttakes(filmname, filmfolder, scene, shot)
+                        take = takes + 1
+                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    filename = 'take' + str(take).zfill(3)
+                    if beeps > 0 and beeping == False:
+                        beeping = True
+                        beepcountdown = beeps
+                    elif beepcountdown == 0:
+                        beeping = False
+                        if os.path.isdir(foldername) == False:
+                            os.makedirs(foldername)
+                        if cammode == 'film':
+                            videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+                            tot = int(videos_totalt.videos)
+                            video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
+                            db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolenght=0, videolenght=0)
+                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D dsnoop:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
+                            sound_start = time.time()
+                            if onlysound != True:
+                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel)
+                                starttime = time.time()
+                            os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
+                            recording = True
+                            showmenu = 0
+                        if cammode == 'picture':
+                            #picdate=datetime.datetime.now().strftime('%Y%d%m')
+                            picture = foldername +'picture' + str(take).zfill(3) + '.jpeg'
+                            print('taking picture')
+                            camera.capture(picture,format="jpeg",use_video_port=True) 
+                            run_command('touch ' + foldername + 'take' + str(take).zfill(3) + '.mp4')
+                            basewidth = 800
+                            img = Image.open(picture)
+                            wpercent = (basewidth/float(img.size[0]))
+                            hsize = int((float(img.size[1])*float(wpercent)))
+                            img = img.resize((basewidth,hsize), Image.ANTIALIAS)
+                            img.save(foldername+'take'+str(take).zfill(3) + '.jpeg')
+                            vumetermessage('Great Pic taken!!')
+                            updatethumb = True
+                    elif beepcountdown > 0 and beeping == True:
+                        beeping = False
+                        beepcountdown = 0
+                        vumetermessage('Filming was canceled!!')
+                elif recording == True and float(time.time() - starttime) > 0.2:
+                    #print(term.clear+term.home)
+                    disk = os.statvfs(filmfolder)
+                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                    recording = False
+                    if showmenu_settings == True:
+                        showmenu = 1
+                    if onlysound != True:
+                        camera.stop_recording()
+                    os.system('pkill arecord')
+                    soundlag=starttime-sound_start
+                    db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
+                    #time.sleep(0.005) #get audio at least 0.1 longer
+                    #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
+                    if onlysound != True:
+                        try:
+                            #camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
+                            camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                        except:
+                            logger.warning('something wrong with camera jpeg capture')
+                    #delayerr = audiotrim(foldername,filename)
+                    onlysound = False
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if beeps > 0:
+                        if bus:
+                            buzz(300)
                         else:
-                            if a==0:
-                                pressagain='insert_take'
-                            else:
-                                sendtocamera(i,port,'TAKEPLACEHOLDER')
-                        a=a+1
-            elif pressed == "middle" and menu[selected]=="Sync SCENE":
-                for i in cameras:
-                    if i != cameras[0]:
-                        vumetermessage('Hold on syncing!')
-                        sendtocamera(i,port,'SYNCIP:'+cameras[0]+'|'+filmfolder)
-                        time.sleep(1)
-            elif pressed == "middle" and menu[selected]=='New SCENE':
-                a=0
-                for i in cameras:
-                    if i not in camerasoff:
-                        if a==0:
-                            pressagain="new_scene"
+                            run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
+                    if round(fps) != 25:
+                        compileshot(foldername + filename,filmfolder,filmname)
+                    #os.system('cp /dev/shm/' + filename + '.wav ' + foldername + filename + '.wav')
+                    if beeps > 0:
+                        if bus:
+                            buzz(150)
                         else:
-                            sendtocamera(i,port,'NEWSCENE')
-                    a=a+1
-            elif pressed == "record" and camera_recording != None:
-                if camera_recording == 0:
-                    if recording == True:
-                        pressed='record_now'
-                else:
-                    sendtocamera(cameras[camera_recording],port,'STOP')
-                camera_recording=None
-            elif pressed == "record" and camera_recording == None:
-                a=0
-                for i in cameras:
-                    if i not in camerasoff:
-                        if a == camselected:
-                            if camselected==0:
-                                pressed='record_now'
-                            else:
-                                sendtocamera(i,port,'REC')
-                            camera_recording=camselected
-                        else:
-                            if a==0:
-                                pressagain='insert_shot'
-                            else:
-                                sendtocamera(i,port,'PLACEHOLDER')
-                        a=a+1
-            elif pressed == "remove" and menu[selected]=='SCENE:':
-                a=0
-                for i in cameras:
-                    if a!=0:
-                        sendtocamera(i,port,'REMOVE:'+str(scene))
-                    a=a+1
-            elif pressed == "up" and menu[selected]=='SCENE:':
-                a=0
-                for i in cameras:
-                    if a!=0:
-                        sendtocamera(i,port,'SCENE:'+str(scene+1))
-                    a=a+1
-            elif pressed == "down" and menu[selected]=='SCENE:':
-                a=0
-                for i in cameras:
-                    if a!=0:
-                        sendtocamera(i,port,'SCENE:'+str(scene-1))
-                    a=a+1
-            elif pressed == "up" and menu[selected]=='SHOT:':
-                a=0
-                for i in cameras:
-                    if a!=0:
-                        sendtocamera(i,port,'SHOT:'+str(shot+1))
-                    a=a+1
-            elif pressed == "down" and menu[selected]=='SHOT:':
-                a=0
-                for i in cameras:
-                    if a!=0:
-                        sendtocamera(i,port,'SHOT:'+str(shot-1))
-                    a=a+1
-            elif pressed == "up" and menu[selected]=='Q:':
-                a=0
-                for i in cameras:
-                    if a!=0:
-                        sendtocamera(i,port,'Q:'+str(quality+1))
-                    a=a+1
-            elif pressed == "down" and menu[selected]=='Q:':
-                a=0
-                for i in cameras:
-                    if a!=0:
-                        sendtocamera(i,port,'Q:'+str(quality-1))
-                    a=a+1
-            elif event == "0":
-                newselected = 0
-            elif event == "1":
-                if len(cameras) > 1:
-                    newselected = 1
-            elif event == "2":
-                if len(cameras) > 2:
-                    newselected = 2
-            elif event == "3":
-                if len(cameras) > 3:
-                    newselected = 3
-            elif event == "4":
-                if len(cameras) > 4:
-                    newselected = 4
-            elif event == "5":
-                if len(cameras) > 5:
-                    newselected = 5
-            elif event == "6":
-                if len(cameras) > 6:
-                    newselected = 6
-            elif event == "7":
-                if len(cameras) > 7:
-                    newselected = 7
-            elif event == "8":
-                if len(cameras) > 8:
-                    newselected = 8
-            elif event == "9":
-                if len(cameras) > 9:
-                    newselected = 9
-            elif event == "-":
-                if cameras[camselected] not in camerasoff:
-                    camerasoff.append(cameras[camselected])
-            elif event == "+":
-                if cameras[camselected] in camerasoff:
-                    camerasoff.remove(cameras[camselected])
-            elif camselected != newselected:
-                if camera_recording != None:
-                    #change camera
-                    a=0
-                    for c in cameras:
-                        if c not in camerasoff:
-                            if a == camselected:
-                                if a == 0:
-                                    #pressed='record_now'
-                                    #pressagain='insert_shot'
-                                    delayedstop=c
-                                else:
-                                    #sendtocamera(c,port,'STOP')
-                                    #time.sleep(sleep)
-                                    #sendtocamera(c,port,'PLACEHOLDER')
-                                    delayedstop=c
-                            elif a == newselected:
-                                if a == 0:
-                                    if recording == False:
-                                        pressed='record_now'
-                                else:
-                                    sendtocamera(c,port,'REC')
-                                camera_recording=newselected
-                            else:
-                                if a == 0:
-                                    pressagain='insert_shot'
-                                else:
-                                    sendtocamera(c,port,'PLACEHOLDER')
-                                #time.sleep(2)
-                            a=a+1
-                    if delayedstop:
-                        time.sleep(0.05)
-                        if delayedstop==cameras[0]:
-                            if recording == True:
-                                pressed='record_now'
-                            pressagain='insert_shot'
-                        else:
-                            sendtocamera(delayedstop,port,'STOP')
-                            time.sleep(sleep)
-                            sendtocamera(delayedstop,port,'PLACEHOLDER')
-                camselected=newselected
-                rendermenu = True
-                #vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected+' camselected:'+str(camselected))
-                if len(cameras) > 1:
-                    vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
-                else:
-                    vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
-
-
-        #RECORD AND PAUSE
-        if beepcountdown > 1:
-            if time.time() - lastbeep  > 1:
-                beep(bus)
-                beepcountdown -= 1
-                lastbeep = time.time()
-                logger.info('beepcountdown: ' + str(beepcountdown))
-                vumetermessage('Filming in ' + str(beepcountdown) + ' seconds, press record again to cancel       ')
-        elif beepcountdown > 0:
-            if time.time() - float(lastbeep) > 0.1:
-                beep(bus)
-                vumetermessage('Get ready!!')
-            if time.time() - lastbeep > 1:
-                longbeep(bus)
-                beepcountdown = 0
-                if recordwithports == True:
-                    if retake == True:
-                        pressed = 'retake_now'
-                        retake = False
-                    else:
-                        pressed = 'record_now'
-                else:
-                    pressed = 'record'
-                print('exhausted from all beepings')
-        elif 'CAMERA:' in pressed:
-            newselected_maybe=int(pressed.split(':')[1])
-            if len(cameras) > newselected_maybe:
-                newselected=newselected_maybe
-        if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclenght != 0 and t > reclenght:
-            overlay = removeimage(camera, overlay)
-            if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
-                #camera_recording=0
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
-                if pressed == "record":
-                    #shot = shots+1
-                    take = takes+1
-                elif pressed == "retake":
-                    take = takes+1
-                elif pressed == 'record_now':
+                            run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
+                    t = 0
+                    rectime = ''
+                    vumetermessage('Gonzopi ' + gonzopiversion[:-1] + ' ' + gonzopivername[:-1])
+                    updatethumb = True
+                    #camera_recording=0
+                #if not in last shot or take then go to it
+                if pressed == 'record' and recordable == False:
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     shot=shots+1
                     take=1
-                elif pressed == 'retake_now':
+                    #take = takes
+                    #takes = counttakes(filmname, filmfolder, scene, shot)
+                if pressed == 'retake' and recordable == False:
+                    #scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     takes = counttakes(filmname, filmfolder, scene, shot)
+                    #take = takes
+                    #takes = counttakes(filmname, filmfolder, scene, shot)
                     take = takes + 1
-                foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                filename = 'take' + str(take).zfill(3)
-                if beeps > 0 and beeping == False:
-                    beeping = True
-                    beepcountdown = beeps
-                elif beepcountdown == 0:
-                    beeping = False
-                    if os.path.isdir(foldername) == False:
-                        os.makedirs(foldername)
-                    if cammode == 'film':
-                        videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
-                        tot = int(videos_totalt.videos)
-                        video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
-                        db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolenght=0, videolenght=0)
-                        os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D dsnoop:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
-                        sound_start = time.time()
-                        if onlysound != True:
-                            camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel)
-                            starttime = time.time()
-                        os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
-                        recording = True
-                        showmenu = 0
-                    if cammode == 'picture':
-                        #picdate=datetime.datetime.now().strftime('%Y%d%m')
-                        picture = foldername +'picture' + str(take).zfill(3) + '.jpeg'
-                        print('taking picture')
-                        camera.capture(picture,format="jpeg",use_video_port=True) 
-                        run_command('touch ' + foldername + 'take' + str(take).zfill(3) + '.mp4')
-                        basewidth = 800
-                        img = Image.open(picture)
-                        wpercent = (basewidth/float(img.size[0]))
-                        hsize = int((float(img.size[1])*float(wpercent)))
-                        img = img.resize((basewidth,hsize), Image.ANTIALIAS)
-                        img.save(foldername+'take'+str(take).zfill(3) + '.jpeg')
-                        vumetermessage('Great Pic taken!!')
-                        updatethumb = True
-                elif beepcountdown > 0 and beeping == True:
-                    beeping = False
-                    beepcountdown = 0
-                    vumetermessage('Filming was canceled!!')
-            elif recording == True and float(time.time() - starttime) > 0.2:
-                #print(term.clear+term.home)
-                disk = os.statvfs(filmfolder)
-                diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                recording = False
-                if showmenu_settings == True:
-                    showmenu = 1
-                if onlysound != True:
-                    camera.stop_recording()
-                os.system('pkill arecord')
-                soundlag=starttime-sound_start
-                db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
-                #time.sleep(0.005) #get audio at least 0.1 longer
-                #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
-                if onlysound != True:
-                    try:
-                        #camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
-                        camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
-                    except:
-                        logger.warning('something wrong with camera jpeg capture')
-                #delayerr = audiotrim(foldername,filename)
-                onlysound = False
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                if beeps > 0:
-                    if bus:
-                        buzz(300)
-                    else:
-                        run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
-                if round(fps) != 25:
-                    compileshot(foldername + filename,filmfolder,filmname)
-                #os.system('cp /dev/shm/' + filename + '.wav ' + foldername + filename + '.wav')
-                if beeps > 0:
-                    if bus:
-                        buzz(150)
-                    else:
-                        run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
-                t = 0
-                rectime = ''
-                vumetermessage('Gonzopi ' + gonzopiversion[:-1] + ' ' + gonzopivername[:-1])
-                updatethumb = True
-                #camera_recording=0
-            #if not in last shot or take then go to it
-            if pressed == 'record' and recordable == False:
-                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                shot=shots+1
-                take=1
-                #take = takes
-                #takes = counttakes(filmname, filmfolder, scene, shot)
-            if pressed == 'retake' and recordable == False:
-                #scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                takes = counttakes(filmname, filmfolder, scene, shot)
-                #take = takes
-                #takes = counttakes(filmname, filmfolder, scene, shot)
-                take = takes + 1
-        #ENTER (auto shutter, iso, awb on/off)
-        elif pressed == 'middle' and menu[selected] == 'SHUTTER:':
-            if camera.shutter_speed == 0:
-                camera.shutter_speed = camera.exposure_speed
-            else:
-                camera.shutter_speed = 0
-        elif pressed == 'middle' and menu[selected] == 'ISO:':
-            if camera.iso == 0:
-                camera.iso = 100
-            else:
-                camera.iso = 0
-        elif pressed == 'middle' and menu[selected] == 'RED:':
-            if camera.awb_mode == 'auto':
-                camera.awb_gains = (float(camera.awb_gains[0]), float(camera.awb_gains[1]))
-                camera.awb_mode = 'off'
-            else:
-                camera.awb_mode = 'auto'
-        elif pressed == 'middle' and menu[selected] == 'BLUE:':
-            if camera.awb_mode == 'auto':
-                camera.awb_gains = (float(camera.awb_gains[0]), float(camera.awb_gains[1]))
-                camera.awb_mode = 'off'
-            else:
-                camera.awb_mode = 'auto'
-        elif pressed == 'middle' and menu[selected] == 'BEEP:':
-            beeps = 0
-        elif pressed == 'middle' and menu[selected] == 'LENGTH:':
-            reclenght = 0
-        elif pressed == 'middle' and menu[selected] == 'LIVE:':
-            if stream == '':
-                stream = startstream(camera, stream, plughw, channels)
+            #ENTER (auto shutter, iso, awb on/off)
+            elif pressed == 'middle' and menu[selected] == 'SHUTTER:':
+                if camera.shutter_speed == 0:
+                    camera.shutter_speed = camera.exposure_speed
+                else:
+                    camera.shutter_speed = 0
+            elif pressed == 'middle' and menu[selected] == 'ISO:':
+                if camera.iso == 0:
+                    camera.iso = 100
+                else:
+                    camera.iso = 0
+            elif pressed == 'middle' and menu[selected] == 'RED:':
+                if camera.awb_mode == 'auto':
+                    camera.awb_gains = (float(camera.awb_gains[0]), float(camera.awb_gains[1]))
+                    camera.awb_mode = 'off'
+                else:
+                    camera.awb_mode = 'auto'
+            elif pressed == 'middle' and menu[selected] == 'BLUE:':
+                if camera.awb_mode == 'auto':
+                    camera.awb_gains = (float(camera.awb_gains[0]), float(camera.awb_gains[1]))
+                    camera.awb_mode = 'off'
+                else:
+                    camera.awb_mode = 'auto'
+            elif pressed == 'middle' and menu[selected] == 'BEEP:':
+                beeps = 0
+            elif pressed == 'middle' and menu[selected] == 'LENGTH:':
+                reclenght = 0
+            elif pressed == 'middle' and menu[selected] == 'LIVE:':
                 if stream == '':
-                    vumetermessage('something wrong with streaming')
+                    stream = startstream(camera, stream, plughw, channels)
+                    if stream == '':
+                        vumetermessage('something wrong with streaming')
+                    else:
+                        live = 'yes'
                 else:
-                    live = 'yes'
-            else:
-                stream = stopstream(camera, stream)
-                live = 'no'
-        elif pressed == 'middle' and menu[selected] == 'BRIGHT:':
-            camera.brightness = 50
-        elif pressed == 'middle' and menu[selected] == 'CONT:':
-            camera.contrast = 0
-        elif pressed == 'middle' and menu[selected] == 'SAT:':
-            camera.saturation = 0
-        elif pressed == 'middle' and menu[selected] == 'MIC:':
-            miclevel  = 70
-        elif pressed == 'middle' and menu[selected] == 'PHONES:':
-            headphoneslevel = 70
-        elif pressed == 'middle' and menu[selected] == 'SRV:':
-            if showgonzopictrl == False:
-                menu=gonzopictrlmenu
-                #selected=0
-                showgonzopictrl = True
-            else:
-                menu=standardmenu
-                showgonzopictrl=False
+                    stream = stopstream(camera, stream)
+                    live = 'no'
+            elif pressed == 'middle' and menu[selected] == 'BRIGHT:':
+                camera.brightness = 50
+            elif pressed == 'middle' and menu[selected] == 'CONT:':
+                camera.contrast = 0
+            elif pressed == 'middle' and menu[selected] == 'SAT:':
+                camera.saturation = 0
+            elif pressed == 'middle' and menu[selected] == 'MIC:':
+                miclevel  = 70
+            elif pressed == 'middle' and menu[selected] == 'PHONES:':
+                headphoneslevel = 70
+            elif pressed == 'middle' and menu[selected] == 'SRV:':
+                if showgonzopictrl == False:
+                    menu=gonzopictrlmenu
+                    #selected=0
+                    showgonzopictrl = True
+                else:
+                    menu=standardmenu
+                    showgonzopictrl=False
 
-        #UP
-        elif pressed == 'up':
-            if menu[selected] == 'FILM:':
-                filmname = loadfilm(filmname, filmfolder, camera, overlay)
-                loadfilmsettings = True
-            if menu[selected] == 'BRIGHT:':
-                camera.brightness = min(camera.brightness + 1, 99)
-            elif menu[selected] == 'CONT:':
-                camera.contrast = min(camera.contrast + 1, 99)
-            elif menu[selected] == 'SAT:':
-                camera.saturation = min(camera.saturation + 1, 99)
-            elif menu[selected] == 'SFX:':
-                if effectselected < len(effects) - 1:
-                    effectselected += 1
-                    camera.image_effect = effects[effectselected]
-            elif menu[selected] == 'SHUTTER:':
-                if camera.shutter_speed == 0:
-                    camera.shutter_speed = camera.exposure_speed
-                if camera.shutter_speed < 5000:
-                    camera.shutter_speed = min(camera.shutter_speed + 50, 50000)
-                else:
-                    camera.shutter_speed = min(camera.shutter_speed + 200, 50000)
-            elif menu[selected] == 'ISO:':
-                camera.iso = min(camera.iso + 100, 1600)
-            elif menu[selected] == 'BEEP:':
-                beeps = beeps + 1
-            elif menu[selected] == 'FLIP:':
-                if flip == 'yes':
-                    camera.hflip = False
-                    camera.vflip = False
-                    flip = 'no'
-                    time.sleep(0.2)
-                else:
-                    camera.hflip = True
-                    camera.vflip = True
-                    flip = 'yes'
-                    time.sleep(0.2)
-            elif menu[selected] == 'LENGTH:':
-                if reclenght < 1:
-                    reclenght = reclenght + 0.2
-                else:
-                    reclenght = int(reclenght + 1)
-                time.sleep(0.1)
-            elif menu[selected] == 'MIC:':
-                if miclevel < 100:
-                    miclevel = miclevel + 2
-                    run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
-            elif menu[selected] == 'PHONES:':
-                if headphoneslevel < 100:
-                    headphoneslevel = headphoneslevel + 2
-                    run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
-            elif menu[selected] == 'SCENE:' and recording == False:
-                if scene <= scenes:
-                    scene += 1
-                    #shot = countshots(filmname, filmfolder, scene)
-                    shot = 1
-                    take = counttakes(filmname, filmfolder, scene, shot)
-                #scene, shots, takes = browse2(filmname, filmfolder, scene, shot, take, 0, 1)
-                #shot = 1
-            elif menu[selected] == 'SHOT:' and recording == False:
-                if shot <= shots:
-                    shot += 1
-                    take = counttakes(filmname, filmfolder, scene, shot)
-                #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, 1)
-                #takes = take
-            elif menu[selected] == 'TAKE:' and recording == False:
-                if take <= takes:
-                    take += 1
-                #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, 1)
-            elif menu[selected] == 'RED:':
-                camera.awb_mode = 'off'
-                if float(camera.awb_gains[0]) < 7.98:
-                    camera.awb_gains = (round(camera.awb_gains[0],2) + 0.02, round(camera.awb_gains[1],2))
-            elif menu[selected] == 'BLUE:':
-                camera.awb_mode = 'off'
-                if float(camera.awb_gains[1]) < 7.98:
-                    camera.awb_gains = (round(camera.awb_gains[0],2), round(camera.awb_gains[1],2) + 0.02)
-            elif menu[selected] == 'SRV:':
-                if serverstate == 'on':
-                    try:
-                        os.makedirs(gonzopifolder+'/srv/sessions')
-                        os.system('chown www-data '+gonzopifolder+'/srv/sessions')
-                    except:
-                        print('srv folder exist')
-                    serverstate = 'false'
-                    serverstate = gonzopiserver(False)
-                elif serverstate == 'off':
-                    serverstate = 'on'
-                    serverstate = gonzopiserver(True)
-            elif menu[selected] == 'WIFI:':
-                if wifistate == 'on':
-                    run_command('sudo iwconfig wlan0 txpower off')
-                    wifistate = 'off'
-                elif wifistate == 'off':
-                    run_command('sudo iwconfig wlan0 txpower auto')
-                    wifistate = 'on'
-            elif menu[selected] == 'SEARCH:':
-                if searchforcameras == 'on':
-                    searchforcameras = 'off'
-                elif searchforcameras == 'off':
-                    searchforcameras = 'on'
-            elif menu[selected] == 'MODE:':
-                if cammode == 'film':
-                    cammode = 'picture'
-                    vumetermessage('changing to picture mode')
-                elif cammode == 'picture':
-                    cammode = 'film'
-                    vumetermessage('changing to film mode')
-                camera.stop_preview()
-                camera.close()
-                camera = startcamera(lens,fps)
-                loadfilmsettings = True
-                flushbutton()
-            elif menu[selected] == 'LENS:':
-                s = 0
-                for a in lenses:
-                    if a == lens:
-                        selectlens = s
-                    s += 1
-                if selectlens < len(lenses) - 1:
-                    selectlens += 1
-                lens = os.listdir('lenses/')[selectlens]
-                #npzfile = np.load('lenses/' + lens)
-                #lensshade = npzfile['lens_shading_table']
-                table = read_table('lenses/' + lens)
-                camera.lens_shading_table = table
-            elif menu[selected] == 'COMP:':
-                if comp < 1:
-                    comp += 1
-            elif menu[selected] == 'HW:':
-                if plughw < len(getaudiocards())-1:
-                    plughw += 1
-                vumetermessage(getaudiocards()[plughw])
-            elif menu[selected] == 'CH:':
-                if channels == 1:
-                    channels = 2
-            elif menu[selected] == 'FPS:':
-                if fps_selected < len(fps_selection)-1:
-                    fps_selected+=1
-                    fps=fps_selection[fps_selected]
-                    camera.framerate = fps
-            elif menu[selected] == 'Q:':
-                if scenes == 0:
-                    if quality < 39:
-                        quality += 1
-            elif menu[selected] == 'CAMERA:':
-                if camselected < len(cameras)-1:
-                    newselected = camselected+1
-                    logger.info('camera selected:'+str(camselected))
-            elif menu[selected] == 'DSK:':
-                if dsk+1 < len(storagedrives):
-                    dsk += 1
-                    filmfolder = storagedrives[dsk][1]
+            #UP
+            elif pressed == 'up':
+                if menu[selected] == 'FILM:':
+                    filmname = loadfilm(filmname, filmfolder, camera, overlay)
                     loadfilmsettings = True
-                    #COUNT DISKSPACE
-                    disk = os.statvfs(filmfolder)
-                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                    #LOAD FILM AND SCENE SETTINGS
-                    try:
-                        filmname = getfilms(filmfolder)[0][0]
-                    except:
-                        filmname = filmname 
-                    try:
-                        filmname_back = getfilms(filmfolder)[0][1]
-                    except:
-                        filmname_back = filmname
+                if menu[selected] == 'BRIGHT:':
+                    camera.brightness = min(camera.brightness + 1, 99)
+                elif menu[selected] == 'CONT:':
+                    camera.contrast = min(camera.contrast + 1, 99)
+                elif menu[selected] == 'SAT:':
+                    camera.saturation = min(camera.saturation + 1, 99)
+                elif menu[selected] == 'SFX:':
+                    if effectselected < len(effects) - 1:
+                        effectselected += 1
+                        camera.image_effect = effects[effectselected]
+                elif menu[selected] == 'SHUTTER:':
+                    if camera.shutter_speed == 0:
+                        camera.shutter_speed = camera.exposure_speed
+                    if camera.shutter_speed < 5000:
+                        camera.shutter_speed = min(camera.shutter_speed + 50, 50000)
+                    else:
+                        camera.shutter_speed = min(camera.shutter_speed + 200, 50000)
+                elif menu[selected] == 'ISO:':
+                    camera.iso = min(camera.iso + 100, 1600)
+                elif menu[selected] == 'BEEP:':
+                    beeps = beeps + 1
+                elif menu[selected] == 'FLIP:':
+                    if flip == 'yes':
+                        camera.hflip = False
+                        camera.vflip = False
+                        flip = 'no'
+                        time.sleep(0.2)
+                    else:
+                        camera.hflip = True
+                        camera.vflip = True
+                        flip = 'yes'
+                        time.sleep(0.2)
+                elif menu[selected] == 'LENGTH:':
+                    if reclenght < 1:
+                        reclenght = reclenght + 0.2
+                    else:
+                        reclenght = int(reclenght + 1)
+                    time.sleep(0.1)
+                elif menu[selected] == 'MIC:':
+                    if miclevel < 100:
+                        miclevel = miclevel + 2
+                        run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
+                elif menu[selected] == 'PHONES:':
+                    if headphoneslevel < 100:
+                        headphoneslevel = headphoneslevel + 2
+                        run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+                elif menu[selected] == 'SCENE:' and recording == False:
+                    if scene <= scenes:
+                        scene += 1
+                        #shot = countshots(filmname, filmfolder, scene)
+                        shot = 1
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                    #scene, shots, takes = browse2(filmname, filmfolder, scene, shot, take, 0, 1)
+                    #shot = 1
+                elif menu[selected] == 'SHOT:' and recording == False:
+                    if shot <= shots:
+                        shot += 1
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                    #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, 1)
+                    #takes = take
+                elif menu[selected] == 'TAKE:' and recording == False:
+                    if take <= takes:
+                        take += 1
+                    #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, 1)
+                elif menu[selected] == 'RED:':
+                    camera.awb_mode = 'off'
+                    if float(camera.awb_gains[0]) < 7.98:
+                        camera.awb_gains = (round(camera.awb_gains[0],2) + 0.02, round(camera.awb_gains[1],2))
+                elif menu[selected] == 'BLUE:':
+                    camera.awb_mode = 'off'
+                    if float(camera.awb_gains[1]) < 7.98:
+                        camera.awb_gains = (round(camera.awb_gains[0],2), round(camera.awb_gains[1],2) + 0.02)
+                elif menu[selected] == 'SRV:':
                     if serverstate == 'on':
-                        gonzopiserver(False)
-                        gonzopiserver(True)
-
-        #LEFT
-        elif pressed == 'left':
-            if selected > 0:
-                selected = selected - 1
-            else:
-                selected = len(menu) - 1
-            if selected == 5:
-                selected = 4
-        #DOWN
-        elif pressed == 'down':
-            if menu[selected] == 'FILM:':
-                filmname = loadfilm(filmname, filmfolder, camera, overlay)
-                loadfilmsettings = True
-            elif menu[selected] == 'BRIGHT:':
-                camera.brightness = max(camera.brightness - 1, 0)
-            elif menu[selected] == 'CONT:':
-                camera.contrast = max(camera.contrast - 1, -100)
-            elif menu[selected] == 'SAT:':
-                camera.saturation = max(camera.saturation - 1, -100)
-            elif menu[selected] == 'SFX:':
-                if effectselected > 0:
-                    effectselected -= 1
-                    camera.image_effect = effects[effectselected]
-            elif menu[selected] == 'SHUTTER:':
-                if camera.shutter_speed == 0:
-                    camera.shutter_speed = camera.exposure_speed
-                if camera.shutter_speed < 5000:
-                    camera.shutter_speed = max(camera.shutter_speed - 50, 20)
-                else:
-                    camera.shutter_speed = max(camera.shutter_speed - 200, 200)
-            elif menu[selected] == 'ISO:':
-                camera.iso = max(camera.iso - 100, 100)
-            elif menu[selected] == 'BEEP:':
-                if beeps > 0:
-                    beeps = beeps - 1
-            elif menu[selected] == 'FLIP:':
-                if flip == 'yes':
-                    camera.hflip = False
-                    camera.vflip = False
-                    flip = 'no'
-                    time.sleep(0.2)
-                else:
-                    camera.hflip = True
-                    camera.vflip = True
-                    flip = 'yes'
-                    time.sleep(0.2)
-            elif menu[selected] == 'LENGTH:':
-                if reclenght > 1:
-                    reclenght = int(reclenght - 1)
-                    time.sleep(0.1)
-                elif reclenght > 0.3:
-                    reclenght = reclenght - 0.2
-                    time.sleep(0.1)
-                else:
-                    reclenght = 0
-            elif menu[selected] == 'MIC:':
-                if miclevel > 0:
-                    miclevel = miclevel - 2
-                    run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
-            elif menu[selected] == 'PHONES:':
-                if headphoneslevel > 0:
-                    headphoneslevel = headphoneslevel - 2
-                    run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
-            elif menu[selected] == 'SCENE:' and recording == False:
-                if scene > 1:
-                    scene -= 1
-                    #shot = countshots(filmname, filmfolder, scene)
-                    shot=1
-                    take = counttakes(filmname, filmfolder, scene, shot)
-                #scene, shots, take = browse2(filmname, filmfolder, scene, shot, take, 0, -1)
-                #takes = take
-                #shot = 1
-            elif menu[selected] == 'SHOT:' and recording == False:
-                if shot > 1:
-                    shot -= 1
-                    take = counttakes(filmname, filmfolder, scene, shot)
-                #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, -1)
-                #takes = take
-            elif menu[selected] == 'TAKE:' and recording == False:
-                if take > 1:
-                    take -= 1
-                #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, -1)
-            elif menu[selected] == 'RED:':
-                camera.awb_mode = 'off'
-                if float(camera.awb_gains[0]) > 0.02:
-                    camera.awb_gains = (round(camera.awb_gains[0],2) - 0.02, round(camera.awb_gains[1],2))
-            elif menu[selected] == 'BLUE:':
-                camera.awb_mode = 'off'
-                if float(camera.awb_gains[1]) > 0.02:
-                    camera.awb_gains = (round(camera.awb_gains[0],2), round(camera.awb_gains[1],2) - 0.02)
-            elif menu[selected] == 'SRV:':
-                if serverstate == 'on':
-                    try:
-                        os.makedirs(gonzopifolder+'/srv/sessions')
-                        os.system('chown www-data '+gonzopifolder+'/srv/sessions')
-                    except:
-                        print('srv folder exist')
-                    serverstate = gonzopiserver(False)
-                elif serverstate == 'off':
-                    serverstate = gonzopiserver(True)
-            elif menu[selected] == 'WIFI:':
-                if wifistate == 'on':
-                    run_command('sudo iwconfig wlan0 txpower off')
-                    wifistate = 'off'
-                elif wifistate == 'off':
-                    run_command('sudo iwconfig wlan0 txpower auto')
-                    wifistate = 'on'
-            elif menu[selected] == 'SEARCH:':
-                if searchforcameras == 'on':
-                    searchforcameras = 'off'
-                elif searchforcameras == 'off':
-                    seaarchforcameras = 'on'
-            elif menu[selected] == 'MODE:':
-                if cammode == 'film':
-                    cammode = 'picture'
-                    vumetermessage('changing to picture mode')
-                elif cammode == 'picture':
-                    cammode = 'film'
-                    vumetermessage('changing to film mode')
-                camera.stop_preview()
-                camera.close()
-                camera = startcamera(lens,fps)
-                loadfilmsettings = True
-                flushbutton()
-            elif menu[selected] == 'LENS:':
-                s = 0
-                for a in lenses:
-                    if a == lens:
-                        selectlens = s
-                    s += 1
-                if selectlens > 0:
-                    selectlens -= 1
-                lens = os.listdir('lenses/')[selectlens]
-                #npzfile = np.load('lenses/' + lens)
-                #lensshade = npzfile['lens_shading_table']
-                table = read_table('lenses/' + lens)
-                camera.lens_shading_table = table
-            elif menu[selected] == 'DUB:':
-                if round(dub[0],1) == 1.0 and round(dub[1],1) > 0.0:
-                    dub[1] -= 0.1
-                if round(dub[1],1) == 1.0 and round(dub[0],1) < 1.0:
-                    dub[0] += 0.1
-            elif menu[selected] == 'COMP:':
-                if comp > 0:
-                    comp -= 1
-            elif menu[selected] == 'HW:':
-                if plughw > 0:
-                    plughw -= 1
-                vumetermessage(getaudiocards()[plughw])
-            elif menu[selected] == 'CH:':
-                if channels == 2:
-                    channels = 1
-            elif menu[selected] == 'FPS:':
-                if fps_selected > 0:
-                    fps_selected-=1
-                    fps=fps_selection[fps_selected]
-                    camera.framerate = fps
-            elif menu[selected] == 'Q:':
-                if scenes == 0:
-                    if quality > 10:
-                        quality -= 1
-            elif menu[selected] == 'CAMERA:':
-                if camselected > 0:
-                    newselected = camselected-1
-                    logger.info('camera selected:'+str(camselected))
-            elif menu[selected] == 'DSK:':
-                if dsk > 0:
-                    dsk -= 1
-                    filmfolder = storagedrives[dsk][1]
+                        try:
+                            os.makedirs(gonzopifolder+'/srv/sessions')
+                            os.system('chown www-data '+gonzopifolder+'/srv/sessions')
+                        except:
+                            print('srv folder exist')
+                        serverstate = 'false'
+                        serverstate = gonzopiserver(False)
+                    elif serverstate == 'off':
+                        serverstate = 'on'
+                        serverstate = gonzopiserver(True)
+                elif menu[selected] == 'WIFI:':
+                    if wifistate == 'on':
+                        run_command('sudo iwconfig wlan0 txpower off')
+                        wifistate = 'off'
+                    elif wifistate == 'off':
+                        run_command('sudo iwconfig wlan0 txpower auto')
+                        wifistate = 'on'
+                elif menu[selected] == 'SEARCH:':
+                    if searchforcameras == 'on':
+                        searchforcameras = 'off'
+                    elif searchforcameras == 'off':
+                        searchforcameras = 'on'
+                elif menu[selected] == 'MODE:':
+                    if cammode == 'film':
+                        cammode = 'picture'
+                        vumetermessage('changing to picture mode')
+                    elif cammode == 'picture':
+                        cammode = 'film'
+                        vumetermessage('changing to film mode')
+                    camera.stop_preview()
+                    camera.close()
+                    camera = startcamera(lens,fps)
                     loadfilmsettings = True
-                    #COUNT DISKSPACE
-                    disk = os.statvfs(filmfolder)
-                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                    #LOAD FILM AND SCENE SETTINGS
-                    try:
-                        filmname = getfilms(filmfolder)[0][0]
-                    except:
-                        filmname = filmname 
-                    try:
-                        filmname_back = getfilms(filmfolder)[0][1]
-                    except:
-                        filmname_back = filmname 
-                    if serverstate == 'on':
-                        gonzopiserver(False)
-                        gonzopiserver(True)
+                    flushbutton()
+                elif menu[selected] == 'LENS:':
+                    s = 0
+                    for a in lenses:
+                        if a == lens:
+                            selectlens = s
+                        s += 1
+                    if selectlens < len(lenses) - 1:
+                        selectlens += 1
+                    lens = os.listdir('lenses/')[selectlens]
+                    #npzfile = np.load('lenses/' + lens)
+                    #lensshade = npzfile['lens_shading_table']
+                    table = read_table('lenses/' + lens)
+                    camera.lens_shading_table = table
+                elif menu[selected] == 'COMP:':
+                    if comp < 1:
+                        comp += 1
+                elif menu[selected] == 'HW:':
+                    if plughw < len(getaudiocards())-1:
+                        plughw += 1
+                    vumetermessage(getaudiocards()[plughw])
+                elif menu[selected] == 'CH:':
+                    if channels == 1:
+                        channels = 2
+                elif menu[selected] == 'FPS:':
+                    if fps_selected < len(fps_selection)-1:
+                        fps_selected+=1
+                        fps=fps_selection[fps_selected]
+                        camera.framerate = fps
+                elif menu[selected] == 'Q:':
+                    if scenes == 0:
+                        if quality < 39:
+                            quality += 1
+                elif menu[selected] == 'CAMERA:':
+                    if camselected < len(cameras)-1:
+                        newselected = camselected+1
+                        logger.info('camera selected:'+str(camselected))
+                elif menu[selected] == 'DSK:':
+                    if dsk+1 < len(storagedrives):
+                        dsk += 1
+                        filmfolder = storagedrives[dsk][1]
+                        loadfilmsettings = True
+                        #COUNT DISKSPACE
+                        disk = os.statvfs(filmfolder)
+                        diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                        #LOAD FILM AND SCENE SETTINGS
+                        try:
+                            filmname = getfilms(filmfolder)[0][0]
+                        except:
+                            filmname = filmname 
+                        try:
+                            filmname_back = getfilms(filmfolder)[0][1]
+                        except:
+                            filmname_back = filmname
+                        if serverstate == 'on':
+                            gonzopiserver(False)
+                            gonzopiserver(True)
 
-        #RIGHT
-        elif pressed == 'right':
-            if selected < len(menu) - 1:
-                selected = selected + 1
-            else:
-                selected = 0
-            if selected == 5: #jump over recording time
-                selected = 6
-        #Start Recording Time
-        if recording == True:
-            t = time.time() - starttime
-            rectime = time.strftime("%H:%M:%S", time.gmtime(t))
-        #Load settings
-        if loadfilmsettings == True:
-            db = get_film_files(filmname,filmfolder,db)
-            try:
-                filmsettings = loadsettings(filmfolder, filmname)
-                camera.brightness = filmsettings[2]
-                camera.contrast = filmsettings[3]
-                camera.saturation = filmsettings[4]
-                camera.shutter_speed = filmsettings[5]
-                camera.iso = filmsettings[6]
-                camera.awb_mode = filmsettings[7]
-                camera.awb_gains = filmsettings[8]
-                awb_lock = filmsettings[9]
-                miclevel = filmsettings[10]
-                headphoneslevel = filmsettings[11]
-                beeps = filmsettings[12]
-                flip = filmsettings[13]
-                comp = filmsettings[14]
-                between = filmsettings[15]
-                duration = filmsettings[16]
-                showmenu_settings = filmsettings[17]
-                quality = filmsettings[18]
-                #wifistate = filmsettings[19]
-                #serverstate=filmsettings[20]
-                plughw=filmsettings[21]
-                channels=filmsettings[22]
-                #cammode=filmsettings[23]
-                scene=filmsettings[24]
-                shot=filmsettings[25]
-                take=filmsettings[26]
-                logger.info('film settings loaded & applied')
-                time.sleep(0.2)
-            except:
-                logger.warning('could not load film settings')
-            if flip == "yes":
-                camera.vflip = True
-                camera.hflip = True
-            run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
-            run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
-            print(filmfolder)
-            print(filmname)
-            origin_videos=organize(filmfolder, filmname)
-            print('ORIGIN')
-            print(origin_videos)
-            print('total of videos: '+str(len(origin_videos)))
-            with open(filmfolder+filmname+'/.origin_videos', 'w') as outfile:
-                outfile.write('\n'.join(str(i) for i in origin_videos))
-            if not os.path.isdir(filmfolder+'.videos/'):
-                os.makedirs(filmfolder+'.videos/')
-            allfiles = os.listdir(filmfolder+'.videos/')
-            print(allfiles)
-            print('alll')
-            for origin in origin_videos:
-                if origin in allfiles:
-                    try:
-                        #os.remove(origin)
-                        print('ORIGIN VIDEO FOLDER NOT IN SYNC' + origin)
-                        time.sleep(5)
-                    except:
-                        print('not exist')
-            #organize(filmfolder,'onthefloor')
-            scenes, shots, takes = countlast(filmname, filmfolder)
-            loadfilmsettings = False
-            rendermenu = True
-            updatethumb =  True
-        if scene == 0:
-            scene = 1
-        if take == 0:
-            take = 1
-        if shot == 0:
-            shot = 1
-        # If menu at SCENE show first shot thumbnail off that scene
-        if menu[selected] == 'FILM:' and lastmenu != menu[selected] and recordable == False:
-            updatethumb = True
-        if menu[selected] == 'SCENE:' and lastmenu != menu[selected] and recordable == False:
-            updatethumb = True
-        if menu[selected] == 'SHOT:' and lastmenu != menu[selected] and recordable == False:
-            updatethumb = True
-        if menu[selected] == 'TAKE:' and lastmenu != menu[selected] and recordable == False:
-            updatethumb = True
-        #Check if scene, shot, or take changed and update thumbnail
-        if oldscene != scene or oldshot != shot or oldtake != take or updatethumb == True:
-            if recording == False:
-                #logger.info('film:' + filmname + ' scene:' + str(scene) + '/' + str(scenes) + ' shot:' + str(shot) + '/' + str(shots) + ' take:' + str(take) + '/' + str(takes))
-                foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                filename = 'take' + str(take).zfill(3)
-                recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
-                overlay = removeimage(camera, overlay)
-                if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
-                    p = counttakes(filmname, filmfolder, scene, 1)
-                    imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
-                    try:
-                        videosize=countsize(filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/scene.mp4')
-                        vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
-                    except:
-                        vumetermessage('not rendered')
-                #elif menu[selected] == 'FILM:' and recordable == True:
-                #    scene, shot, take = countlast(filmname,filmfolder)
-                #    shot += 1
-                elif menu[selected] == 'FILM:' and recordable == False: # display first shot of film
-                    p = counttakes(filmname, filmfolder, 1, 1)
-                    imagename = filmfolder + filmname + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
-                    try:
-                        videosize=countsize(filmfolder + filmname + '/' + filmname+'.mp4')
-                        vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
-                    except:
-                        vumetermessage('not rendered')
-                imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.jpeg'
-                if menu[selected]=='SHOT:' and recordable == False or menu[selected]=='TAKE:' and recordable==False:
-                    try:
-                        videosize=countsize(foldername + filename + '.mp4')
-                        vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
-                    except:
-                        videosize=countsize(foldername + filename + '.h264')
-                        vumetermessage('not rendered, videosize: '+str(round(videosize/1000,2))+' Mb')
-                overlay = displayimage(camera, imagename, overlay, 3)
-                oldscene = scene
-                oldshot = shot
-                oldtake = take
-                updatethumb = False
-                scenes = countscenes(filmfolder, filmname)
-                shots = countshots(filmname, filmfolder, scene)
-                takes = counttakes(filmname, filmfolder, scene, shot)
-        #If auto dont show value show auto (impovement here to show different colors in gui, yes!!?)
-        if camera.iso == 0:
-            cameraiso = 'auto'
-        else:
-            cameraiso = str(camera.iso)
-        if camera.shutter_speed == 0:
-            camerashutter = 'auto'
-        else:
-            camerashutter = str(camera.exposure_speed).zfill(5)
-        if camera.awb_mode == 'auto':
-            camerared = 'auto'
-            camerablue = 'auto'
-        else:
-            camerared = str(float(camera.awb_gains[0]))[:4]
-            camerablue = str(float(camera.awb_gains[1]))[:4]
-
-        #Check if menu is changed and save settings / sec
-        if buttonpressed == True or recording == True or rendermenu == True:
-            lastmenu = menu[selected]
-            if showgonzopictrl == False:
-                menu = standardmenu
-                settings = storagedrives[dsk][0]+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
-            else:
-                #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
-                menu = gonzopictrlmenu
-                #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                settings = storagedrives[dsk][0]+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
-            #Rerender menu if picamera settings change
-            #if settings != oldsettings or selected != oldselected:
-            writemenu(menu,settings,selected,'',showmenu)
-            rendermenu = False
-            #save settings if menu has been updated and x seconds passed
-            if recording == False:
-                #if time.time() - pausetime > savesettingsevery: 
-                if oldsettings != settings:
-                    settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take]
-                    #print('saving settings')
-                    savesettings(settings_to_save, filmname, filmfolder)
-                if time.time() - pausetime > savesettingsevery: 
-                    pausetime = time.time()
-                    #NETWORKS
-                    networks=[]
-                    adapters = ifaddr.get_adapters()
-                    for adapter in adapters:
-                        print("IPs of network adapter " + adapter.nice_name)
-                        for ip in adapter.ips:
-                            if ':' not in ip.ip[0] and '127.0.0.1' != ip.ip:
-                                print(ip.ip)
-                                networks=[ip.ip]
-                    if networks != []:
-                        network=networks[0]
-                        if network not in cameras:
-                            cameras=[]
-                            cameras.append(network)
-                    else:
-                        network='not connected'
-                    if len(cameras) > 1:
-                        camerasconnected='connected '+str(len(cameras)-1)
-                        recordwithports=True
-                        vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
-                    else:
-                        camerasconnected=''
-                        recordwithports=False
-                        if searchforcameras == 'on':
-                            camerasconnected='searching '+str(pingip)
-                        if menu[selected] != 'SHOT:' and menu[selected] != 'SCENE:' and menu[selected] != 'FILM:' and menu[selected] != 'TAKE:':
-                            vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
-                    disk = os.statvfs(filmfolder)
-                    diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                    checksync = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )) + 'Mb'
-                    if checksync == oldchecksync:
-                        rectime = ''
-                    else:
-                        rectime = 'SYNCING.. '
-                        oldchecksync = checksync
-                    #print(term.yellow+'filming with '+camera_model +' ip:'+ network
-                    print(camselected,camera_recording,cameras)
-            #writemessage(pressed)
-            oldsettings = settings
-            oldselected = selected
-        #PING TARINAS
-        if searchforcameras == 'on':
-            if camera_recording == None:
-                if pingip < 256:
-                    pingip+=1
+            #LEFT
+            elif pressed == 'left':
+                if selected > 0:
+                    selected = selected - 1
                 else:
-                    pingip=0
-                    #searchforcameras='off'
-                newcamera=pingtocamera(network[:-3]+str(pingip),port,'PING')
-                if newcamera != '':
-                    if newcamera not in cameras and newcamera not in networks:
-                        cameras.append(newcamera)
-                        vumetermessage("Found camera! "+newcamera)
-                print('-~-')
-                print('pinging ip: '+network[:-3]+str(pingip))
+                    selected = len(menu) - 1
+                if selected == 5:
+                    selected = 4
+            #DOWN
+            elif pressed == 'down':
+                if menu[selected] == 'FILM:':
+                    filmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    loadfilmsettings = True
+                elif menu[selected] == 'BRIGHT:':
+                    camera.brightness = max(camera.brightness - 1, 0)
+                elif menu[selected] == 'CONT:':
+                    camera.contrast = max(camera.contrast - 1, -100)
+                elif menu[selected] == 'SAT:':
+                    camera.saturation = max(camera.saturation - 1, -100)
+                elif menu[selected] == 'SFX:':
+                    if effectselected > 0:
+                        effectselected -= 1
+                        camera.image_effect = effects[effectselected]
+                elif menu[selected] == 'SHUTTER:':
+                    if camera.shutter_speed == 0:
+                        camera.shutter_speed = camera.exposure_speed
+                    if camera.shutter_speed < 5000:
+                        camera.shutter_speed = max(camera.shutter_speed - 50, 20)
+                    else:
+                        camera.shutter_speed = max(camera.shutter_speed - 200, 200)
+                elif menu[selected] == 'ISO:':
+                    camera.iso = max(camera.iso - 100, 100)
+                elif menu[selected] == 'BEEP:':
+                    if beeps > 0:
+                        beeps = beeps - 1
+                elif menu[selected] == 'FLIP:':
+                    if flip == 'yes':
+                        camera.hflip = False
+                        camera.vflip = False
+                        flip = 'no'
+                        time.sleep(0.2)
+                    else:
+                        camera.hflip = True
+                        camera.vflip = True
+                        flip = 'yes'
+                        time.sleep(0.2)
+                elif menu[selected] == 'LENGTH:':
+                    if reclenght > 1:
+                        reclenght = int(reclenght - 1)
+                        time.sleep(0.1)
+                    elif reclenght > 0.3:
+                        reclenght = reclenght - 0.2
+                        time.sleep(0.1)
+                    else:
+                        reclenght = 0
+                elif menu[selected] == 'MIC:':
+                    if miclevel > 0:
+                        miclevel = miclevel - 2
+                        run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
+                elif menu[selected] == 'PHONES:':
+                    if headphoneslevel > 0:
+                        headphoneslevel = headphoneslevel - 2
+                        run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+                elif menu[selected] == 'SCENE:' and recording == False:
+                    if scene > 1:
+                        scene -= 1
+                        #shot = countshots(filmname, filmfolder, scene)
+                        shot=1
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                    #scene, shots, take = browse2(filmname, filmfolder, scene, shot, take, 0, -1)
+                    #takes = take
+                    #shot = 1
+                elif menu[selected] == 'SHOT:' and recording == False:
+                    if shot > 1:
+                        shot -= 1
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                    #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, -1)
+                    #takes = take
+                elif menu[selected] == 'TAKE:' and recording == False:
+                    if take > 1:
+                        take -= 1
+                    #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, -1)
+                elif menu[selected] == 'RED:':
+                    camera.awb_mode = 'off'
+                    if float(camera.awb_gains[0]) > 0.02:
+                        camera.awb_gains = (round(camera.awb_gains[0],2) - 0.02, round(camera.awb_gains[1],2))
+                elif menu[selected] == 'BLUE:':
+                    camera.awb_mode = 'off'
+                    if float(camera.awb_gains[1]) > 0.02:
+                        camera.awb_gains = (round(camera.awb_gains[0],2), round(camera.awb_gains[1],2) - 0.02)
+                elif menu[selected] == 'SRV:':
+                    if serverstate == 'on':
+                        try:
+                            os.makedirs(gonzopifolder+'/srv/sessions')
+                            os.system('chown www-data '+gonzopifolder+'/srv/sessions')
+                        except:
+                            print('srv folder exist')
+                        serverstate = gonzopiserver(False)
+                    elif serverstate == 'off':
+                        serverstate = gonzopiserver(True)
+                elif menu[selected] == 'WIFI:':
+                    if wifistate == 'on':
+                        run_command('sudo iwconfig wlan0 txpower off')
+                        wifistate = 'off'
+                    elif wifistate == 'off':
+                        run_command('sudo iwconfig wlan0 txpower auto')
+                        wifistate = 'on'
+                elif menu[selected] == 'SEARCH:':
+                    if searchforcameras == 'on':
+                        searchforcameras = 'off'
+                    elif searchforcameras == 'off':
+                        seaarchforcameras = 'on'
+                elif menu[selected] == 'MODE:':
+                    if cammode == 'film':
+                        cammode = 'picture'
+                        vumetermessage('changing to picture mode')
+                    elif cammode == 'picture':
+                        cammode = 'film'
+                        vumetermessage('changing to film mode')
+                    camera.stop_preview()
+                    camera.close()
+                    camera = startcamera(lens,fps)
+                    loadfilmsettings = True
+                    flushbutton()
+                elif menu[selected] == 'LENS:':
+                    s = 0
+                    for a in lenses:
+                        if a == lens:
+                            selectlens = s
+                        s += 1
+                    if selectlens > 0:
+                        selectlens -= 1
+                    lens = os.listdir('lenses/')[selectlens]
+                    #npzfile = np.load('lenses/' + lens)
+                    #lensshade = npzfile['lens_shading_table']
+                    table = read_table('lenses/' + lens)
+                    camera.lens_shading_table = table
+                elif menu[selected] == 'DUB:':
+                    if round(dub[0],1) == 1.0 and round(dub[1],1) > 0.0:
+                        dub[1] -= 0.1
+                    if round(dub[1],1) == 1.0 and round(dub[0],1) < 1.0:
+                        dub[0] += 0.1
+                elif menu[selected] == 'COMP:':
+                    if comp > 0:
+                        comp -= 1
+                elif menu[selected] == 'HW:':
+                    if plughw > 0:
+                        plughw -= 1
+                    vumetermessage(getaudiocards()[plughw])
+                elif menu[selected] == 'CH:':
+                    if channels == 2:
+                        channels = 1
+                elif menu[selected] == 'FPS:':
+                    if fps_selected > 0:
+                        fps_selected-=1
+                        fps=fps_selection[fps_selected]
+                        camera.framerate = fps
+                elif menu[selected] == 'Q:':
+                    if scenes == 0:
+                        if quality > 10:
+                            quality -= 1
+                elif menu[selected] == 'CAMERA:':
+                    if camselected > 0:
+                        newselected = camselected-1
+                        logger.info('camera selected:'+str(camselected))
+                elif menu[selected] == 'DSK:':
+                    if dsk > 0:
+                        dsk -= 1
+                        filmfolder = storagedrives[dsk][1]
+                        loadfilmsettings = True
+                        #COUNT DISKSPACE
+                        disk = os.statvfs(filmfolder)
+                        diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                        #LOAD FILM AND SCENE SETTINGS
+                        try:
+                            filmname = getfilms(filmfolder)[0][0]
+                        except:
+                            filmname = filmname 
+                        try:
+                            filmname_back = getfilms(filmfolder)[0][1]
+                        except:
+                            filmname_back = filmname 
+                        if serverstate == 'on':
+                            gonzopiserver(False)
+                            gonzopiserver(True)
+
+            #RIGHT
+            elif pressed == 'right':
+                if selected < len(menu) - 1:
+                    selected = selected + 1
+                else:
+                    selected = 0
+                if selected == 5: #jump over recording time
+                    selected = 6
+            #Start Recording Time
+            if recording == True:
+                t = time.time() - starttime
+                rectime = time.strftime("%H:%M:%S", time.gmtime(t))
+            #Load settings
+            if loadfilmsettings == True:
+                db = get_film_files(filmname,filmfolder,db)
+                try:
+                    filmsettings = loadsettings(filmfolder, filmname)
+                    camera.brightness = filmsettings[2]
+                    camera.contrast = filmsettings[3]
+                    camera.saturation = filmsettings[4]
+                    camera.shutter_speed = filmsettings[5]
+                    camera.iso = filmsettings[6]
+                    camera.awb_mode = filmsettings[7]
+                    camera.awb_gains = filmsettings[8]
+                    awb_lock = filmsettings[9]
+                    miclevel = filmsettings[10]
+                    headphoneslevel = filmsettings[11]
+                    beeps = filmsettings[12]
+                    flip = filmsettings[13]
+                    comp = filmsettings[14]
+                    between = filmsettings[15]
+                    duration = filmsettings[16]
+                    showmenu_settings = filmsettings[17]
+                    quality = filmsettings[18]
+                    #wifistate = filmsettings[19]
+                    #serverstate=filmsettings[20]
+                    plughw=filmsettings[21]
+                    channels=filmsettings[22]
+                    #cammode=filmsettings[23]
+                    scene=filmsettings[24]
+                    shot=filmsettings[25]
+                    take=filmsettings[26]
+                    logger.info('film settings loaded & applied')
+                    time.sleep(0.2)
+                except:
+                    logger.warning('could not load film settings')
+                if flip == "yes":
+                    camera.vflip = True
+                    camera.hflip = True
+                run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
+                run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+                print(filmfolder)
+                print(filmname)
+                origin_videos=organize(filmfolder, filmname)
+                print('ORIGIN')
+                print(origin_videos)
+                print('total of videos: '+str(len(origin_videos)))
+                with open(filmfolder+filmname+'/.origin_videos', 'w') as outfile:
+                    outfile.write('\n'.join(str(i) for i in origin_videos))
+                if not os.path.isdir(filmfolder+'.videos/'):
+                    os.makedirs(filmfolder+'.videos/')
+                allfiles = os.listdir(filmfolder+'.videos/')
+                print(allfiles)
+                print('alll')
+                for origin in origin_videos:
+                    if origin in allfiles:
+                        try:
+                            #os.remove(origin)
+                            print('ORIGIN VIDEO FOLDER NOT IN SYNC' + origin)
+                            time.sleep(5)
+                        except:
+                            print('not exist')
+                #organize(filmfolder,'onthefloor')
+                scenes, shots, takes = countlast(filmname, filmfolder)
+                loadfilmsettings = False
+                rendermenu = True
+                updatethumb =  True
+            if scene == 0:
+                scene = 1
+            if take == 0:
+                take = 1
+            if shot == 0:
+                shot = 1
+            # If menu at SCENE show first shot thumbnail off that scene
+            if menu[selected] == 'FILM:' and lastmenu != menu[selected] and recordable == False:
+                updatethumb = True
+            if menu[selected] == 'SCENE:' and lastmenu != menu[selected] and recordable == False:
+                updatethumb = True
+            if menu[selected] == 'SHOT:' and lastmenu != menu[selected] and recordable == False:
+                updatethumb = True
+            if menu[selected] == 'TAKE:' and lastmenu != menu[selected] and recordable == False:
+                updatethumb = True
+            #Check if scene, shot, or take changed and update thumbnail
+            if oldscene != scene or oldshot != shot or oldtake != take or updatethumb == True:
+                if recording == False:
+                    #logger.info('film:' + filmname + ' scene:' + str(scene) + '/' + str(scenes) + ' shot:' + str(shot) + '/' + str(shots) + ' take:' + str(take) + '/' + str(takes))
+                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    filename = 'take' + str(take).zfill(3)
+                    recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
+                    overlay = removeimage(camera, overlay)
+                    if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
+                        p = counttakes(filmname, filmfolder, scene, 1)
+                        imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
+                        try:
+                            videosize=countsize(filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/scene.mp4')
+                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                        except:
+                            vumetermessage('not rendered')
+                    #elif menu[selected] == 'FILM:' and recordable == True:
+                    #    scene, shot, take = countlast(filmname,filmfolder)
+                    #    shot += 1
+                    elif menu[selected] == 'FILM:' and recordable == False: # display first shot of film
+                        p = counttakes(filmname, filmfolder, 1, 1)
+                        imagename = filmfolder + filmname + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
+                        try:
+                            videosize=countsize(filmfolder + filmname + '/' + filmname+'.mp4')
+                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                        except:
+                            vumetermessage('not rendered')
+                    imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.jpeg'
+                    if menu[selected]=='SHOT:' and recordable == False or menu[selected]=='TAKE:' and recordable==False:
+                        try:
+                            videosize=countsize(foldername + filename + '.mp4')
+                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                        except:
+                            videosize=countsize(foldername + filename + '.h264')
+                            vumetermessage('not rendered, videosize: '+str(round(videosize/1000,2))+' Mb')
+                    overlay = displayimage(camera, imagename, overlay, 3)
+                    oldscene = scene
+                    oldshot = shot
+                    oldtake = take
+                    updatethumb = False
+                    scenes = countscenes(filmfolder, filmname)
+                    shots = countshots(filmname, filmfolder, scene)
+                    takes = counttakes(filmname, filmfolder, scene, shot)
+            #If auto dont show value show auto (impovement here to show different colors in gui, yes!!?)
+            if camera.iso == 0:
+                cameraiso = 'auto'
             else:
-                searchforcameras = 'off'
-        time.sleep(keydelay)
+                cameraiso = str(camera.iso)
+            if camera.shutter_speed == 0:
+                camerashutter = 'auto'
+            else:
+                camerashutter = str(camera.exposure_speed).zfill(5)
+            if camera.awb_mode == 'auto':
+                camerared = 'auto'
+                camerablue = 'auto'
+            else:
+                camerared = str(float(camera.awb_gains[0]))[:4]
+                camerablue = str(float(camera.awb_gains[1]))[:4]
+
+            #Check if menu is changed and save settings / sec
+            if buttonpressed == True or recording == True or rendermenu == True:
+                lastmenu = menu[selected]
+                if showgonzopictrl == False:
+                    menu = standardmenu
+                    settings = storagedrives[dsk][0]+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                else:
+                    #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
+                    menu = gonzopictrlmenu
+                    #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
+                    settings = storagedrives[dsk][0]+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
+                #Rerender menu if picamera settings change
+                #if settings != oldsettings or selected != oldselected:
+                writemenu(menu,settings,selected,'',showmenu)
+                rendermenu = False
+                #save settings if menu has been updated and x seconds passed
+                if recording == False:
+                    #if time.time() - pausetime > savesettingsevery: 
+                    if oldsettings != settings:
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take]
+                        #print('saving settings')
+                        savesettings(settings_to_save, filmname, filmfolder)
+                    if time.time() - pausetime > savesettingsevery: 
+                        pausetime = time.time()
+                        #NETWORKS
+                        networks=[]
+                        adapters = ifaddr.get_adapters()
+                        for adapter in adapters:
+                            print("IPs of network adapter " + adapter.nice_name)
+                            for ip in adapter.ips:
+                                if ':' not in ip.ip[0] and '127.0.0.1' != ip.ip:
+                                    print(ip.ip)
+                                    networks=[ip.ip]
+                        if networks != []:
+                            network=networks[0]
+                            if network not in cameras:
+                                cameras=[]
+                                cameras.append(network)
+                        else:
+                            network='not connected'
+                        if len(cameras) > 1:
+                            camerasconnected='connected '+str(len(cameras)-1)
+                            recordwithports=True
+                            vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
+                        else:
+                            camerasconnected=''
+                            recordwithports=False
+                            if searchforcameras == 'on':
+                                camerasconnected='searching '+str(pingip)
+                            if menu[selected] != 'SHOT:' and menu[selected] != 'SCENE:' and menu[selected] != 'FILM:' and menu[selected] != 'TAKE:':
+                                vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
+                        disk = os.statvfs(filmfolder)
+                        diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
+                        checksync = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )) + 'Mb'
+                        if checksync == oldchecksync:
+                            rectime = ''
+                        else:
+                            rectime = 'SYNCING.. '
+                            oldchecksync = checksync
+                        #print(term.yellow+'filming with '+camera_model +' ip:'+ network
+                        print(camselected,camera_recording,cameras)
+                #writemessage(pressed)
+                oldsettings = settings
+                oldselected = selected
+            #PING TARINAS
+            if searchforcameras == 'on':
+                if camera_recording == None:
+                    if pingip < 256:
+                        pingip+=1
+                    else:
+                        pingip=0
+                        #searchforcameras='off'
+                    newcamera=pingtocamera(network[:-3]+str(pingip),port,'PING')
+                    if newcamera != '':
+                        if newcamera not in cameras and newcamera not in networks:
+                            cameras.append(newcamera)
+                            vumetermessage("Found camera! "+newcamera)
+                    print('-~-')
+                    print('pinging ip: '+network[:-3]+str(pingip))
+                else:
+                    searchforcameras = 'off'
+            time.sleep(keydelay)
 
 #--------------Logger-----------------------
 
@@ -2501,7 +2521,10 @@ def getfilms(filmfolder):
 
 def getconfig(camera):
     filmfolder=''
-    version = camera.revision
+    if camera != None:
+        version = camera.revision
+    else:
+        version = 'none'
     home = os.path.expanduser('~')
     configfile = home + '/.gonzopi/config.ini'
     configdir = os.path.dirname(configfile)
@@ -2522,7 +2545,15 @@ def getconfig(camera):
             return camera_model, camera_revision, filmfolder+'/'
         except:
             logger.info("couldnt read config")
-    if version == 'imx219':
+    if version == 'none':
+        config['SENSOR'] = {}
+        config['SENSOR']['model'] = version
+        config['SENSOR']['revision'] = 'none'
+        with open(configfile, 'w') as f:
+            config.write(f)
+        camera_model = version
+        camera_revision = 'none'
+    elif version == 'imx219':
         config['SENSOR'] = {}
         config['SENSOR']['model'] = version
         config['SENSOR']['revision'] = 'standard'
