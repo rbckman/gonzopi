@@ -294,6 +294,13 @@ cat <<'EOF' >> /etc/apache2/apache2.conf
 	Require all granted
 </Directory>
 EOF
+cat <<'EOF' >> /dev/shm/apache2.conf
+<Directory /dev/shm/srv>
+	Options Indexes FollowSymLinks
+	AllowOverride None
+	Require all granted
+</Directory>
+EOF
 systemctl reload apache2
 
 echo 'Dont do sync while copying to usb drives, does increase speed alöt!'

@@ -173,7 +173,7 @@ def main():
     take = 1
     pic = 1
     onlysound=False
-    filmname = 'onthefloor'
+    filmname = 'reel_001'
     newfilmname = ''
     beeps = 0
     beepcountdown = 0
@@ -262,10 +262,8 @@ def main():
         filmname = getfilms(filmfolder)[0][0]
     except:
         filmname = filmname 
-    try:
-        filmname_back = getfilms(filmfolder)[0][1]
-    except:
-        filmname_back = filmname 
+        if os.path.isdir(filmfolder+filmname) == False:
+            os.makedirs(filmfolder+filmname)
 
     #THUMBNAILCHECKER
     oldscene = scene
@@ -278,15 +276,18 @@ def main():
     if os.path.isdir(gonzopifolder+'/srv/sessions') == False:
         os.makedirs(gonzopifolder+'/srv/sessions')
     os.system('sudo chown -R www-data '+gonzopifolder+'/srv/sessions')
-    os.system('sudo chown -R www-data '+gonzopifolder+'/srv/static/menu.html')
+    os.system('sudo ln -sf /dev/shm/srv/menu.html '+gonzopifolder+'/srv/static/menu.html')
+    os.system('sudo mkdir /dev/shm/srv')
+    os.system('sudo chown -R www-data /dev/shm/srv')
+    os.system('sudo chown -R www-data '+gonzopifolder+'/srv/static/')
     #serverstate = gonzopiserver(False)
     #TO_BE_OR_NOT_TO_BE 
     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
     filename = 'take' + str(take).zfill(3)
     recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
-    onthefloor_folder=filmfolder+'onthefloor'
-    if os.path.isdir(onthefloor_folder) == False:
-        os.makedirs(onthefloor_folder)
+
+    #CLEAN
+    #clean('',filmfolder)
 
     #--------------Gonzopi Controller over socket ports --------#
 
@@ -938,15 +939,18 @@ def main():
                 #film
                 elif pressed == 'remove' and menu[selected] == 'FILM:':
                     remove(filmfolder, filmname, scene, shot, take, 'film')
-                    filmname = getfilms(filmfolder)[0][0]
-                    if filmname == '':
-                        filmname = nameyourfilm(filmfolder,filmname,abc, True)
+                    try:
+                        filmname = getfilms(filmfolder)[0][0]
+                    except:
+                        filmname = 'reel_001'
+                        if os.path.isdir(filmfolder+filmname) == False:
+                            os.makedirs(filmfolder+filmname)
                     else:
                         scene, shot, take = countlast(filmname, filmfolder)
                         loadfilmsettings = True
                         updatethumb = True
                         rendermenu = True
-                        time.sleep(0.2)
+                    time.sleep(0.2)
                 elif pressed == 'remove' and menu[selected] == 'CAMERA:':
                     if camselected != 0:
                         cameras.pop(camselected)
@@ -1326,7 +1330,7 @@ def main():
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
                             db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolenght=0, videolenght=0)
-                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D dsnoop:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
+                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
                                 camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel)
@@ -2198,7 +2202,7 @@ def writemenu(menu,settings,selected,header,showmenu):
     spaces = len(menudone) - 500
     menudone += spaces * ' '
     if oldmenu != menudone or rendermenu == True:
-        print(term.clear+term.home)
+        #print(term.clear+term.home)
         if showmenu == 0:
             print(term.red+menudoneprint)
         else:
@@ -2504,6 +2508,8 @@ def getfilms(filmfolder):
     #get a list of films, in order of settings.p file last modified
     films_sorted = []
     films = next(os.walk(filmfolder))[1]
+    if films == []:
+        return
     for i in films:
         if not '.videos' in i:
             if os.path.isfile(filmfolder + i + '/' + 'settings.p') == True:
@@ -2978,7 +2984,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
                         camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=quality, level=profilelevel)
                         if sound == True:
-                            os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D dsnoop:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
+                            os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
                         starttime = time.time()
                         recording = True
@@ -3101,9 +3107,21 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         shot=1
                         take=1
                     elif sceneshotortake == 'film':
+                        origin_videos=[]
+                        v=organize(filmfolder, filmname)
+                        if v == '':
+                            return
+                        origin_videos.extend(v)
+                        for i in origin_videos:
+                            print('remove video: '+i)
+                            try:
+                                os.remove(i)
+                            except:
+                                pass
+                            #time.sleep(3)
                         foldername = filmfolder + filmname
                         os.system('rm -r ' + foldername)
-                    return
+                        return
                 else:
                     if sceneshotortake == 'take':
                         writemessage('Throwing take on the floor' + str(take))
@@ -3138,13 +3156,68 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         shot = 1
                         take = 1
                     elif sceneshotortake == 'film':
+                        origin_videos=[]
+                        v=organize(filmfolder, filmname)
+                        if v == '':
+                            return
+                        origin_videos.extend(v)
+                        for i in origin_videos:
+                            print('remove video: '+i)
+                            try:
+                                os.remove(i)
+                            except:
+                                pass
+                            #time.sleep(3)
                         foldername = filmfolder + filmname
                         os.system('rm -r ' + foldername)
+                        return
                     organize(filmfolder, filmname + '_onthefloor')
                 return
             elif selected == 0:
                 return
         time.sleep(0.02)
+
+#--------CLEAN---------
+
+def clean(filmname, filmfolder):
+    if filmname == '':
+        films = getfilms(filmfolder)
+    else:
+        films.append(filmname)
+    videos_to_remove=[]
+    origin_videos=[]
+    for f in films:
+        v=organize(filmfolder, f[0])
+        origin_videos.extend(v)
+        print(filmfolder)
+        print(f[0])
+        print(origin_videos)
+        #time.sleep(5)
+    print('ORIGIN')
+    print(origin_videos)
+    print('alll')
+    allfiles = os.listdir(filmfolder+'.videos/')
+    print(allfiles)
+    print('all videos: '+ str(len(allfiles)))
+    remove_videos=[]
+    for video in allfiles:
+        if any(filmfolder+'.videos/'+video in x for x in origin_videos):
+            #os.remove(origin)
+            print('REMOVE ORIGIN VIDEO NOT IN SYNC ' + video)
+        else:
+            #os.remove(origin)
+            if video != 'gonzopi.db':
+                remove_videos.append(filmfolder+'.videos/'+video)
+            print('ORIGIN VIDEO IN SYNC' + video)
+    #print(remove_videos)
+    print('all videos: '+ str(len(allfiles)))
+    print('origin videos: '+ str(len(origin_videos)))
+    print('to be removed: '+ str(len(remove_videos)))
+    for i in remove_videos:
+        os.remove(i)
+    #with open(filmfolder+'.videos/.remove_videos', 'w') as outfile:
+    #    outfile.write('\n'.join(str(i) for i in remove_videos))
+    #time.sleep(10)
 
 #------------Remove and Organize----------------
 
@@ -4299,7 +4372,7 @@ def playdub(filmname, filename, player_menu):
         #run_command('aplay -D plughw:0 ' + filename + '.wav &')
         #run_command('mplayer ' + filename + '.wav &')
     if player_menu == 'dub':
-        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D dsnoop:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv /dev/shm/dub.wav &')
+        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv /dev/shm/dub.wav &')
     time.sleep(0.5)
     #try:
     #    playerAudio.play()
@@ -4451,7 +4524,7 @@ def playdub(filmname, filename, player_menu):
                     #    playerAudio.play()
                     #run_command('aplay -D plughw:0 ' + filename + '.wav &')
                     if dub == True:
-                        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D dsnoop:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv /dev/shm/dub.wav &')
+                        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv /dev/shm/dub.wav &')
                 except:
                     pass
                 starttime = time.time()
@@ -4902,7 +4975,7 @@ def startstream(camera, stream, plughw, channels):
     with open("/home/pi/.youtube-live") as fp:
         key = fp.readlines()
     print('using key: ' + key[0])
-    stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i dsnoop:'+str(plughw)+' -ar 48000 -vcodec copy -acodec libmp3lame -b:a 128k -ar 48000 -map 0:0 -map 1:0 -strict experimental -f flv ' + youtube + key[0]
+    stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 48000 -vcodec copy -acodec libmp3lame -b:a 128k -ar 48000 -map 0:0 -map 1:0 -strict experimental -f flv ' + youtube + key[0]
     #
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 44100 -vcodec copy -acodec libmp3lame -b:a 128k -ar 44100 -map 0:0 -map 1:0 -strict experimental -f mpegts tcp://0.0.0.0:3333\?listen'
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -map 0:0 -map 1:0 -g 0 -f mpegts udp://10.42.0.169:5002'
@@ -5284,7 +5357,7 @@ def startcamera(lens, fps):
     if camera_model == 'imx219':
         #table = read_table('lenses/' + lens)
         #camera.lens_shading_table = table
-        camera.framerate = 24.999
+        camera.framerate = 25
     elif camera_model == 'ov5647':
         #table = read_table('lenses/' + lens)
         camera.lens_shading_table = table

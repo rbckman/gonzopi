@@ -104,7 +104,7 @@ session.randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hex
 ##---------------Connection----------------------------------------------
 
 def pingtocamera(host, port, data):
-    print("Sending to "+host+" on port "+str(port)+" DATA:"+data)
+    #print("Sending to "+host+" on port "+str(port)+" DATA:"+data)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(0.01)
     try:
@@ -138,14 +138,14 @@ def sendtocamera(host, port, data):
 def getfilms(filmfolder):
     #get a list of films, in order of settings.p file last modified
     films_sorted = []
-    print(filmfolder)
+    #print(filmfolder)
     films = next(os.walk(filmfolder))[1]
     for i in films:
         if os.path.isfile(filmfolder + i + '/settings.p') == True:
             lastupdate = os.path.getmtime(filmfolder + i + '/' + 'settings.p')
             films_sorted.append((i,lastupdate))
     films_sorted = sorted(films_sorted, key=lambda tup: tup[1], reverse=True)
-    print(films_sorted)
+    #print(films_sorted)
     return films_sorted
 
 #------------Count scenes--------
@@ -207,9 +207,9 @@ def countsize(filename):
 def checkvideo(video,filmfolder,film,scene,shot,take):
     if take==None:
         take=1
-    print(basedir+video)
+    #print(basedir+video)
     p = "/"+filmfolder+film+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+ "/picture"+str(take).zfill(3)+".jpeg"
-    print(p)
+    #print(p)
     v = ''
     if video != '':
         try:
@@ -336,7 +336,7 @@ class index:
             session.reload = 1
             raise web.seeother('/c/')
         thumb="/"+filmfolder+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
-        print(thumb)
+        #print(thumb)
         if os.path.isfile(basedir+thumb) == False:
             print(basedir+thumb)
             thumb=''
@@ -424,7 +424,7 @@ class api:
         if menu != menuold or vumetermessage != vumeterold:
             menuold=menu
             vumeterold=vumetermessage
-            print(menu)
+            #print(menu)
             menudone=''
             p=0
             film=None
