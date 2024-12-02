@@ -428,6 +428,7 @@ class api:
             menudone=''
             p=0
             film=None
+            selectfilm=False
             if menu != '':
                 scene=1
                 shot=1
@@ -450,7 +451,14 @@ class api:
                         #    menudone=menudone+'<br>'
                         #if p == 30:
                         #    menudone=menudone+'<br>'
-                    if p == 4:
+                    if p == 2 and i.rstrip('\n') == 'Up and down to select and load film':
+                        selectfilm=True
+                    if p == 3 and selectfilm==True:
+                        try:
+                            film=i.split(':')[1].rstrip('\n')
+                        except:
+                            film=None
+                    if p == 4 and selectfilm == False:
                         try:
                             film=i.split(':')[1].rstrip('\n')
                         except:
@@ -478,6 +486,9 @@ class api:
             thumb = ''
             video = ''
             if film != None:
+                if selected == 0:
+                    video = '/'+filmfolder + film +'/'+ film+'.mp4'
+                    menudone+=menudone+'video'
                 if selected == 4:
                     video = '/'+filmfolder + film +'/'+ film+'.mp4'
                 elif selected == 5:

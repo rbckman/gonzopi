@@ -1978,12 +1978,12 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 writemenu(menu,settings,selected,'',showmenu)
@@ -4799,6 +4799,9 @@ def usbfilmfolder(dsk):
     buttontime = time.time()
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
+    if os.path.exists('/dev/sda1') == True:
+        os.system('sudo mount /dev/sda1 /media/usb0')
+        #os.system('sudo umount -l /media/usb0')
     if dsk == 1:
         usbmount = 1
     else:
@@ -5357,7 +5360,7 @@ def startcamera(lens, fps):
     if camera_model == 'imx219':
         #table = read_table('lenses/' + lens)
         #camera.lens_shading_table = table
-        camera.framerate = 24.97
+        camera.framerate = 24.96
     elif camera_model == 'ov5647':
         #table = read_table('lenses/' + lens)
         camera.lens_shading_table = table
