@@ -1333,7 +1333,7 @@ def main():
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
-                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel, quality=25)
+                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel, quality=quality)
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
                             recording = True
@@ -2982,7 +2982,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             else:
                                 run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
-                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=quality, level=profilelevel)
+                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=5555555, level=profilelevel, quality=quality)
                         if sound == True:
                             os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
@@ -4986,7 +4986,7 @@ def startstream(camera, stream, plughw, channels):
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://10.42.0.169:5002'
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
-        camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 5555555)
+        camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 5555555, quality=quality)
     except:
         stream = ''
     #now = time.strftime("%Y-%m-%d-%H:%M:%S") 
