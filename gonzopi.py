@@ -71,7 +71,7 @@ if rpimode:
     os.system('sudo chown -R pi /dev/shm')
 
     #make cpu freq performance
-    os.system('sudo cpufreq-set -g performance')
+    #os.system('sudo cpufreq-set -g performance')
 
     #I2CBUTTONS
     probei2c = 0
@@ -1333,7 +1333,7 @@ def main():
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
-                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel)
+                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel, quality=25)
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
                             recording = True
@@ -2202,7 +2202,7 @@ def writemenu(menu,settings,selected,header,showmenu):
     spaces = len(menudone) - 500
     menudone += spaces * ' '
     if oldmenu != menudone or rendermenu == True:
-        #print(term.clear+term.home)
+        print(term.clear+term.home)
         if showmenu == 0:
             print(term.red+menudoneprint)
         else:
@@ -5357,7 +5357,7 @@ def startcamera(lens, fps):
     if camera_model == 'imx219':
         #table = read_table('lenses/' + lens)
         #camera.lens_shading_table = table
-        camera.framerate = 25
+        camera.framerate = 24.97
     elif camera_model == 'ov5647':
         #table = read_table('lenses/' + lens)
         camera.lens_shading_table = table
