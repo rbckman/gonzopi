@@ -5361,7 +5361,7 @@ def startcamera(lens, fps):
     if camera_model == 'imx219':
         #table = read_table('lenses/' + lens)
         #camera.lens_shading_table = table
-        camera.framerate = 24.961
+        camera.framerate = 24.96
     elif camera_model == 'ov5647':
         #table = read_table('lenses/' + lens)
         camera.lens_shading_table = table
@@ -5383,7 +5383,7 @@ def startcamera(lens, fps):
     elif camera_model == 'imx477':
         #fps_selection=[5,15,24.985,35,49]
         #if sound is gettin before pic add 0.001
-        fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]
+        fps_selection=[5,8,10,11,12,13,14,15,24.96,35,49]
         fps=fps_selection[fps_selected]
         camera.framerate = fps 
     else:
