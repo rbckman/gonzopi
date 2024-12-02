@@ -71,7 +71,7 @@ if rpimode:
     os.system('sudo chown -R pi /dev/shm')
 
     #make cpu freq performance
-    #os.system('sudo cpufreq-set -g performance')
+    os.system('sudo cpufreq-set -g performance')
 
     #I2CBUTTONS
     probei2c = 0
@@ -2202,7 +2202,7 @@ def writemenu(menu,settings,selected,header,showmenu):
     spaces = len(menudone) - 500
     menudone += spaces * ' '
     if oldmenu != menudone or rendermenu == True:
-        print(term.clear+term.home)
+        #print(term.clear+term.home)
         if showmenu == 0:
             print(term.red+menudoneprint)
         else:
@@ -4801,6 +4801,7 @@ def usbfilmfolder(dsk):
     writemessage('Searching for usb storage device, middlebutton to cancel')
     if os.path.exists('/dev/sda1') == True:
         os.system('sudo mount /dev/sda1 /media/usb0')
+        os.system('sudo chown pi /media/usb0')
         #os.system('sudo umount -l /media/usb0')
     if dsk == 1:
         usbmount = 1
@@ -5360,7 +5361,7 @@ def startcamera(lens, fps):
     if camera_model == 'imx219':
         #table = read_table('lenses/' + lens)
         #camera.lens_shading_table = table
-        camera.framerate = 24.96
+        camera.framerate = 24.961
     elif camera_model == 'ov5647':
         #table = read_table('lenses/' + lens)
         camera.lens_shading_table = table
