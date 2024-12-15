@@ -773,7 +773,7 @@ def main():
                         print('is there already prob')
                     add_organize(filmfolder, filmname)
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    vumetermessage('Shot ' + str(shot) + ' inserted')
+                    #vumetermessage('Shot ' + str(shot) + ' inserted')
                     updatethumb = True
                     time.sleep(1)
                 #INSERT SHOT TO LAST SHOT
@@ -788,7 +788,7 @@ def main():
                         print('is there already prob')
                     add_organize(filmfolder, filmname)
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    vumetermessage('Shot ' + str(shot) + ' inserted')
+                    #vumetermessage('Shot ' + str(shot) + ' inserted')
                     updatethumb = True
                 #INSERT TAKE
                 elif pressed == 'insert_take':
@@ -801,7 +801,7 @@ def main():
                         print('is there already prob')
                     add_organize(filmfolder, filmname)
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    vumetermessage('Take ' + str(shot) + ' inserted')
+                    #vumetermessage('Take ' + str(shot) + ' inserted')
                     updatethumb = True
                     #time.sleep(1)
                 #INSERT SCENE
@@ -814,7 +814,7 @@ def main():
                     shot = 1
                     updatethumb = True
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    vumetermessage('Scene ' + str(scene) + ' inserted')
+                    #vumetermessage('Scene ' + str(scene) + ' inserted')
                     time.sleep(1)
                 #NEW SCENE
                 elif pressed == 'new_scene':
@@ -1191,32 +1191,32 @@ def main():
                 elif event == "0":
                     newselected = 0
                 elif event == "1":
+                    if len(cameras) > 0:
+                        newselected = 0
+                elif event == "2":
                     if len(cameras) > 1:
                         newselected = 1
-                elif event == "2":
+                elif event == "3":
                     if len(cameras) > 2:
                         newselected = 2
-                elif event == "3":
+                elif event == "4":
                     if len(cameras) > 3:
                         newselected = 3
-                elif event == "4":
+                elif event == "5":
                     if len(cameras) > 4:
                         newselected = 4
-                elif event == "5":
+                elif event == "6":
                     if len(cameras) > 5:
                         newselected = 5
-                elif event == "6":
+                elif event == "7":
                     if len(cameras) > 6:
                         newselected = 6
-                elif event == "7":
+                elif event == "8":
                     if len(cameras) > 7:
                         newselected = 7
-                elif event == "8":
+                elif event == "9":
                     if len(cameras) > 8:
                         newselected = 8
-                elif event == "9":
-                    if len(cameras) > 9:
-                        newselected = 9
                 elif event == "-":
                     if cameras[camselected] not in camerasoff:
                         camerasoff.append(cameras[camselected])
@@ -1266,10 +1266,13 @@ def main():
                     camselected=newselected
                     rendermenu = True
                     #vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected+' camselected:'+str(camselected))
-                    if len(cameras) > 1:
-                        vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
+                    if len(cameras) > 0:
+                        if camera_recording:
+                            vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected+1)+' rec:'+str(camera_recording+1))
+                        else:
+                            vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected+1)+' rec:'+str(camera_recording))
                     else:
-                        vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
+                        vumetermessage('filming with '+camera_model +' ip:'+ network)
 
 
             #RECORD AND PAUSE
@@ -1439,7 +1442,7 @@ def main():
                 reclenght = 0
             elif pressed == 'middle' and menu[selected] == 'LIVE:':
                 if stream == '':
-                    stream = startstream(camera, stream, plughw, channels)
+                    stream = startstream(camera, stream, plughw, channels,network)
                     if stream == '':
                         vumetermessage('something wrong with streaming')
                     else:
@@ -1983,7 +1986,7 @@ def main():
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, str(camselected), '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 writemenu(menu,settings,selected,'',showmenu)
@@ -2016,7 +2019,10 @@ def main():
                         if len(cameras) > 1:
                             camerasconnected='connected '+str(len(cameras)-1)
                             recordwithports=True
-                            vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected)+' rec:'+str(camera_recording))
+                            if camera_recording:
+                                vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected+1)+' rec:'+str(camera_recording+1))
+                            else:
+                                vumetermessage('filming with '+camera_model +' ip:'+ cameras[camselected] + ' '+camerasconnected+' camselected:'+str(camselected+1)+' rec:'+str(camera_recording))
                         else:
                             camerasconnected=''
                             recordwithports=False
@@ -2234,6 +2240,7 @@ def vumetermessage(message):
     f = open('/dev/shm/vumeter', 'w')
     f.write(message + clear * ' ')
     f.close()
+    logger.info(message)
 
 #------------Count file size-----
 
@@ -2841,6 +2848,131 @@ def nameyourfilm(filmfolder, filmname, abc, newfilm):
         elif event in abc:
             pausetime = time.time()
             filmname = filmname + event
+        if time.time() - pausetime > 0.5:
+            if blinking == True:
+                cursor = abc[abcx]
+            if blinking == False:
+                cursor = ' '
+            blinking = not blinking
+            pausetime = time.time()
+        time.sleep(keydelay)
+
+
+#-------------New udp Stream host----------------
+
+def newudp_ip(abc, network):
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    abcx = 0
+    helpmessage = 'Up, Down (select characters) Right (next). Middle (done), Retake (Cancel)'
+    cursor = '_'
+    blinking = True
+    pausetime = time.time()
+    ip_network = network.split('.')[:-1]
+    ip_network = '.'.join(ip_network)+'.'
+    ip = ''
+    port=8000
+    while True:
+        message = 'Host ip and port: ' + ip_network + ip
+        print(term.clear+term.home)
+        print(message+cursor)
+        writemessage(message + cursor)
+        vumetermessage(helpmessage)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if event == ' ':
+            event = '_'
+        if pressed == 'down':
+            pausetime = time.time()
+            if abcx < (len(abc) - 1):
+                abcx = abcx + 1
+                cursor = abc[abcx]
+        elif pressed == 'up':
+            pausetime = time.time()
+            if abcx > 0:
+                abcx = abcx - 1
+                cursor = abc[abcx]
+        elif pressed == 'right':
+            pausetime = time.time()
+            if len(ip) < 2:
+                ip = ip + abc[abcx]
+                cursor = abc[abcx]
+            else:
+                helpmessage = 'Yo, maximum ip reached bro!'
+        elif pressed == 'left' or pressed == 'remove':
+            pausetime = time.time()
+            if len(ip) > 0:
+                ip = ip[:-1]
+                cursor = abc[abcx]
+        elif pressed == 'middle' or event == 10:
+            if abc[abcx] != ' ' or ip != '':
+                ip = ip + abc[abcx]
+                if int(ip) < 256:
+                    logger.info("New host " + ip_network+ip)
+                    newhost = (ip_network+ip).strip()
+                    break
+                else:
+                    helpmessage = 'in the range of ips 1-256'
+        elif pressed == 'retake':
+            return '' 
+        elif event in abc:
+            pausetime = time.time()
+            ip = ip + event
+        if time.time() - pausetime > 0.5:
+            if blinking == True:
+                cursor = abc[abcx]
+            if blinking == False:
+                cursor = ' '
+            blinking = not blinking
+            pausetime = time.time()
+        time.sleep(keydelay)
+    ip='800'
+    abcx=1
+    while True:
+        message = 'Host ip and port: ' + newhost + ': ' + ip
+        print(term.clear+term.home)
+        print(message+cursor)
+        writemessage(message + cursor)
+        vumetermessage(helpmessage)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if event == ' ':
+            event = '_'
+        if pressed == 'down':
+            pausetime = time.time()
+            if abcx < (len(abc) - 1):
+                abcx = abcx + 1
+                cursor = abc[abcx]
+        elif pressed == 'up':
+            pausetime = time.time()
+            if abcx > 0:
+                abcx = abcx - 1
+                cursor = abc[abcx]
+        elif pressed == 'right':
+            pausetime = time.time()
+            if len(ip) < 2:
+                ip = ip + abc[abcx]
+                cursor = abc[abcx]
+            else:
+                helpmessage = 'Yo, maximum ip reached bro!'
+        elif pressed == 'left' or pressed == 'remove':
+            pausetime = time.time()
+            if len(ip) > 0:
+                ip = ip[:-1]
+                cursor = abc[abcx]
+        elif pressed == 'middle' or event == 10:
+            if abc[abcx] != ' ' or ip != '':
+                ip = ip + abc[abcx]
+                if int(ip) < 8256:
+                    logger.info("New port " +ip)
+                    return newhost, (ip).strip()
+                else:
+                    helpmessage = 'in the range of ips 1-256'
+        elif pressed == 'retake':
+            return '' 
+        elif event in abc:
+            pausetime = time.time()
+            ip = ip + event
         if time.time() - pausetime > 0.5:
             if blinking == True:
                 cursor = abc[abcx]
@@ -4973,17 +5105,19 @@ def uploadfilm(filename, filmname):
 
 #-------------Streaming---------------
 
-def startstream(camera, stream, plughw, channels):
+def startstream(camera, stream, plughw, channels,network):
     #youtube
-    youtube="rtmp://a.rtmp.youtube.com/live2/"
-    with open("/home/pi/.youtube-live") as fp:
-        key = fp.readlines()
-    print('using key: ' + key[0])
-    stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 48000 -vcodec copy -acodec libmp3lame -b:a 128k -ar 48000 -map 0:0 -map 1:0 -strict experimental -f flv ' + youtube + key[0]
+    #youtube="rtmp://a.rtmp.youtube.com/live2/"
+    #with open("/home/pi/.youtube-live") as fp:
+    #    key = fp.readlines()
+    #print('using key: ' + key[0])
+    #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 48000 -vcodec copy -acodec libmp3lame -b:a 128k -ar 48000 -map 0:0 -map 1:0 -strict experimental -f flv ' + youtube + key[0]
     #
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 44100 -vcodec copy -acodec libmp3lame -b:a 128k -ar 44100 -map 0:0 -map 1:0 -strict experimental -f mpegts tcp://0.0.0.0:3333\?listen'
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -map 0:0 -map 1:0 -g 0 -f mpegts udp://10.42.0.169:5002'
-    #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://10.42.0.169:5002'
+    numbers_only = ' ','1','2','3','4','5','6','7','8','9','0'
+    newhost, hostport = newudp_ip(numbers_only, network)
+    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+newhost+':'+hostport
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
         camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 5555555, quality=quality)

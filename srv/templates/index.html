@@ -102,26 +102,6 @@ $$(document).on('keydown', function (event) {
         $$('#DELETE').trigger('click');
     } else if (event.which == 13) {
         $$('#MIDDLE').trigger('click');
-    } else if (event.which == 49) {
-        $$('#CAMERA0').trigger('click');
-    } else if (event.which == 50) {
-        $$('#CAMERA1').trigger('click');
-    } else if (event.which == 51) {
-        $$('#CAMERA2').trigger('click');
-    } else if (event.which == 52) {
-        $$('#CAMERA3').trigger('click');
-    } else if (event.which == 53) {
-        $$('#CAMERA4').trigger('click');
-    } else if (event.which == 54) {
-        $$('#CAMERA5').trigger('click');
-    } else if (event.which == 55) {
-        $$('#CAMERA6').trigger('click');
-    } else if (event.which == 56) {
-        $$('#CAMERA7').trigger('click');
-    } else if (event.which == 57) {
-        $$('#CAMERA8').trigger('click');
-    } else if (event.which == 58) {
-        $$('#CAMERA9').trigger('click');
     } else if (event.which == 97) {
         $$('#CAMERA0').trigger('click');
     } else if (event.which == 98) {
@@ -182,7 +162,7 @@ $for i in cameras:
 <a id="DELETE">DELETE</a> <a id="DOWN">DOWN</a> <a id="RETAKE">RETAKE</a><br>
 </div>
 <div id="controller2">
-<a id="CAMERA0">CAM0</a> <a id="CAMERA1">CAM1</a> <a id="CAMERA2">CAM2</a><br>
+<a id="CAMERA0">CAM1</a> <a id="CAMERA1">CAM2</a> <a id="CAMERA2">CAM3</a><br>
 </div>
 <div id="controller3">
 <a id="MOVE">MOVE</a> <a id="COPY">COPY</a> <a id="PASTE">PASTE</a><br>
@@ -214,6 +194,103 @@ $if thumb != '':
     <br>
 
 <script>
+$$('#CAMERA0').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera0",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA1').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera1",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA2').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera2",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA3').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera3",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA4').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera4",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA5').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera5",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA6').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera6",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#CAMERA7').on('click', function () {
+    $$.ajax({
+    method: "GET",
+    type: "Content-type",
+    url:"/api?func=camera7",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+
 $$('#LEFT').on('click', function () {
     $$.ajax({
     method: "GET",
