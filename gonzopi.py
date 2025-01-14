@@ -995,7 +995,11 @@ def main():
                     except:
                         logger.info('no origin videos')
                     #run_command('scp -r '+filmfolder+filmname+'/'+'scene'+str(scene).zfill(3)+' pi@'+ip+':'+filmfolder+filmname+'/')
-                    sendtocamera(ip,port,'SYNCDONE:'+cameras[0]+'|'+filmfolder)
+                    received=False
+                    while received != True:
+                        received = sendtocamera(ip,port,'SYNCDONE:'+cameras[0]+'|'+filmfolder)
+                        time.sleep(5)
+                        logger.info('sending syncdone again...')
                     startinterface()
                     camera = startcamera(lens,fps)
                     loadfilmsettings = True
@@ -1005,10 +1009,11 @@ def main():
                     msg = pressed.split(':')[1]
                     syncfolder=msg.split('|')[1]
                     ip = msg.split('|')[0]
+                    sendtocamera(ip,port,'GOTSYNC:'+cameras[0]+'|'+filmfolder)
                     logger.info('SYNCING from ip:'+ip)
                     run_command('ssh-copy-id pi@'+ip)
                     try:
-                        run_command('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
+                        os.system('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ &')
                     except:
                         logger.info('no files')
                     with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
@@ -1867,6 +1872,7 @@ def main():
                     scene=filmsettings[24]
                     shot=filmsettings[25]
                     take=filmsettings[26]
+                    cameras=filmsettings[27]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
                 except:
@@ -1995,7 +2001,7 @@ def main():
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
@@ -2140,8 +2146,10 @@ def sendtocamera(host, port, data):
             s.send(str.encode(data))
             print("Sent to server..")
             break
+        return True
     except:
         print('did not connect')
+        return False
     s.close()
 
 ##---------------Send to server----------------------------------------------
