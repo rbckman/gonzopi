@@ -995,7 +995,7 @@ def main():
                     except:
                         logger.info('no origin videos')
                     #run_command('scp -r '+filmfolder+filmname+'/'+'scene'+str(scene).zfill(3)+' pi@'+ip+':'+filmfolder+filmname+'/')
-                    sendtocamera(ip,port,'SYNCDONE:'+ip+'|'+filmfolder)
+                    sendtocamera(ip,port,'SYNCDONE:'+cameras[0]+'|'+filmfolder)
                     startinterface()
                     camera = startcamera(lens,fps)
                     loadfilmsettings = True
