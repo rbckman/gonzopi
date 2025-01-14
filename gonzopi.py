@@ -991,7 +991,7 @@ def main():
                         run_command('ssh-keygen')
                     run_command('ssh-copy-id pi@'+ip)
                     try:
-                        run_command('rsync -avr --update --progress --files-from='+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos --no-relative / pi@'+ip+':'+syncfolder+'.videos/ &')
+                        run_command('rsync -avr --update --progress --files-from='+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos --no-relative / pi@'+ip+':'+syncfolder+'.videos/')
                     except:
                         logger.info('no origin videos')
                     #run_command('scp -r '+filmfolder+filmname+'/'+'scene'+str(scene).zfill(3)+' pi@'+ip+':'+filmfolder+filmname+'/')
@@ -1008,7 +1008,7 @@ def main():
                     logger.info('SYNCING from ip:'+ip)
                     run_command('ssh-copy-id pi@'+ip)
                     try:
-                        run_command('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ &')
+                        run_command('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
                     except:
                         logger.info('no files')
                     with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
@@ -1113,7 +1113,7 @@ def main():
                         if i != cameras[0]:
                             vumetermessage('Hold on syncing!')
                             sendtocamera(i,port,'SYNCIP:'+cameras[0]+'|'+filmfolder)
-                            time.sleep(1)
+                            time.sleep(0.05)
                 elif pressed == "middle" and menu[selected]=='New SCENE':
                     a=0
                     for i in cameras:
