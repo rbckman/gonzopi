@@ -58,18 +58,18 @@ else
     apt-get -y install git python3-pip python-configparser libav-tools mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake python3-ifaddr python3-pygame
 fi
 echo "installing python-omxplayer-wrapper..."
-sudo pip3 install omxplayer-wrapper
+pip3 install omxplayer-wrapper
 echo "installing blessed..."
-sudo pip3 install blessed
+pip3 install blessed
 echo "installing secrets..."
-sudo pip3 install secrets
-sudo pip3 install numpy
-sudo pip3 install RPi.GPIO
+pip3 install secrets
+pip3 install numpy
+pip3 install RPi.GPIO
 echo "installing picamerax with lens shading correction..."
 #sudo pip3 --no-cache-dir install https://github.com/chrisruk/picamera/archive/hq-camera-new-framerates.zip --upgrade
-sudo pip3 install --upgrade picamerax
+pip3 install --upgrade picamerax
 echo "installing web.py for the gonzopi webserver..."
-sudo pip3 install web.py==0.61
+pip3 install web.py==0.61
 
 if [ "$screen" = "ugeek-hdtft" ]
 then
