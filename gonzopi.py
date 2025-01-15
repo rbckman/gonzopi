@@ -211,6 +211,7 @@ def main():
     gonzopiversion = f.readline()
     gonzopivername = f.readline()
     db=''
+    synclist=[]
 
     if rpimode:
         #START INTERFACE
@@ -980,7 +981,10 @@ def main():
                     msg = pressed.split(':')[1]
                     syncfolder=msg.split('|')[1]
                     ip = msg.split('|')[0]
+                    synctime= ip.split(';')[1]
+                    ip = ip.split(';')[0]
                     vumetermessage('SYNCING!')
+                    time.sleep(int(synctime))
                     stopinterface(camera)
                     video_files=shotfiles(filmfolder, filmname, scene)
                     for i in video_files:
@@ -998,38 +1002,46 @@ def main():
                     received=False
                     while received != True:
                         received = sendtocamera(ip,port,'SYNCDONE:'+cameras[0]+'|'+filmfolder)
-                        time.sleep(5)
+                        time.sleep(1)
                         logger.info('sending syncdone again...')
                     startinterface()
                     camera = startcamera(lens,fps)
                     loadfilmsettings = True
                     rendermenu = True
                 elif 'SYNCDONE:' in pressed:
-                    stopinterface(camera)
                     msg = pressed.split(':')[1]
                     syncfolder=msg.split('|')[1]
                     ip = msg.split('|')[0]
                     sendtocamera(ip,port,'GOTSYNC:'+cameras[0]+'|'+filmfolder)
-                    logger.info('SYNCING from ip:'+ip)
-                    run_command('ssh-copy-id pi@'+ip)
-                    try:
-                        os.system('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ &')
-                    except:
-                        logger.info('no files')
-                    with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
-                        if f:
-                            scene_origin_files = [line.rstrip() for line in f]
-                    #a=0
-                    #for i in cameras:
-                    #    if a != 0:
-                    #        run_command('rsync -avr --update --progress '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ pi@'+i+':'+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
-                    #        time.sleep(3)
-                    #    a=a+1
-                    startinterface()
-                    camera = startcamera(lens,fps)
-                    loadfilmsettings = True
-                    rendermenu = True
-                    vumetermessage('SYNC DONE!')
+                    synclist.append(ip)
+                    print(synclist)
+                    #time.sleep(3)
+                    if len(synclist) == len(cameras)-1:
+                        for ip in synclist:
+                            stopinterface(camera)
+                            logger.info('SYNCING from ip:'+ip)
+                            run_command('ssh-copy-id pi@'+ip)
+                            try:
+                                run_command('rsync -avr --update --progress pi@'+ip+':'+syncfolder+filmname+'/scene'+str(scene).zfill(3)+'/ '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
+                            except:
+                                logger.info('no files')
+                            try:
+                                with open(filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/.origin_videos', 'r') as f:
+                                    if f:
+                                        scene_origin_files = [line.rstrip() for line in f]
+                            except:
+                                logger.info('no files')
+                            #a=0
+                            #for i in cameras:
+                            #    if a != 0:
+                            #        run_command('rsync -avr --update --progress '+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/ pi@'+i+':'+filmfolder+filmname+'/scene'+str(scene).zfill(3)+'/')
+                            #        time.sleep(3)
+                            #    a=a+1
+                            startinterface()
+                            camera = startcamera(lens,fps)
+                            loadfilmsettings = True
+                            rendermenu = True
+                            vumetermessage('SYNC DONE!')
                 elif 'RETAKE' in pressed:
                     pressed="retake_now"
                 elif 'RETAKE:' in pressed:
@@ -1114,11 +1126,14 @@ def main():
                                     sendtocamera(i,port,'TAKEPLACEHOLDER')
                             a=a+1
                 elif pressed == "middle" and menu[selected]=="Sync SCENE":
+                    n=1
                     for i in cameras:
                         if i != cameras[0]:
                             vumetermessage('Hold on syncing!')
-                            sendtocamera(i,port,'SYNCIP:'+cameras[0]+'|'+filmfolder)
-                            time.sleep(0.05)
+                            sendtocamera(i,port,'SYNCIP:'+cameras[0]+';'+str(n)+'|'+filmfolder)
+                            synclist=[]
+                            n=n+1
+                            #time.sleep(1)
                 elif pressed == "middle" and menu[selected]=='New SCENE':
                     a=0
                     for i in cameras:
