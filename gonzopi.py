@@ -123,8 +123,8 @@ def main():
     gonzopifolder = os.getcwd()
 
     #MENUS
-    standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
-    gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:','SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
+    standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'CROSSFADE:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
+    gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'CROSSFADE:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
     menu = standardmenu
@@ -142,6 +142,10 @@ def main():
     awb_lock = 'no'
     effects = 'none', 'negative', 'solarize'
     effectselected = 0
+    blendmodes = 'screen', 'average', 'darken', 'lighten', 'burn', 'multiply'
+    blendselect=0
+    blending=False
+    crossfade=0
     cammode = 'film'
     camera_model=''
     fps = 25
@@ -479,29 +483,19 @@ def main():
                             trim = playdub(filmname,foldername + filename, 'shot')
                             if trim[0] == 'beginning' or trim[0] == 'end':
                                 writemessage('Cutting clip...')
-                                take = counttakes(filmname, filmfolder, scene, shot)+1
-                                trim_filename = foldername + 'take' + str(take).zfill(3)
-                                videotrim(foldername, foldername + filename, trim_filename, trim[0], trim[1])
+                                videotrimsave(foldername, trim[0], trim[1], filename)
                             elif trim[0] >= trim[1]:
                                 trim = [trim[0],0]
                             elif trim[0] != 0 and trim[1] != 0:
                                 writemessage('Cutting clip...')
-                                take = counttakes(filmname, filmfolder, scene, shot)+1
-                                trim_filename = foldername + 'take' + str(take).zfill(3)
-                                videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
-                                take = counttakes(filmname, filmfolder, scene, shot)+1
-                                trim_filename2 = foldername + 'take' + str(take).zfill(3)
-                                videotrim(foldername, trim_filename, trim_filename2, 'beginning', trim[0])
+                                videotrimsave(foldername, 'end', trim[1], filename)
+                                videotrimsave(foldername, 'beginning', trim[0], filename)
                             elif trim[0] == 0 and trim[1] != 0:
                                 writemessage('Cutting clip...')
-                                take = counttakes(filmname, filmfolder, scene, shot)+1
-                                trim_filename = foldername + 'take' + str(take).zfill(3)
-                                videotrim(foldername, foldername + filename, trim_filename, 'end', trim[1])
+                                videotrimsave(foldername, 'end', trim[1], filename)
                             if trim[0] != 0 and trim[1] == 0:
                                 writemessage('Cutting clip...')
-                                take = counttakes(filmname, filmfolder, scene, shot)+1
-                                trim_filename = foldername + 'take' + str(take).zfill(3)
-                                videotrim(foldername, foldername + filename, trim_filename, 'beginning', trim[0])
+                                videotrimsave(foldername, 'beginning', trim[0], filename)
                             imagename = foldername + filename + '.jpeg'
                             overlay = displayimage(camera, imagename, overlay, 3)
                             camera.start_preview()
@@ -509,6 +503,20 @@ def main():
                             vumetermessage('nothing here! hit rec!')
                         rendermenu = True
                         updatethumb=True
+                #BLEND
+                elif pressed == 'middle' and menu[selected] == 'BLEND:':
+                    videolenght=0
+                    filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
+                    compileshot(filename,filmfolder,filmname)
+                    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+                    videolenght = pipe.decode().strip()
+                    videolenght=(int(videolenght)/1000)-0.2
+                    if videolenght > 1:
+                        selected=3
+                        vumetermessage('select what shot to blend on')
+                        blending=True
+                        reclenght=videolenght
+                        pressed='record'
                 #DUB SHOT
                 elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
                     newdub = clipsettings(filmfolder, filmname, scene, shot, take, plughw)
@@ -1326,21 +1334,26 @@ def main():
             if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclenght != 0 and t > reclenght:
                 overlay = removeimage(camera, overlay)
                 if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
-                    #camera_recording=0
-                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
-                    if pressed == "record":
-                        #shot = shots+1
-                        take = takes+1
-                    elif pressed == "retake":
-                        take = takes+1
-                    elif pressed == 'record_now':
-                        shot=shots+1
-                        take=1
-                    elif pressed == 'retake_now':
-                        takes = counttakes(filmname, filmfolder, scene, shot)
-                        take = takes + 1
-                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                    filename = 'take' + str(take).zfill(3)
+                    #camera_recording=0 
+                    if blending == False:
+                        scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
+                        if pressed == "record":
+                            #shot = shots+1
+                            take = takes+1
+                        elif pressed == "retake":
+                            take = takes+1
+                        elif pressed == 'record_now':
+                            shot=shots+1
+                            take=1
+                        elif pressed == 'retake_now':
+                            takes = counttakes(filmname, filmfolder, scene, shot)
+                            take = takes + 1
+                        foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                        filename = 'take' + str(take).zfill(3)
+                    else:
+                        foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
+                        filename = blendmodes[blendselect]
+                        blending=False
                     if beeps > 0 and beeping == False:
                         beeping = True
                         beepcountdown = beeps
@@ -1504,6 +1517,9 @@ def main():
                     if effectselected < len(effects) - 1:
                         effectselected += 1
                         camera.image_effect = effects[effectselected]
+                elif menu[selected] == 'BLEND:':
+                    if blendselect < len(blendmodes) - 1:
+                        blendselect += 1
                 elif menu[selected] == 'SHUTTER:':
                     if camera.shutter_speed == 0:
                         camera.shutter_speed = camera.exposure_speed
@@ -1682,6 +1698,9 @@ def main():
                     if effectselected > 0:
                         effectselected -= 1
                         camera.image_effect = effects[effectselected]
+                elif menu[selected] == 'BLEND:':
+                    if blendselect > 0:
+                        blendselect -= 1
                 elif menu[selected] == 'SHUTTER:':
                     if camera.shutter_speed == 0:
                         camera.shutter_speed = camera.exposure_speed
@@ -2002,12 +2021,12 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect],str(crossfade), cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
                 else:
-                    #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
+                    #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'CROSSFADE:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '', cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect],str(crossfade), cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 writemenu(menu,settings,selected,'',showmenu)
@@ -2356,10 +2375,27 @@ def counttakes(filmname, filmfolder, scene, shot):
         allfiles = []
         return takes
     for a in allfiles:
-        if '.mp4' in a or '.h264' in a:
-            if not doubles.replace('.h264', '.mp4') == a:
-                takes = takes + 1
-            doubles = a
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                doubles = a
+    return takes
+
+def counttakes2(folder):
+    takes = 0
+    doubles = ''
+    try:
+        allfiles = os.listdir(folder)
+    except:
+        allfiles = []
+        return takes
+    for a in allfiles:
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                doubles = a
     return takes
 
 #-----------Count videos on floor-----
@@ -3399,44 +3435,45 @@ def organize(filmfolder, filmname):
             print(sorted(takes))
             #time.sleep(2)
             for s in sorted(takes):
-                if '.mp4' in s or '.h264' in s:
-                    unorganized_nr = int(s[4:7])
-                    takename = filmfolder + filmname + '/' + i + '/' + p + '/take' + str(unorganized_nr).zfill(3)
-                    if '.mp4' in s:
-                        origin=os.path.realpath(takename+'.mp4')
-                        if origin != os.path.abspath(takename+'.mp4'):
-                            print('appending: '+origin)
-                            origin_files.append(origin)
-                            origin_scene_files.append(origin)
-                            if os.path.isfile(takename+'.h264'):
-                                print('oh no boubles found!')
-                    if '.h264' in s:
-                        origin=os.path.realpath(takename+'.h264')
-                        if origin != os.path.abspath(takename+'.h264'):
-                            origin_files.append(origin)
-                            origin_scene_files.append(origin)
-                    if organized_nr == unorganized_nr:
-                        #print('correct')
-                        pass
-                    if organized_nr != unorganized_nr:
-                        print('false, correcting from ' + str(unorganized_nr) + ' to ' + str(organized_nr))
-                        print(s)
-                        #time.sleep(3)
-                        mv = 'mv ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(unorganized_nr).zfill(3)
-                        run_command(mv + '.mp4 ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.mp4')
-                        run_command(mv + '.h264 ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.h264')
-                        run_command(mv + '.wav ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.wav')
-                        run_command(mv + '.jpeg ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.jpeg')
-                    #check if same video has both h246 and mp4 and render and remove h264
-                    for t in sorted(takes):
-                        if t.replace('.mp4','') == s.replace('.h264','') or s.replace('.mp4','') == t.replace('.h264',''):
-                            logger.info('Found both mp4 and h264 of same video!')
-                            logger.info(t)
-                            logger.info(s)
-                            #time.sleep(5)
-                            compileshot(takename,filmfolder,filmname)
-                            organized_nr -= 1
-                    organized_nr += 1
+                if 'take' in s:
+                    if '.mp4' in s or '.h264' in s:
+                        unorganized_nr = int(s[4:7])
+                        takename = filmfolder + filmname + '/' + i + '/' + p + '/take' + str(unorganized_nr).zfill(3)
+                        if '.mp4' in s:
+                            origin=os.path.realpath(takename+'.mp4')
+                            if origin != os.path.abspath(takename+'.mp4'):
+                                print('appending: '+origin)
+                                origin_files.append(origin)
+                                origin_scene_files.append(origin)
+                                if os.path.isfile(takename+'.h264'):
+                                    print('oh no boubles found!')
+                        if '.h264' in s:
+                            origin=os.path.realpath(takename+'.h264')
+                            if origin != os.path.abspath(takename+'.h264'):
+                                origin_files.append(origin)
+                                origin_scene_files.append(origin)
+                        if organized_nr == unorganized_nr:
+                            #print('correct')
+                            pass
+                        if organized_nr != unorganized_nr:
+                            print('false, correcting from ' + str(unorganized_nr) + ' to ' + str(organized_nr))
+                            print(s)
+                            #time.sleep(3)
+                            mv = 'mv ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(unorganized_nr).zfill(3)
+                            run_command(mv + '.mp4 ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.mp4')
+                            run_command(mv + '.h264 ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.h264')
+                            run_command(mv + '.wav ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.wav')
+                            run_command(mv + '.jpeg ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.jpeg')
+                        #check if same video has both h246 and mp4 and render and remove h264
+                        for t in sorted(takes):
+                            if t.replace('.mp4','') == s.replace('.h264','') or s.replace('.mp4','') == t.replace('.h264',''):
+                                logger.info('Found both mp4 and h264 of same video!')
+                                logger.info(t)
+                                logger.info(s)
+                                #time.sleep(5)
+                                compileshot(takename,filmfolder,filmname)
+                                organized_nr -= 1
+                        organized_nr += 1
         origin_files.extend(origin_scene_files)
         with open(filmfolder+filmname+'/'+i+'/.origin_videos', 'w') as outfile:
             outfile.write('\n'.join(str(i) for i in origin_scene_files))
@@ -3763,6 +3800,11 @@ def scenefiles(filmfolder, filmname):
     #time.sleep(2)
     return files
 
+
+
+
+
+
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
@@ -3810,6 +3852,41 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         #    # run_command('rm ' + renderfilename + '*')
         #    status='',''
         #    q.put(status)
+
+        #EDITS AND FX
+        if os.path.isfile(scenedir+'.beginning') == True:
+            settings = pickle.load(open(scenedir + ".beginning", "rb"))
+            s, trimfile = settings
+            logger.info("settings loaded")
+            videotrim(scenedir,trimfile,'beginning', s)
+            os.remove(scenedir+'.beginning')
+            #readcutinout
+            #cutvideo()
+            newaudiomix = True
+        if os.path.isfile(scenedir+'.end') == True:
+            try:
+                settings = pickle.load(open(scenedir + ".end", "rb"))
+                s, trimfile = settings
+                logger.info("settings loaded")
+                videotrim(scenedir,trimfile,'end', s)
+                os.remove(scenedir+'.end')
+            except:
+                logger.info("couldnt load settings")
+            #readcutinout
+            #cutvideo()
+            newaudiomix = True
+        if os.path.isfile(scenedir+'blend/screen.h264') == True:
+            compileshot(scenedir+'blend/screen.h264',filmfolder,filmname)
+            run_command('ffmpeg -i '+renderfilename+'.mp4 -i '+scenedir+'blend/screen.mp4 -filter_complex "blend=screen" /dev/shm/screen.mp4')
+            run_command('cp /dev/shm/screen.mp4 '+renderfilename+'.mp4')
+            run_command('rm /dev/shm/screen.mp4')
+            #ffmpeg -i blendtest.mp4 -i blendtest3.mp4 -filter_complex "blend=screen" output2.mp4
+            newaudiomix = True
+        if os.path.isfile(scenedir+'dub/.crossfade.mp4') == True:
+            #ffmpeg -i blendtest.mp4 -i blendtest.mp4 -filter_complex "xfade=offset=4.5:duration=1" output3.mp4
+            #crossfade()
+            pass
+
         try:
             with open(scenedir + '.videohash', 'r') as f:
                 oldvideohash = f.readline().strip()
@@ -4414,6 +4491,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
         elif pressed == 'left':
             if selected > 0:
                 selected = selected - 1
+
         elif pressed == 'middle' and menu[selected] == 'BACK':
             os.system('pkill aplay')
             break
@@ -4755,14 +4833,31 @@ def viewfilm(filmfolder, filmname):
         scene = scene + 1
     return filmfiles
 
+
+#--------------Save video trim settings-----------------
+
+def videotrimsave(filmfolder, where, s, trimfile):
+    #db.insert('videos', tid=datetime.datetime.now())
+    settings=s,trimfile
+    try:
+        with open(filmfolder + "."+where, "wb") as f:
+            pickle.dump(settings, f)
+            #logger.info("settings saved")
+    except:
+        logger.warning("could not save settings")
+        #logger.warning(e)
+    return
+
 #---------------Video Trim--------------------
 
-def videotrim(foldername ,filename, trim_filename, where, s):
+def videotrim(foldername ,filename, where, s):
     #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
+    trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
+    filename=foldername+filename
     if where == 'beginning':
         logger.info('trimming clip from beginning')
         #run_command('ffmpeg -ss ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
-        run_command('MP4Box ' + filename + '.mp4 -splitx ' + str(s) + ':end -out ' + trim_filename + '.mp4')
+        run_command('MP4Box ' + filename + '.mp4 -splitx ' + str(s) + ':end -out ' + trim_filename +  '.mp4')
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'beginning','')
         if os.path.exists(foldername+'dub') == True:
