@@ -113,7 +113,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -123,8 +123,8 @@ def main():
     gonzopifolder = os.getcwd()
 
     #MENUS
-    standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'CROSSFADE:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
-    gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'CROSSFADE:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
+    standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
+    gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
     menu = standardmenu
@@ -145,7 +145,7 @@ def main():
     blendmodes = 'screen', 'average', 'darken', 'lighten', 'burn', 'multiply'
     blendselect=0
     blending=False
-    crossfade=0
+    crossfade=3
     cammode = 'film'
     camera_model=''
     fps = 25
@@ -517,6 +517,12 @@ def main():
                         blending=True
                         reclenght=videolenght
                         pressed='record'
+                #CROSSFADE
+                elif pressed == 'middle' and menu[selected] == 'CROSSFADE:':
+                    folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    filename = 'take' + str(take).zfill(3)
+                    vumetermessage('New crossfade made!')
+                    crossfadesave(folder,crossfade,filename) 
                 #DUB SHOT
                 elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
                     newdub = clipsettings(filmfolder, filmname, scene, shot, take, plughw)
@@ -1354,6 +1360,7 @@ def main():
                         foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
                         filename = blendmodes[blendselect]
                         blending=False
+                        reclenght=0
                     if beeps > 0 and beeping == False:
                         beeping = True
                         beepcountdown = beeps
@@ -2021,12 +2028,12 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect],str(crossfade), cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'CROSSFADE:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect],str(crossfade), cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 writemenu(menu,settings,selected,'',showmenu)
@@ -3875,18 +3882,45 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             #readcutinout
             #cutvideo()
             newaudiomix = True
-        if os.path.isfile(scenedir+'blend/screen.h264') == True:
-            compileshot(scenedir+'blend/screen.h264',filmfolder,filmname)
-            run_command('ffmpeg -i '+renderfilename+'.mp4 -i '+scenedir+'blend/screen.mp4 -filter_complex "blend=screen" /dev/shm/screen.mp4')
-            run_command('cp /dev/shm/screen.mp4 '+renderfilename+'.mp4')
-            run_command('rm /dev/shm/screen.mp4')
+        ###---------BLEND----------
+        if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.h264') == True:
+            compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+' -filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
+            screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
+            run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
+            run_command('cp /dev/shm/blend.mp4 '+screen_filename+'.mp4')
+            run_command('rm /dev/shm/blend.mp4')
+            run_command('ffmpeg -y -sseof -1 -i ' + screen_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + screen_filename + '.jpeg')
             #ffmpeg -i blendtest.mp4 -i blendtest3.mp4 -filter_complex "blend=screen" output2.mp4
             newaudiomix = True
-        if os.path.isfile(scenedir+'dub/.crossfade.mp4') == True:
-            #ffmpeg -i blendtest.mp4 -i blendtest.mp4 -filter_complex "xfade=offset=4.5:duration=1" output3.mp4
-            #crossfade()
-            pass
-
+        ###---------CROSSFADE--------
+        if os.path.isfile(scenedir+'.crossfade') == True:
+            settings = pickle.load(open(scenedir + ".crossfade", "rb"))
+            s, trimfile = settings
+            logger.info("settings loaded")
+            videolenght=0
+            foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+            crossfade_folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot+1).zfill(3) + '/'
+            crossfade_filename = 'take' + str(counttakes2(crossfade_folder)).zfill(3)
+            filename = trimfile
+            compileshot(crossfade_folder+crossfade_filename,crossfade_folder,filmname)
+            pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + foldername+filename + '.mp4', shell=True)
+            videolenght = pipe.decode().strip()
+            videolenght=(int(videolenght)/1000)-0.2
+            pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + crossfade_folder+ crossfade_filename + '.mp4', shell=True)
+            videolenght2 = pipe.decode().strip()
+            videolenght2=(int(videolenght2)/1000)-0.2
+            if videolenght > int(s)/2:
+                if videolenght2 > int(s)/2:           
+                    #crossfade(scenedir,trimfile,'end', s)
+                    crossfade_start = int(videolenght)-crossfade
+                    output = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
+                    run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+crossfade_folder+crossfade_filename+'.mp4 -filter_complex "xfade=offset='+str(crossfade_start)+':duration='+str(crossfade)+'" '+output+'.mp4')
+                    run_command('ffmpeg -y -i '+renderfilename+'.wav -i '+crossfade_folder+crossfade_filename+'.wav -filter_complex "acrossfade=d='+str(crossfade)+'" '+output+'.wav')
+                    run_command('ffmpeg -y -sseof -1 -i ' + output + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + output + '.jpeg')
+                    os.remove(scenedir+'.crossfade')
+                    #ffmpeg -i blendtest.mp4 -i blendtest.mp4 -filter_complex "xfade=offset=4.5:duration=1" output3.mp4
+                    #crossfade()
         try:
             with open(scenedir + '.videohash', 'r') as f:
                 oldvideohash = f.readline().strip()
@@ -4833,6 +4867,20 @@ def viewfilm(filmfolder, filmname):
         scene = scene + 1
     return filmfiles
 
+
+#--------------Save video crossfade settings-----------------
+
+def crossfadesave(filmfolder, s, trimfile):
+    #db.insert('videos', tid=datetime.datetime.now())
+    settings=s,trimfile
+    try:
+        with open(filmfolder + ".crossfade", "wb") as f:
+            pickle.dump(settings, f)
+            #logger.info("settings saved")
+    except:
+        logger.warning("could not save settings")
+        #logger.warning(e)
+    return
 
 #--------------Save video trim settings-----------------
 
