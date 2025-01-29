@@ -113,7 +113,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, updip, updport
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -139,13 +139,16 @@ def main():
     selected = 0
     awb = 'auto', 'sunlight', 'cloudy', 'shade', 'tungsten', 'fluorescent', 'incandescent', 'flash', 'horizon'
     awbx = 0
+    updip = ''
+    updport = ''
     awb_lock = 'no'
     effects = 'none', 'negative', 'solarize'
     effectselected = 0
     blendmodes = 'screen', 'average', 'darken', 'lighten', 'burn', 'multiply'
     blendselect=0
     blending=False
-    crossfade=3
+    fade='in'
+    fadelenght=3
     cammode = 'film'
     camera_model=''
     fps = 25
@@ -1482,7 +1485,9 @@ def main():
                 reclenght = 0
             elif pressed == 'middle' and menu[selected] == 'LIVE:':
                 if stream == '':
-                    stream = startstream(camera, stream, plughw, channels,network)
+                    if updip == '':
+                        updip, updport = newudp_ip(numbers_only, network)
+                    stream = startstream(camera, stream, plughw, channels,network,updip,updport)
                     if stream == '':
                         vumetermessage('something wrong with streaming')
                     else:
@@ -1914,6 +1919,8 @@ def main():
                     shot=filmsettings[25]
                     take=filmsettings[26]
                     cameras=filmsettings[27]
+                    updip=filmsettings[28]
+                    updport=filmsettings[29]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
                 except:
@@ -2030,7 +2037,7 @@ def main():
                     menu = standardmenu
                     settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
                 else:
-                    #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'CROSSFADE:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
+                    #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
                     settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', ''
@@ -2042,7 +2049,7 @@ def main():
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,updip,updport]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
@@ -3016,7 +3023,7 @@ def newudp_ip(abc, network):
                 cursor = abc[abcx]
         elif pressed == 'right':
             pausetime = time.time()
-            if len(ip) < 2:
+            if len(ip) < 4:
                 ip = ip + abc[abcx]
                 cursor = abc[abcx]
             else:
@@ -5271,7 +5278,7 @@ def uploadfilm(filename, filmname):
 
 #-------------Streaming---------------
 
-def startstream(camera, stream, plughw, channels,network):
+def startstream(camera, stream, plughw, channels,network, updip, updport):
     #youtube
     #youtube="rtmp://a.rtmp.youtube.com/live2/"
     #with open("/home/pi/.youtube-live") as fp:
@@ -5281,9 +5288,9 @@ def startstream(camera, stream, plughw, channels,network):
     #
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar 44100 -vcodec copy -acodec libmp3lame -b:a 128k -ar 44100 -map 0:0 -map 1:0 -strict experimental -f mpegts tcp://0.0.0.0:3333\?listen'
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -map 0:0 -map 1:0 -g 0 -f mpegts udp://10.42.0.169:5002'
-    numbers_only = ' ','1','2','3','4','5','6','7','8','9','0'
-    newhost, hostport = newudp_ip(numbers_only, network)
-    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+newhost+':'+hostport
+    #numbers_only = ' ','1','2','3','4','5','6','7','8','9','0'
+    #newhost, hostport = newudp_ip(numbers_only, network)
+    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i dsnoop:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+updip+':'+updport
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
         camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 5555555, quality=quality)
