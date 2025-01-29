@@ -5290,7 +5290,7 @@ def startstream(camera, stream, plughw, channels,network, updip, updport):
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -map 0:0 -map 1:0 -g 0 -f mpegts udp://10.42.0.169:5002'
     #numbers_only = ' ','1','2','3','4','5','6','7','8','9','0'
     #newhost, hostport = newudp_ip(numbers_only, network)
-    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i dsnoop:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+updip+':'+updport
+    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+updip+':'+updport
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
         camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 5555555, quality=quality)
