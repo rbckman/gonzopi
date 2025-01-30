@@ -113,7 +113,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, updip, updport
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, updip, updport, bitrate
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -154,7 +154,8 @@ def main():
     fps = 25
     fps_selected=8
     fps_selection=[]
-    quality = 25
+    quality = 20
+    bitrate = 8888888
     profilelevel='4.2'
     headphoneslevel = 40
     miclevel = 50
@@ -1379,7 +1380,7 @@ def main():
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
-                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = 5555555, level=profilelevel, quality=quality)
+                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality)
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
                             recording = True
@@ -1513,6 +1514,8 @@ def main():
                 else:
                     menu=standardmenu
                     showgonzopictrl=False
+            elif pressed == 'middle' and menu[selected] == 'Q:':
+                bitrate = get_bitrate(numbers_only[1:], bitrate)
 
             #UP
             elif pressed == 'up':
@@ -1659,9 +1662,8 @@ def main():
                         fps=fps_selection[fps_selected]
                         camera.framerate = fps
                 elif menu[selected] == 'Q:':
-                    if scenes == 0:
-                        if quality < 39:
-                            quality += 1
+                    if quality < 39:
+                        quality += 1
                 elif menu[selected] == 'CAMERA:':
                     if camselected < len(cameras)-1:
                         newselected = camselected+1
@@ -1848,9 +1850,8 @@ def main():
                         fps=fps_selection[fps_selected]
                         camera.framerate = fps
                 elif menu[selected] == 'Q:':
-                    if scenes == 0:
-                        if quality > 10:
-                            quality -= 1
+                    if quality > 10:
+                        quality -= 1
                 elif menu[selected] == 'CAMERA:':
                     if camselected > 0:
                         newselected = camselected-1
@@ -1921,6 +1922,7 @@ def main():
                     cameras=filmsettings[27]
                     updip=filmsettings[28]
                     updport=filmsettings[29]
+                    bitrate=filmsettings[30]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
                 except:
@@ -2049,7 +2051,7 @@ def main():
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,updip,updport]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,updip,updport,bitrate]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
@@ -2931,6 +2933,75 @@ def nameyourfilm(filmfolder, filmname, abc, newfilm):
         time.sleep(keydelay)
 
 
+#-------------set bitrate----------------
+
+def get_bitrate(abc, bitrate):
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    abcx = 0
+    helpmessage = 'Up, Down (select bitrate) Right (next). Middle (done), Retake (Cancel)'
+    cursor = '_'
+    blinking = True
+    pausetime = time.time()
+    menuinput=str(bitrate)
+    while True:
+        message = 'New bitrate: ' + menuinput
+        print(term.clear+term.home)
+        print(message+cursor)
+        writemessage(message + cursor)
+        vumetermessage(helpmessage)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if event == ' ':
+            event = '_'
+        if pressed == 'down':
+            pausetime = time.time()
+            if abcx < (len(abc) - 1):
+                abcx = abcx + 1
+                cursor = abc[abcx]
+        elif pressed == 'up':
+            pausetime = time.time()
+            if abcx > 0:
+                abcx = abcx - 1
+                cursor = abc[abcx]
+        elif pressed == 'right':
+            pausetime = time.time()
+            if len(menuinput) < 7:
+                menuinput = menuinput + abc[abcx]
+                cursor = abc[abcx]
+            else:
+                helpmessage = 'Yo, maximum bitrate reached bro!'
+        elif pressed == 'left' or pressed == 'remove':
+            pausetime = time.time()
+            if len(menuinput) > 0:
+                menuinput = menuinput[:-1]
+                cursor = abc[abcx]
+        elif pressed == 'middle' or event == 10:
+            if abc[abcx] != ' ' or menuinput != '':
+                menuinput = menuinput + abc[abcx]
+                if int(menuinput) < 25000001:
+                    logger.info("New bitrate " + menuinput)
+                    bitrate = int(menuinput)
+                    return bitrate
+                    break
+                else:
+                    helpmessage = 'in the range of bitrate 1-25000000'
+        elif pressed == 'retake':
+            return '' 
+        elif event in abc:
+            pausetime = time.time()
+            menuinput = menuinput + event
+        if time.time() - pausetime > 0.5:
+            if blinking == True:
+                cursor = abc[abcx]
+            if blinking == False:
+                cursor = ' '
+            blinking = not blinking
+            pausetime = time.time()
+        time.sleep(keydelay)
+
+
 #-------------New udp Stream host----------------
 
 def newudp_ip(abc, network):
@@ -3187,7 +3258,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             else:
                                 run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
-                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=5555555, level=profilelevel, quality=quality)
+                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=bitrate, level=profilelevel, quality=quality)
                         if sound == True:
                             os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
@@ -5290,10 +5361,11 @@ def startstream(camera, stream, plughw, channels,network, updip, updport):
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -map 0:0 -map 1:0 -g 0 -f mpegts udp://10.42.0.169:5002'
     #numbers_only = ' ','1','2','3','4','5','6','7','8','9','0'
     #newhost, hostport = newudp_ip(numbers_only, network)
-    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+updip+':'+updport
+    #stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+updip+':'+updport
+    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -vcodec copy -f mpegts udp://'+updip+':'+updport
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
-        camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = 5555555, quality=quality)
+        camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = bitrate, quality=quality)
     except:
         stream = ''
     #now = time.strftime("%Y-%m-%d-%H:%M:%S") 
