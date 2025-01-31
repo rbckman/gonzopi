@@ -113,7 +113,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, updip, updport, bitrate
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -139,8 +139,8 @@ def main():
     selected = 0
     awb = 'auto', 'sunlight', 'cloudy', 'shade', 'tungsten', 'fluorescent', 'incandescent', 'flash', 'horizon'
     awbx = 0
-    updip = ''
-    updport = ''
+    udp_ip = ''
+    udp_port = ''
     awb_lock = 'no'
     effects = 'none', 'negative', 'solarize'
     effectselected = 0
@@ -974,6 +974,11 @@ def main():
                     if camselected != 0:
                         cameras.pop(camselected)
                         newselected=0
+                elif pressed == 'remove' and menu[selected] == 'LIVE:':
+                    udp_ip = ''
+                    udp_port = ''
+                    vumetermessage("udp ip address removed")
+                    time.sleep(1)
                 elif pressed == 'middle' and menu[selected] == 'Add CAMERA':
                     if networks != []:
                         newcamera = newcamera_ip(numbers_only, network)
@@ -1486,9 +1491,10 @@ def main():
                 reclenght = 0
             elif pressed == 'middle' and menu[selected] == 'LIVE:':
                 if stream == '':
-                    if updip == '':
-                        updip, updport = newudp_ip(numbers_only, network)
-                    stream = startstream(camera, stream, plughw, channels,network,updip,updport)
+                    if udp_ip == '':
+                        udp_ip, udp_port = newudp_ip(numbers_only, network)
+                        rendermenu = True
+                    stream = startstream(camera, stream, plughw, channels,network,udp_ip,udp_port)
                     if stream == '':
                         vumetermessage('something wrong with streaming')
                     else:
@@ -1515,8 +1521,8 @@ def main():
                     menu=standardmenu
                     showgonzopictrl=False
             elif pressed == 'middle' and menu[selected] == 'Q:':
-                bitrate = get_bitrate(numbers_only[1:], bitrate)
-
+                bitrate = get_bitrate(numbers_only, bitrate)
+                rendermenu = True
             #UP
             elif pressed == 'up':
                 if menu[selected] == 'FILM:':
@@ -1876,7 +1882,6 @@ def main():
                         if serverstate == 'on':
                             gonzopiserver(False)
                             gonzopiserver(True)
-
             #RIGHT
             elif pressed == 'right':
                 if selected < len(menu) - 1:
@@ -1920,8 +1925,8 @@ def main():
                     shot=filmsettings[25]
                     take=filmsettings[26]
                     cameras=filmsettings[27]
-                    updip=filmsettings[28]
-                    updport=filmsettings[29]
+                    udp_ip=filmsettings[28]
+                    udp_port=filmsettings[29]
                     bitrate=filmsettings[30]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
@@ -2051,7 +2056,7 @@ def main():
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,updip,updport,bitrate]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
@@ -2965,7 +2970,7 @@ def get_bitrate(abc, bitrate):
             if abcx > 0:
                 abcx = abcx - 1
                 cursor = abc[abcx]
-        elif pressed == 'right':
+        elif pressed == 'right' and abcx != 0:
             pausetime = time.time()
             if len(menuinput) < 7:
                 menuinput = menuinput + abc[abcx]
@@ -5349,7 +5354,7 @@ def uploadfilm(filename, filmname):
 
 #-------------Streaming---------------
 
-def startstream(camera, stream, plughw, channels,network, updip, updport):
+def startstream(camera, stream, plughw, channels,network, udp_ip, udp_port):
     #youtube
     #youtube="rtmp://a.rtmp.youtube.com/live2/"
     #with open("/home/pi/.youtube-live") as fp:
@@ -5361,8 +5366,8 @@ def startstream(camera, stream, plughw, channels,network, updip, updport):
     #stream_cmd = 'ffmpeg -f h264 -r 25 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -map 0:0 -map 1:0 -g 0 -f mpegts udp://10.42.0.169:5002'
     #numbers_only = ' ','1','2','3','4','5','6','7','8','9','0'
     #newhost, hostport = newudp_ip(numbers_only, network)
-    #stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+updip+':'+updport
-    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -vcodec copy -f mpegts udp://'+updip+':'+updport
+    #stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -itsoffset 5.5 -fflags nobuffer -f alsa -ac '+str(channels)+' -i hw:'+str(plughw)+' -ar '+soundrate+' -acodec mp2 -b:a 128k -ar '+soundrate+' -vcodec copy -f mpegts udp://'+udp_ip+':'+udp_port
+    stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -vcodec copy -f mpegts udp://'+udp_ip+':'+udp_port
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
         camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = bitrate, quality=quality)
