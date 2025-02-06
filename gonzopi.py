@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#  ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄    ▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄ ▄▄▄ 
-# █       █       █  █  █ █       █       █       █   █
-# █   ▄▄▄▄█   ▄   █   █▄█ █▄▄▄▄   █   ▄   █    ▄  █   █
-# █  █  ▄▄█  █ █  █       █▄▄▄▄█  █  █ █  █   █▄█ █   █
-# █  █ █  █  █▄█  █  ▄    █ ▄▄▄▄▄▄█  █▄█  █    ▄▄▄█   █
-# █  █▄▄█ █       █ █ █   █ █▄▄▄▄▄█       █   █   █   █
-# █▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█▄█  █▄▄█▄▄▄▄▄▄▄█▄▄▄▄▄▄▄█▄▄▄█   █▄▄▄█
-
 # https://gonzopi.org
+
 cameramode=True
 try:
     import picamerax as picamera
@@ -45,6 +38,23 @@ if rpimode == True:
     import smbus
 import ifaddr
 import web
+# Check for slider support
+import serial
+import serial.tools.list_ports
+# Get a list of all serial ports
+slidecommander = ''
+slideports = serial.tools.list_ports.comports()
+# Print the available ports
+if not slideports:
+    print("No serial ports found.")
+else:
+    print("Available serial ports:")
+    for p in slideports:
+        print(f"{p.device} - {p.description}")
+        if p.description.strip() == "FT232R USB UART":
+            slidecommander = p.device
+            print('Future Technology Found!')
+            time.sleep(2)
 
 #import shlex
 from blessed import Terminal
@@ -123,7 +133,10 @@ def main():
     gonzopifolder = os.getcwd()
 
     #MENUS
-    standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
+    if slidecommander:
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE'
+    else:
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
     gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
@@ -151,6 +164,7 @@ def main():
     fadelenght=3
     cammode = 'film'
     camera_model=''
+    slidemode=False
     fps = 25
     fps_selected=8
     fps_selection=[]
@@ -1378,6 +1392,8 @@ def main():
                         if os.path.isdir(foldername) == False:
                             os.makedirs(foldername)
                         if cammode == 'film':
+                            if slidecommander:
+                                send_serial_port(slidecommander,';')
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
@@ -1502,6 +1518,9 @@ def main():
                 else:
                     stream = stopstream(camera, stream)
                     live = 'no'
+            elif pressed == 'middle' and menu[selected] == 'SLIDE':
+                slide_menu(slidecommander)
+                rendermenu = True
             elif pressed == 'middle' and menu[selected] == 'BRIGHT:':
                 camera.brightness = 50
             elif pressed == 'middle' and menu[selected] == 'CONT:':
@@ -2042,12 +2061,12 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, ''
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 writemenu(menu,settings,selected,'',showmenu)
@@ -2788,6 +2807,86 @@ def loadfilm(filmname, filmfolder, camera, overlay):
             return filmname
         time.sleep(0.02)
 
+def slide_menu(slidecommander):
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    selected = 0
+    speed = 2
+    pan = 0
+    tilt = 0
+    move = 0
+    header = 'Future Tech Slide Commander'
+    menu = 'SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'BACK'
+    while True:
+        settings = str(speed), str(pan), str(tilt), str(move), '', '', '' , ''
+        writemenu(menu,settings,selected,header,showmenu)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if pressed == 'down' and menu[selected] == 'SPEED:':
+            if speed > 1:
+                speed -= 1
+        elif pressed == 'down' and menu[selected] =='PAN:':
+            pan -= 1
+        elif pressed == 'down' and menu[selected] =='TILT:':
+            tilt -= 1
+        elif pressed == 'down' and menu[selected] =='MOVE:':
+            move -= 1
+        elif pressed == 'up' and menu[selected] =='SPEED:':
+            speed += 1
+        elif pressed == 'up' and menu[selected] =='PAN:':
+            pan += 1
+        elif pressed == 'up' and menu[selected] =='TILT:':
+            tilt += 1
+        elif pressed == 'up' and menu[selected] =='MOVE:':
+            move += 1
+        elif pressed == 'right':
+            if selected < (len(settings) - 1):
+                selected = selected + 1
+        elif pressed == 'left':
+            if selected > 0:
+                selected = selected - 1
+        elif pressed == 'middle' and menu[selected] == 'PAN:':
+            send_serial_port(slidecommander,'p'+str(pan))
+        elif pressed == 'middle' and menu[selected] == 'TILT:':
+            send_serial_port(slidecommander,'t'+str(tilt))
+        elif pressed == 'middle' and menu[selected] == 'MOVE:':
+            send_serial_port(slidecommander,'x'+str(move))
+        elif pressed == 'middle' and menu[selected] == 'ADD':
+            send_serial_port(slidecommander,'#')
+        elif pressed == 'middle' and menu[selected] == '<':
+            send_serial_port(slidecommander,'<')
+        elif pressed == 'middle' and menu[selected] == '>':
+            send_serial_port(slidecommander,'>')
+        elif pressed == 'middle' and menu[selected] == 'SPEED:':
+            send_serial_port(slidecommander,'s'+str(speed))
+            time.sleep(0.2)
+            send_serial_port(slidecommander,'S'+str(speed))
+            time.sleep(0.2)
+            send_serial_port(slidecommander,'X'+str(speed))
+        elif pressed == 'middle' and menu[selected] == 'BACK':
+            writemessage('Returning')
+            return
+        time.sleep(0.02)
+
+### send to SERIAL PORT
+
+def send_serial_port(serial_port,msg):
+    baud_rate = 57600       # Set the baud rate according to your device
+    # Create a serial connection
+    try:
+        ser = serial.Serial(serial_port, baud_rate, timeout=1)
+        print(f"Connected to {serial_port} at {baud_rate} baud.")
+    except serial.SerialException as e:
+        print(f"Error: {e}")
+        exit()
+    # Write data to the serial port
+    data_to_send = msg  # Add a newline if needed
+    try:
+        ser.write(data_to_send.encode('utf-8'))  # Encode the string to bytes
+        print(f"Sent: {data_to_send.strip()}")
+    except Exception as e:
+        print(f"Error while sending data: {e}")
 
 #---------Name anything really-----------
 
