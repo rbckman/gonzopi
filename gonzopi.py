@@ -2858,7 +2858,7 @@ def slide_menu(slidecommander):
         elif pressed == 'middle' and menu[selected] == 'PAN:':
             send_serial_port(slidecommander,'p'+str(pan))
         elif pressed == 'middle' and menu[selected] == 'START':
-            os.system('pkill slidereader.py')
+            os.system('pkill -9 slidereader.py')
             time.sleep(1)
             slidereader = Popen(['python3', gonzopifolder+'/extras/slidereader.py'])
         elif pressed == 'middle' and menu[selected] == 'TILT:':

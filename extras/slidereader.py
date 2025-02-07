@@ -1,6 +1,7 @@
 import serial
 import serial.tools.list_ports
 import time
+import select
 
 def list_serial_ports():
     # Get a list of all serial ports
@@ -28,7 +29,8 @@ def listen_serial_port(serial_port):
     # Read data from the serial port
     try:
         while True:
-            if ser.in_waiting > 0:  # Check if there is data waiting to be read
+            ready, _, _ = select.select([ser], [], [], 1)  # 1 second timeout
+            if ready:
                 received_data = ser.readline().decode('utf-8').strip()  # Read a line and decode
                 print(f"Received: {received_data}")
     except KeyboardInterrupt:
