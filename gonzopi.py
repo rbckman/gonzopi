@@ -2819,9 +2819,9 @@ def slide_menu(slidecommander):
     tilt = 0
     move = 0
     header = 'Future Tech Slide Commander'
-    menu =  'START','SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'BACK'
+    menu =  'BACK','START','SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'STATUS'
     while True:
-        settings = '',str(speed), str(pan), str(tilt), str(move), '', '', '' , ''
+        settings = '', '',str(speed), str(pan), str(tilt), str(move), '', '', '' , ''
         writemenu(menu,settings,selected,header,showmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down' and menu[selected] == 'SPEED:':
@@ -2837,6 +2837,8 @@ def slide_menu(slidecommander):
             move -= 10
         elif pressed == 'record' and menu[selected] =='MOVE:':
             move -= 100
+        elif pressed == 'record' and menu[selected] =='SPEED:':
+            send_serial_port(slidecommander,'X'+str(speed))
         elif pressed == 'up' and menu[selected] =='SPEED:':
             speed += 1
         elif pressed == 'up' and menu[selected] =='PAN:':
@@ -2883,6 +2885,8 @@ def slide_menu(slidecommander):
             return
         elif pressed == 'remove' and menu[selected] == 'ADD':
             send_serial_port(slidecommander,'C')
+        elif pressed == 'middle' and menu[selected] == 'STATUS':
+            send_serial_port(slidecommander,'R')
         time.sleep(0.02)
 
 
