@@ -54,7 +54,6 @@ else:
         if p.description.strip() == "FT232R USB UART":
             slidecommander = p.device
             print('Future Technology Found!')
-            time.sleep(2)
 
 #import shlex
 from blessed import Terminal
@@ -534,7 +533,7 @@ def main():
                         vumetermessage('select what shot to blend on')
                         blending=True
                         reclenght=videolenght
-                        pressed='record'
+                        pressed='record_now'
                 #CROSSFADE
                 elif pressed == 'middle' and menu[selected] == 'CROSSFADE:':
                     folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
@@ -1393,7 +1392,7 @@ def main():
                             os.makedirs(foldername)
                         if cammode == 'film':
                             if slidecommander:
-                                send_serial_port(slidecommander,';')
+                                send_serial_port(slidecommander,'>')
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
@@ -1438,6 +1437,8 @@ def main():
                     db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
                     #time.sleep(0.005) #get audio at least 0.1 longer
                     #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
+                    if slidecommander:
+                        send_serial_port(slidecommander,'<')
                     if onlysound != True:
                         try:
                             #camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
@@ -2818,9 +2819,9 @@ def slide_menu(slidecommander):
     tilt = 0
     move = 0
     header = 'Future Tech Slide Commander'
-    menu = 'SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'BACK'
+    menu =  'START','SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'BACK'
     while True:
-        settings = str(speed), str(pan), str(tilt), str(move), '', '', '' , ''
+        settings = '',str(speed), str(pan), str(tilt), str(move), '', '', '' , ''
         writemenu(menu,settings,selected,header,showmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down' and menu[selected] == 'SPEED:':
@@ -2830,16 +2831,24 @@ def slide_menu(slidecommander):
             pan -= 1
         elif pressed == 'down' and menu[selected] =='TILT:':
             tilt -= 1
-        elif pressed == 'down' and menu[selected] =='MOVE:':
+        elif pressed == 'remove' and menu[selected] =='MOVE:':
             move -= 1
+        elif pressed == 'down' and menu[selected] =='MOVE:':
+            move -= 10
+        elif pressed == 'record' and menu[selected] =='MOVE:':
+            move -= 100
         elif pressed == 'up' and menu[selected] =='SPEED:':
             speed += 1
         elif pressed == 'up' and menu[selected] =='PAN:':
             pan += 1
         elif pressed == 'up' and menu[selected] =='TILT:':
             tilt += 1
-        elif pressed == 'up' and menu[selected] =='MOVE:':
+        elif pressed == 'view' and menu[selected] =='MOVE:':
             move += 1
+        elif pressed == 'up' and menu[selected] =='MOVE:':
+            move += 10
+        elif pressed == 'record' and menu[selected] =='MOVE:':
+            move += 100
         elif pressed == 'right':
             if selected < (len(settings) - 1):
                 selected = selected + 1
@@ -2848,12 +2857,17 @@ def slide_menu(slidecommander):
                 selected = selected - 1
         elif pressed == 'middle' and menu[selected] == 'PAN:':
             send_serial_port(slidecommander,'p'+str(pan))
+        elif pressed == 'middle' and menu[selected] == 'START':
+            os.system('pkill slidereader.py')
+            time.sleep(1)
+            slidereader = Popen(['python3', gonzopifolder+'/extras/slidereader.py'])
         elif pressed == 'middle' and menu[selected] == 'TILT:':
             send_serial_port(slidecommander,'t'+str(tilt))
         elif pressed == 'middle' and menu[selected] == 'MOVE:':
             send_serial_port(slidecommander,'x'+str(move))
         elif pressed == 'middle' and menu[selected] == 'ADD':
             send_serial_port(slidecommander,'#')
+
         elif pressed == 'middle' and menu[selected] == '<':
             send_serial_port(slidecommander,'<')
         elif pressed == 'middle' and menu[selected] == '>':
@@ -2867,7 +2881,10 @@ def slide_menu(slidecommander):
         elif pressed == 'middle' and menu[selected] == 'BACK':
             writemessage('Returning')
             return
+        elif pressed == 'remove' and menu[selected] == 'ADD':
+            send_serial_port(slidecommander,'C')
         time.sleep(0.02)
+
 
 ### send to SERIAL PORT
 
@@ -4067,7 +4084,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         ###---------BLEND----------
         if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.h264') == True:
             compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
-            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+' -filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
             run_command('cp /dev/shm/blend.mp4 '+screen_filename+'.mp4')
