@@ -122,7 +122,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -193,6 +193,11 @@ def main():
     shot = 1
     take = 1
     pic = 1
+    speed = 20
+    pan = 0
+    tilt = 0
+    move = 0
+    slidereader = None
     onlysound=False
     filmname = 'reel_001'
     newfilmname = ''
@@ -1948,6 +1953,10 @@ def main():
                     udp_ip=filmsettings[28]
                     udp_port=filmsettings[29]
                     bitrate=filmsettings[30]
+                    pan=filmsettings[31]
+                    tilt=filmsettings[32]
+                    move=filmsettings[33]
+                    speed=filmsettings[34]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
                 except:
@@ -2076,7 +2085,7 @@ def main():
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate, pan, tilt, move]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
@@ -2809,19 +2818,18 @@ def loadfilm(filmname, filmfolder, camera, overlay):
         time.sleep(0.02)
 
 def slide_menu(slidecommander):
+    global pan, tilt, move, speed, slidereader
+    if not slidereader:
+        slidereader = Popen(['python3', gonzopifolder+'/extras/slidereader.py'])
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
     holdbutton = ''
     selected = 0
-    speed = 2
-    pan = 0
-    tilt = 0
-    move = 0
     header = 'Future Tech Slide Commander'
-    menu =  'BACK','START','SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'STATUS'
+    menu =  'BACK','SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'SAVE', 'RESET'
     while True:
-        settings = '', '',str(speed), str(pan), str(tilt), str(move), '', '', '' , ''
+        settings = '',str(speed), str(pan), str(tilt), str(move), '', '', '' , '', ''
         writemenu(menu,settings,selected,header,showmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down' and menu[selected] == 'SPEED:':
@@ -2859,10 +2867,6 @@ def slide_menu(slidecommander):
                 selected = selected - 1
         elif pressed == 'middle' and menu[selected] == 'PAN:':
             send_serial_port(slidecommander,'p'+str(pan))
-        elif pressed == 'middle' and menu[selected] == 'START':
-            os.system('pkill -9 slidereader.py')
-            time.sleep(1)
-            slidereader = Popen(['python3', gonzopifolder+'/extras/slidereader.py'])
         elif pressed == 'middle' and menu[selected] == 'TILT:':
             send_serial_port(slidecommander,'t'+str(tilt))
         elif pressed == 'middle' and menu[selected] == 'MOVE:':
@@ -2887,6 +2891,16 @@ def slide_menu(slidecommander):
             send_serial_port(slidecommander,'C')
         elif pressed == 'middle' and menu[selected] == 'STATUS':
             send_serial_port(slidecommander,'R')
+        elif pressed == 'middle' and menu[selected] == 'SAVE':
+            send_serial_port(slidecommander,'U')
+        elif pressed == 'middle' and menu[selected] == 'RESET':
+            os.system('pkill -9 slidereader.py')
+            if slidereader.poll():
+                slidereader.kill()
+            time.sleep(1)
+            pan = 0
+            tilt = 0
+            move = 0
         time.sleep(0.02)
 
 

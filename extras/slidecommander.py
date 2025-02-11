@@ -49,7 +49,6 @@ def send_serial_port(serial_port,msg):
         exit()
 
     # Give some time for the connection to establish
-    time.sleep(2)
 
     # Write data to the serial port
     data_to_send = msg  # Add a newline if needed
@@ -65,6 +64,7 @@ def send_serial_port(serial_port,msg):
 
 if __name__ == "__main__":
     port = list_serial_ports()
-    user_input = input("slidecommando: ")
-    send_serial_port(port,user_input)
+    while True:
+        user_input = input("slidecommando: ")
+        send_serial_port(port,user_input)
 
