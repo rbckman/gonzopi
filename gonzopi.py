@@ -1397,8 +1397,9 @@ def main():
                         if os.path.isdir(foldername) == False:
                             os.makedirs(foldername)
                         if cammode == 'film':
-                            if slidecommander:
-                                send_serial_port(slidecommander,';'+slide)
+                            #if recandslide here
+                            #if slidecommander:
+                            #send_serial_port(slidecommander,';1')
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
