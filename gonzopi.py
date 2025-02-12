@@ -122,7 +122,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide,smooth
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -133,7 +133,7 @@ def main():
 
     #MENUS
     if slidecommander:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
     else:
         standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
     gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
@@ -198,7 +198,8 @@ def main():
     tilt = 0
     move = 0
     slidereader = None
-    slide=0
+    smooth = 1000
+    slide=1
     onlysound=False
     filmname = 'reel_001'
     newfilmname = ''
@@ -444,6 +445,11 @@ def main():
                         #run_command('avconv -i ' + foldername + filename  + '.mp4 -frames 1 -vf scale=800:460 ' + foldername + filename + '.jpeg')
                         updatethumb =  True
                 #VIEW SCENE
+                elif pressed == 'view' and menu[selected] == 'SLIDE:':
+                    send_serial_port(slidecommander,';'+str(slide))
+                    slide += 1
+                elif pressed == 'remove' and menu[selected] == 'SLIDE:':
+                    send_serial_port(slidecommander,'<')
                 elif pressed == 'view' and menu[selected] == 'SCENE:':
                     writemessage('Loading scene...')
                     organize(filmfolder, filmname)
@@ -1398,8 +1404,8 @@ def main():
                             os.makedirs(foldername)
                         if cammode == 'film':
                             #if recandslide here
-                            #if slidecommander:
-                            #send_serial_port(slidecommander,';1')
+                            if slidecommander:
+                                send_serial_port(slidecommander,';'+str(slide))
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
@@ -1526,7 +1532,7 @@ def main():
                 else:
                     stream = stopstream(camera, stream)
                     live = 'no'
-            elif pressed == 'middle' and menu[selected] == 'SLIDE':
+            elif pressed == 'middle' and menu[selected] == 'SLIDE:':
                 slide_menu(slidecommander)
                 rendermenu = True
             elif pressed == 'middle' and menu[selected] == 'BRIGHT:':
@@ -1701,9 +1707,10 @@ def main():
                     if camselected < len(cameras)-1:
                         newselected = camselected+1
                         logger.info('camera selected:'+str(camselected))
-                elif menu[selected] == 'SLIDE':
+                elif menu[selected] == 'SLIDE:':
                     if slidecommander:
-                        send_serial_port(slidecommander,'>')
+                        #send_serial_port(slidecommander,'>')
+                        slide += 1
                 elif menu[selected] == 'DSK:':
                     if dsk+1 < len(storagedrives):
                         dsk += 1
@@ -1892,9 +1899,10 @@ def main():
                     if camselected > 0:
                         newselected = camselected-1
                         logger.info('camera selected:'+str(camselected))
-                elif menu[selected] == 'SLIDE':
-                    if slidecommander:
-                        send_serial_port(slidecommander,'<')
+                elif menu[selected] == 'SLIDE:':
+                    if slidecommander and slide > 1:
+                        slide -= 1
+                        #send_serial_port(slidecommander,'<')
                 elif menu[selected] == 'DSK:':
                     if dsk > 0:
                         dsk -= 1
@@ -2080,7 +2088,7 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, str(slide)
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
@@ -2827,53 +2835,89 @@ def loadfilm(filmname, filmfolder, camera, overlay):
         time.sleep(0.02)
 
 def slide_menu(slidecommander):
-    global pan, tilt, move, speed, slidereader
+    global pan, tilt, move, speed, slidereader, smooth
     if not slidereader:
         slidereader = Popen(['python3', gonzopifolder+'/extras/slidereader.py'])
+        #slidereader = subprocess.check_output(['python3',gonzopifolder+'/extras/slidereader.py'], shell=True)
+        #slidereader = pipe.decode().strip()
+        #vumetermessage(slidereader)
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
     holdbutton = ''
     selected = 0
     header = 'Future Tech Slide Commander'
-    menu =  'BACK','SPEED:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'SAVE', 'RESET'
+    menu =  'BACK','SPEED:', 'SMOOTH:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'SAVE', 'RESET', 'STATUS'
     while True:
-        settings = '',str(speed), str(pan), str(tilt), str(move), '', '', '' , '', ''
+        settings = '',str(speed), str(smooth), str(pan), str(tilt), str(move), '', '', '' , '', '', ''
         writemenu(menu,settings,selected,header,showmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down' and menu[selected] == 'SPEED:':
-            if speed > 1:
-                speed -= 1
+            if speed > 10:
+                speed -= 10
+        elif pressed == 'remove' and menu[selected] =='SPEED:':
+            speed += 1
+        elif pressed == 'view' and menu[selected] =='SPEED:':
+            speed -= 1
+        elif pressed == 'up' and menu[selected] =='SPEED:':
+            speed += 10
+        elif pressed == 'down' and menu[selected] =='SPEED:':
+            speed -= 10
+        elif pressed == 'record' and menu[selected] =='SPEED:':
+            speed += 100
+        elif pressed == 'retake' and menu[selected] =='SPEED:':
+            speed -= 100
+        if pressed == 'down' and menu[selected] == 'SMOOTH:':
+            if smooth > 10:
+                smooth -= 10
+        elif pressed == 'remove' and menu[selected] =='SMOOTH:':
+            smooth += 1
+        elif pressed == 'view' and menu[selected] =='SMOOTH:':
+            smooth -= 1
+        elif pressed == 'up' and menu[selected] =='SMOOTH:':
+            smooth += 10
+        elif pressed == 'down' and menu[selected] =='SMOOTH:':
+            smooth -= 10
+        elif pressed == 'record' and menu[selected] =='SMOOTH:':
+            smooth += 100
+        elif pressed == 'retake' and menu[selected] =='SMOOTH:':
+            smooth -= 100
+        elif pressed == 'up' and menu[selected] =='PAN:':
+            pan += 10
         elif pressed == 'down' and menu[selected] =='PAN:':
+            pan -= 10
+        elif pressed == 'view' and menu[selected] =='PAN:':
             pan -= 1
-        elif pressed == 'down' and menu[selected] =='TILT:':
-            tilt -= 1
-        elif pressed == 'remove' and menu[selected] =='MOVE:':
-            move = 0
         elif pressed == 'remove' and menu[selected] =='PAN:':
-            pan = 0
-        elif pressed == 'remove' and menu[selected] =='tilt:':
-            pan = 0
-        elif pressed == 'remove' and menu[selected] =='speed:':
-            speed = 20
+            pan += 1
+        elif pressed == 'retake' and menu[selected] =='PAN:':
+            pan -= 100
+        elif pressed == 'record' and menu[selected] =='PAN:':
+            pan += 100
+        elif pressed == 'view' and menu[selected] =='TILT:':
+            tilt += 1
+        elif pressed == 'remove' and menu[selected] =='TILT:':
+            tilt -= 1
+        elif pressed == 'up' and menu[selected] =='TILT:':
+            tilt += 10
+        elif pressed == 'down' and menu[selected] =='TILT:':
+            tilt -= 10
+        elif pressed == 'retake' and menu[selected] =='TILT:':
+            tilt -= 100
+        elif pressed == 'record' and menu[selected] =='TILT:':
+            tilt += 100
+        elif pressed == 'remove' and menu[selected] =='MOVE:':
+            move += 1
+        elif pressed == 'view' and menu[selected] =='MOVE:':
+            move -= 1
+        elif pressed == 'up' and menu[selected] =='MOVE:':
+            move += 10
         elif pressed == 'down' and menu[selected] =='MOVE:':
             move -= 10
         elif pressed == 'record' and menu[selected] =='MOVE:':
-            move -= 100
-        elif pressed == 'record' and menu[selected] =='SPEED:':
-            send_serial_port(slidecommander,'X'+str(speed))
-        elif pressed == 'up' and menu[selected] =='SPEED:':
-            speed += 1
-        elif pressed == 'up' and menu[selected] =='PAN:':
-            pan += 1
-        elif pressed == 'up' and menu[selected] =='TILT:':
-            tilt += 1
-        elif pressed == 'view' and menu[selected] =='MOVE:':
-            move += 1
-        elif pressed == 'up' and menu[selected] =='MOVE:':
-            move += 10
-        elif pressed == 'record' and menu[selected] =='MOVE:':
             move += 100
+        elif pressed == 'retake' and menu[selected] =='MOVE:':
+            move -= 100
         elif pressed == 'right':
             if selected < (len(settings) - 1):
                 selected = selected + 1
@@ -2900,10 +2944,16 @@ def slide_menu(slidecommander):
             send_serial_port(slidecommander,'>')
         elif pressed == 'middle' and menu[selected] == 'SPEED:':
             send_serial_port(slidecommander,'s'+str(speed))
-            time.sleep(0.2)
+            time.sleep(0.3)
             send_serial_port(slidecommander,'S'+str(speed))
-            time.sleep(0.2)
+            time.sleep(0.3)
             send_serial_port(slidecommander,'X'+str(speed))
+        elif pressed == 'middle' and menu[selected] == 'SMOOTH:':
+            send_serial_port(slidecommander,'q'+str(smooth))
+            time.sleep(0.3)
+            send_serial_port(slidecommander,'Q'+str(smooth))
+            time.sleep(0.3)
+            send_serial_port(slidecommander,'w'+str(smooth))
         elif pressed == 'middle' and menu[selected] == 'BACK':
             writemessage('Returning')
             return
@@ -2922,11 +2972,12 @@ def slide_menu(slidecommander):
             os.system('pkill -9 slidereader.py')
             if slidereader.poll():
                 slidereader.kill()
+                slidereader = Popen(['python3', gonzopifolder+'/extras/slidereader.py'])
             time.sleep(1)
             pan = 0
             tilt = 0
             move = 0
-        time.sleep(0.02)
+        time.sleep(keydelay)
 
 
 ### send to SERIAL PORT
