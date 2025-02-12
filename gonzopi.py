@@ -122,7 +122,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -198,6 +198,7 @@ def main():
     tilt = 0
     move = 0
     slidereader = None
+    slide=0
     onlysound=False
     filmname = 'reel_001'
     newfilmname = ''
@@ -1397,7 +1398,7 @@ def main():
                             os.makedirs(foldername)
                         if cammode == 'film':
                             if slidecommander:
-                                send_serial_port(slidecommander,'>')
+                                send_serial_port(slidecommander,';'+slide)
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
@@ -1442,8 +1443,8 @@ def main():
                     db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
                     #time.sleep(0.005) #get audio at least 0.1 longer
                     #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
-                    if slidecommander:
-                        send_serial_port(slidecommander,'<')
+                    #if slidecommander:
+                    #send_serial_port(slidecommander,'<')
                     if onlysound != True:
                         try:
                             #camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
@@ -1699,6 +1700,9 @@ def main():
                     if camselected < len(cameras)-1:
                         newselected = camselected+1
                         logger.info('camera selected:'+str(camselected))
+                elif menu[selected] == 'SLIDE':
+                    if slidecommander:
+                        send_serial_port(slidecommander,'>')
                 elif menu[selected] == 'DSK:':
                     if dsk+1 < len(storagedrives):
                         dsk += 1
@@ -1887,6 +1891,9 @@ def main():
                     if camselected > 0:
                         newselected = camselected-1
                         logger.info('camera selected:'+str(camselected))
+                elif menu[selected] == 'SLIDE':
+                    if slidecommander:
+                        send_serial_port(slidecommander,'<')
                 elif menu[selected] == 'DSK:':
                     if dsk > 0:
                         dsk -= 1
@@ -1957,6 +1964,7 @@ def main():
                     tilt=filmsettings[32]
                     move=filmsettings[33]
                     speed=filmsettings[34]
+                    slide=filmsettings[35]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
                 except:
@@ -2085,7 +2093,7 @@ def main():
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate, pan, tilt, move]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate, pan, tilt, move, speed, slide]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
@@ -2840,7 +2848,13 @@ def slide_menu(slidecommander):
         elif pressed == 'down' and menu[selected] =='TILT:':
             tilt -= 1
         elif pressed == 'remove' and menu[selected] =='MOVE:':
-            move -= 1
+            move = 0
+        elif pressed == 'remove' and menu[selected] =='PAN:':
+            pan = 0
+        elif pressed == 'remove' and menu[selected] =='tilt:':
+            pan = 0
+        elif pressed == 'remove' and menu[selected] =='speed:':
+            speed = 20
         elif pressed == 'down' and menu[selected] =='MOVE:':
             move -= 10
         elif pressed == 'record' and menu[selected] =='MOVE:':
@@ -2862,9 +2876,14 @@ def slide_menu(slidecommander):
         elif pressed == 'right':
             if selected < (len(settings) - 1):
                 selected = selected + 1
+            else:
+                selected = 0
+            selected == 0
         elif pressed == 'left':
             if selected > 0:
                 selected = selected - 1
+            else:
+                selected = len(settings)
         elif pressed == 'middle' and menu[selected] == 'PAN:':
             send_serial_port(slidecommander,'p'+str(pan))
         elif pressed == 'middle' and menu[selected] == 'TILT:':
@@ -2889,6 +2908,11 @@ def slide_menu(slidecommander):
             return
         elif pressed == 'remove' and menu[selected] == 'ADD':
             send_serial_port(slidecommander,'C')
+        elif pressed == 'retake' and menu[selected] == 'ADD':
+            send_serial_port(slidecommander,'E')
+        elif pressed == 'view' and menu[selected] == 'ADD':
+            send_serial_port(slidecommander,'d'+str(speed))
+            send_serial_port(slidecommander,'D'+str(speed))
         elif pressed == 'middle' and menu[selected] == 'STATUS':
             send_serial_port(slidecommander,'R')
         elif pressed == 'middle' and menu[selected] == 'SAVE':
