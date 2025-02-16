@@ -133,10 +133,10 @@ def main():
 
     #MENUS
     if slidecommander:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
     else:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
-    gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'SFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
+    gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
     menu = standardmenu
@@ -154,7 +154,7 @@ def main():
     udp_ip = ''
     udp_port = ''
     awb_lock = 'no'
-    effects = 'none', 'negative', 'solarize'
+    effects = 'none', 'negative', 'solarize', 'denoise', 'colorpoint', 'colorswap', 'posterise', 'blur', 'film'
     effectselected = 0
     blendmodes = 'screen', 'average', 'darken', 'lighten', 'burn', 'multiply'
     blendselect=0
@@ -1556,6 +1556,12 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'Q:':
                 bitrate = get_bitrate(numbers_only, bitrate)
                 rendermenu = True
+            elif pressed == 'middle' and menu[selected] == 'VFX:':
+                if effects[effectselected] == 'colorpoint':
+                    vfx_colorpoint()
+                if effects[effectselected] == 'solarize':
+                    vfx_solarize()
+
             #UP
             elif pressed == 'up':
                 if menu[selected] == 'FILM:':
@@ -1567,7 +1573,7 @@ def main():
                     camera.contrast = min(camera.contrast + 1, 99)
                 elif menu[selected] == 'SAT:':
                     camera.saturation = min(camera.saturation + 1, 99)
-                elif menu[selected] == 'SFX:':
+                elif menu[selected] == 'VFX:':
                     if effectselected < len(effects) - 1:
                         effectselected += 1
                         camera.image_effect = effects[effectselected]
@@ -1751,7 +1757,7 @@ def main():
                     camera.contrast = max(camera.contrast - 1, -100)
                 elif menu[selected] == 'SAT:':
                     camera.saturation = max(camera.saturation - 1, -100)
-                elif menu[selected] == 'SFX:':
+                elif menu[selected] == 'VFX:':
                     if effectselected > 0:
                         effectselected -= 1
                         camera.image_effect = effects[effectselected]
@@ -2470,7 +2476,102 @@ def counttakes2(folder):
 def countonfloor(filmname, filmfolder):
     print('dsad')
 
+#----------Camera effect menus------
 
+def vfx_colorpoint():
+    global camera
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    selected = 0
+    header = 'Choose colorpoint'
+    menu =  'BACK','GREEN','RED/YELLOW','BLUE','PURPLE'
+    while True:
+        settings = '','','','',''
+        writemenu(menu,settings,selected,header,showmenu)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if pressed == 'right':
+            if selected < (len(settings) - 1):
+                selected = selected + 1
+            else:
+                selected = 0
+            selected == 0
+        elif pressed == 'left':
+            if selected > 0:
+                selected = selected - 1
+            else:
+                selected = len(settings) - 1
+        elif pressed == 'middle' and menu[selected] == 'GREEN':
+            camera.image_effect_params = 0
+        elif pressed == 'middle' and menu[selected] == 'RED/YELLOW':
+            camera.image_effect_params = 1
+        elif pressed == 'middle' and menu[selected] == 'BLUE':
+            camera.image_effect_params = 2
+        elif pressed == 'middle' and menu[selected] == 'PURPLE':
+            camera.image_effect_params = 3
+        elif pressed == 'middle' and menu[selected] == 'BACK':
+            return
+        time.sleep(keydelay)
+
+def vfx_solarize():
+    global camera
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    selected = 0
+    strenght = 0
+    r=0
+    g=0
+    b=0
+    header = 'Choose solarize'
+    menu =  'BACK','STRENGHT:','R:','G:','B:'
+    while True:
+        settings = '',str(strenght),str(r),str(g),str(b)
+        writemenu(menu,settings,selected,header,showmenu)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if pressed == 'right':
+            if selected < (len(settings) - 1):
+                selected = selected + 1
+            else:
+                selected = 0
+            selected == 0
+        elif pressed == 'left':
+            if selected > 0:
+                selected = selected - 1
+            else:
+                selected = len(settings) - 1
+        elif pressed == 'up' and menu[selected] =='STRENGHT:':
+            if strenght < 128:
+                strenght += 1
+        elif pressed == 'down' and menu[selected] =='STRENGHT:':
+            if strenght > 0:
+                strenght -= 1
+        elif pressed == 'up' and menu[selected] =='R:':
+            if r < 128:
+                r += 1
+        elif pressed == 'down' and menu[selected] =='R:':
+            if r > 0:
+                r -= 1
+        elif pressed == 'up' and menu[selected] =='G:':
+            if g < 128:
+                g += 1
+        elif pressed == 'down' and menu[selected] =='G:':
+            if g > 0:
+                g -= 1
+        elif pressed == 'up' and menu[selected] =='B:':
+            if b < 128:
+                b += 1
+        elif pressed == 'down' and menu[selected] =='B:':
+            if b > 0:
+                b -= 1
+        elif pressed == 'middle' and menu[selected] != 'BACK':
+            camera.image_effect_params = r,g,b,strenght
+        elif pressed == 'middle' and menu[selected] == 'BACK':
+            return
+        time.sleep(keydelay)
+            
 #------------Run Command-------------
 
 def run_command(command_line):
@@ -2928,7 +3029,7 @@ def slide_menu(slidecommander):
             if selected > 0:
                 selected = selected - 1
             else:
-                selected = len(settings)
+                selected = len(settings)-1
         elif pressed == 'middle' and menu[selected] == 'PAN:':
             send_serial_port(slidecommander,'p'+str(pan))
         elif pressed == 'middle' and menu[selected] == 'TILT:':
