@@ -1,23 +1,29 @@
 Gonzo Pi
 =============
-### a reboot of filmmaking
+### Filmmakers dream
 
-The camera that runs Linux with an unique all-in-one filmmaking interface. Shooting your videos as takes in a scene and shot based structure. Gonzo Pi is 3d printed, easy to mod & repair.
+a 3d printed FOSS digital video camera with the essential filmmaking tools. 
 
 ![Gonzopi](/extras/gonzopi-01.jpeg)
 
-Software
+Features
 --------
-- film mode & picture mode, soon music video mode.
-- glue selected clips together and/or cutting them by setting in & out points easily.
-- making timelapses, stop-motion, voiceover, music track recording, slo-mo recording, fast-forward recording
-- cut and copy and move clips around
-- backup to usb harddrive or your own server
-- upload or stream to youtube or your own server
-- auto correction can easily be switched on or off for shutter, iso and colors so *operator* is in full control also for audio levels
-- connect many GonzoPis together for multicamera shooting
-- stream a film a take or a scene through the network
-- control the camera with silent physical buttons or a usb-wireless-keyboard or through a built in apache2 web server or ssh or ports, you choose how to go gonzo just the way you like it
+
+The most innovative feature is that you film in a scene, shot and take based structure. You can put placeholders in for shots or scenes that need to be filmed later on. When *view button* is pressed while a scene is selected Gonzo Pi will glue all the last takes of all the shots in that scene together and then play it! Press view while film is selected will glue all scenes together and play your film!
+
+Gluing takes and scenes together takes a while and depends on your usb harddrive speed and the video bitrate. It also depends what Raspberry Pi you drive Gonzo Pi with. I have successfully been making films with 3B, 3B+ and 4B. I recommend 4B as the wifi and USB speed is much faster. Default bitrate for video is 8.888 Mb/s and sound is recorded uncompressed as 48khz wav before it is muxed together into a mp4 video.
+
+- edit takes by setting in & out points easily in-camera (will rerender your scene if new edit found)
+- add voiceover and/or music tracks with dubbing feature
+- adjustable framerates for slo-mo recording or fast-forward recording
+- work on many films, move and copy shots or scenes from film to film. (USB to USB drive)
+- live stream to another device in the same network
+- multicamera mode lets you control many Gonzo Pis in the same network, and sync footage between (makes live multicamera work easy as down to couple of buttons)
+- of course manual or auto shutter, iso and white balance
+- a vu meter for the incoming sound while recording
+- change audio levels while recording
+- control Gonzo pi with silent physical buttons or a usb-wireless-keyboard or through the built-in apache2 web server or over ssh or ports, you choose how to go gonzo just the way you like it
+- Isaac879 3-Axis Camera Slider support https://www.thingiverse.com/thing:4547074 (plug and play, slider is controlled from Gonzo Pi Gui)
 
 ### GUI
 ![Gonzopi](/extras/gonzopi-02.jpeg)

@@ -2962,7 +2962,7 @@ def slide_menu(slidecommander):
         elif pressed == 'retake' and menu[selected] == 'ADD':
             send_serial_port(slidecommander,'E')
         elif pressed == 'view' and menu[selected] == 'ADD':
-            send_serial_port(slidecommander,'d'+str(speed))
+            #send_serial_port(slidecommander,'d'+str(speed))
             send_serial_port(slidecommander,'D'+str(speed))
         elif pressed == 'middle' and menu[selected] == 'STATUS':
             send_serial_port(slidecommander,'R')
