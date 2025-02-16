@@ -13,7 +13,7 @@ The most innovative feature is that you film in a scene, shot and take based str
 
 Gluing takes and scenes together takes a while and depends on your usb harddrive speed and the video bitrate. It also depends what Raspberry Pi you drive Gonzo Pi with. I have successfully been making films with 3B, 3B+ and 4B. I recommend 4B as the wifi and USB speed is much faster. Default bitrate for video is 8.888 Mb/s and sound is recorded uncompressed as 48khz wav before it is muxed together into a mp4 video.
 
-- edit takes by setting in & out points easily in-camera (will rerender your scene if new edit found)
+- edit takes by setting in & out points easily in-camera (will regluing your scene if new edit found)
 - add voiceover and/or music tracks with dubbing feature
 - adjustable framerates for slo-mo recording or fast-forward recording
 - work on many films, move and copy shots or scenes from film to film. (USB to USB drive)
@@ -24,6 +24,11 @@ Gluing takes and scenes together takes a while and depends on your usb harddrive
 - change audio levels while recording
 - control Gonzo pi with silent physical buttons or a usb-wireless-keyboard or through the built-in apache2 web server or over ssh or ports, you choose how to go gonzo just the way you like it
 - Isaac879 3-Axis Camera Slider support https://www.thingiverse.com/thing:4547074 (plug and play, slider is controlled from Gonzo Pi Gui)
+- timelapse mode
+- set beep (countdown in x seconds before filming)
+- set take lenght (min 0.2 s max unlimited)
+- video effects (negative, solarize, denoise, colorpoint, colorswap, posterize, blur, film)
+- blend modes (screen, average, darken, lighten, burn, multiply)
 
 ### GUI
 ![Gonzopi](/extras/gonzopi-02.jpeg)

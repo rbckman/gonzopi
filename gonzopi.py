@@ -1577,9 +1577,14 @@ def main():
                     if effectselected < len(effects) - 1:
                         effectselected += 1
                         camera.image_effect = effects[effectselected]
+                    else:
+                        effectselected = 0
+                        camera.image_effect = effects[effectselected]
                 elif menu[selected] == 'BLEND:':
                     if blendselect < len(blendmodes) - 1:
                         blendselect += 1
+                    else:
+                        blendselect=0
                 elif menu[selected] == 'SHUTTER:':
                     if camera.shutter_speed == 0:
                         camera.shutter_speed = camera.exposure_speed
@@ -1761,9 +1766,14 @@ def main():
                     if effectselected > 0:
                         effectselected -= 1
                         camera.image_effect = effects[effectselected]
+                    else:
+                        effectselected = len(effects)-1
+                        camera.image_effect = effects[effectselected]
                 elif menu[selected] == 'BLEND:':
                     if blendselect > 0:
                         blendselect -= 1
+                    else:
+                        blendselect = len(blendmodes)-1
                 elif menu[selected] == 'SHUTTER:':
                     if camera.shutter_speed == 0:
                         camera.shutter_speed = camera.exposure_speed
