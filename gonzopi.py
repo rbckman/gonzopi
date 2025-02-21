@@ -508,7 +508,7 @@ def main():
                         filename = 'take' + str(take).zfill(3)
                         #compileshot(foldername + filename,filmfolder,filmname)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
-                        if renderfilename != '':
+                        if renderfilename == foldername+filename:
                             trim = playdub(filmname,foldername + filename, 'shot')
                             if trim[0] == 'beginning' or trim[0] == 'end':
                                 writemessage('Cutting clip...')
@@ -530,6 +530,7 @@ def main():
                             camera.start_preview()
                         else:
                             vumetermessage('nothing here! hit rec!')
+                            playdub(filmname, renderfilename, 'shot')
                         rendermenu = True
                         updatethumb=True
                 #BLEND
@@ -1625,18 +1626,24 @@ def main():
                         scene += 1
                         #shot = countshots(filmname, filmfolder, scene)
                         shot = 1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        scene = 1
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shots, takes = browse2(filmname, filmfolder, scene, shot, take, 0, 1)
                     #shot = 1
                 elif menu[selected] == 'SHOT:' and recording == False:
                     if shot <= shots:
                         shot += 1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        shot=1
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, 1)
                     #takes = take
                 elif menu[selected] == 'TAKE:' and recording == False:
                     if take <= takes:
                         take += 1
+                    else:
+                        take=0
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, 1)
                 elif menu[selected] == 'RED:':
                     camera.awb_mode = 'off'
@@ -1817,20 +1824,26 @@ def main():
                     if scene > 1:
                         scene -= 1
                         #shot = countshots(filmname, filmfolder, scene)
-                        shot=1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        scene = countscenes(filmfolder, filmname)
+                    shot=1
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shots, take = browse2(filmname, filmfolder, scene, shot, take, 0, -1)
                     #takes = take
                     #shot = 1
                 elif menu[selected] == 'SHOT:' and recording == False:
                     if shot > 1:
                         shot -= 1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        shot = countshots(filmname, filmfolder, scene)
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, -1)
                     #takes = take
                 elif menu[selected] == 'TAKE:' and recording == False:
                     if take > 1:
                         take -= 1
+                    else:
+                        take = counttakes(filmname,filmfolder,scene,shot)
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, -1)
                 elif menu[selected] == 'RED:':
                     camera.awb_mode = 'off'
@@ -4219,7 +4232,7 @@ def scenefiles(filmfolder, filmname):
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
-    global fps
+    global fps, take, rendermenu, updatethumb
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     def render(q, filmfolder, filmname, renderfilename, scene, shot):
@@ -4265,27 +4278,36 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         #    q.put(status)
 
         #EDITS AND FX
+        trimfile = ''
         if os.path.isfile(scenedir+'.beginning') == True:
             settings = pickle.load(open(scenedir + ".beginning", "rb"))
             s, trimfile = settings
             logger.info("settings loaded")
             videotrim(scenedir,trimfile,'beginning', s)
             os.remove(scenedir+'.beginning')
-            #readcutinout
-            #cutvideo()
             newaudiomix = True
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
+            trimfile = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
+            renderfilename=trimfile
         if os.path.isfile(scenedir+'.end') == True:
             try:
                 settings = pickle.load(open(scenedir + ".end", "rb"))
-                s, trimfile = settings
+                if trimfile == '':
+                    s, trimfile = settings
+                else:
+                    s, trimfileoriginal = settings
                 logger.info("settings loaded")
                 videotrim(scenedir,trimfile,'end', s)
                 os.remove(scenedir+'.end')
             except:
                 logger.info("couldnt load settings")
-            #readcutinout
-            #cutvideo()
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
             newaudiomix = True
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
         ###---------BLEND----------
         if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.h264') == True:
             compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
