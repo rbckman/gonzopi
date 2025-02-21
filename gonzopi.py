@@ -1342,7 +1342,6 @@ def main():
                     else:
                         vumetermessage('filming with '+camera_model +' ip:'+ network)
 
-
             #RECORD AND PAUSE
             if beepcountdown > 1:
                 if time.time() - lastbeep  > 1:
@@ -2978,7 +2977,7 @@ def slide_menu(slidecommander):
             speed += 100
         elif pressed == 'retake' and menu[selected] =='SPEED:':
             speed -= 100
-        if pressed == 'down' and menu[selected] == 'SMOOTH:':
+        elif pressed == 'down' and menu[selected] == 'SMOOTH:':
             if smooth > 10:
                 smooth -= 10
         elif pressed == 'remove' and menu[selected] =='SMOOTH:':
@@ -3048,7 +3047,8 @@ def slide_menu(slidecommander):
             send_serial_port(slidecommander,'x'+str(move))
         elif pressed == 'middle' and menu[selected] == 'ADD':
             send_serial_port(slidecommander,'#')
-
+        elif pressed == 'record' and menu[selected] == 'ADD':
+            return
         elif pressed == 'middle' and menu[selected] == '<':
             send_serial_port(slidecommander,'<')
         elif pressed == 'middle' and menu[selected] == '>':
@@ -3742,7 +3742,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                     elif sceneshotortake == 'shot' and shot > 0:
                         writemessage('Throwing shot on the floor' + str(shot))
                         onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3)+'/'
-                        os.makedirs(onthefloor)
+                        os.makedirs(onthefloor,exist_ok=True)
                         os.system('cp -r '+foldername+'* '+onthefloor)
                         os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
                         os.system('rm -r '+foldername)
