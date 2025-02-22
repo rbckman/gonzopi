@@ -2394,7 +2394,10 @@ def countvideosize(filename):
 def countsize(filename):
     size = 0
     if type(filename) is str:
-        size = os.stat(filename).st_size
+        try:
+            size = os.stat(filename).st_size
+        except:
+            return 0
     else:
         return 0
     return size/1024
@@ -3665,7 +3668,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             call(audiomerge, shell=False)
                         ##MAKE AUDIO SILENCE
                         if sound == False:
-                            audiosilence(foldername,filename)
+                            audiosilence(foldername+filename)
                         #cleanup
                         #os.system('rm -r ' + foldername + 'timelapse')
                         vumetermessage('timelapse done! ;)')
@@ -3690,11 +3693,11 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
     menu = '', ''
     settings = 'NO', 'YES'
     selected = 0
-    otf_scene = countscenes(filmfolder, filmname)
+    otf_scene = countscenes(filmfolder, filmname+'_onthefloor')
     otf_scene += 1
-    otf_shot = countshots(filmname, filmfolder, otf_scene)
+    otf_shot = countshots(filmname+'_onthefloor' , filmfolder, otf_scene)
     otf_shot += 1
-    otf_take = counttakes(filmname, filmfolder, otf_scene, otf_shot)
+    otf_take = counttakes(filmname+'_onthefloor', filmfolder, otf_scene, otf_shot)
     otf_take += 1
     while True:
         writemenu(menu,settings,selected,header,showmenu)
@@ -4011,7 +4014,7 @@ def stretchaudio(filename,fps):
             pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
             audiolenght = pipe.decode().strip()
         except:
-            audiosilence('',filename)
+            audiosilence(filename)
             audiolenght=videolenght
         #if there is no audio lenght
         logger.info('audio is:' + audiolenght)
@@ -4031,6 +4034,7 @@ def compileshot(filename,filmfolder,filmname):
     global fps, soundrate, channels
     videolenght=0
     audiolenght=0
+
     #Check if file already converted
     if '.h264' in filename:
         filename=filename.replace('.h264','')
@@ -4047,7 +4051,7 @@ def compileshot(filename,filmfolder,filmname):
         run_command('MP4Box -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
         if not os.path.isfile(filename + '.wav'):
-            audiosilence('',filename)
+            audiosilence(filename)
         #add audio/video start delay sync
         run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
         run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
@@ -4224,17 +4228,15 @@ def scenefiles(filmfolder, filmname):
     #time.sleep(2)
     return files
 
-
-
-
-
-
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
     global fps, take, rendermenu, updatethumb
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
+    if os.path.exists(renderfilename+'.wav') == False:
+        ##MAKE AUDIO SILENCE
+        audiosilence(renderfilename)
     def render(q, filmfolder, filmname, renderfilename, scene, shot):
         videohash = ''
         oldvideohash = ''
@@ -5409,7 +5411,7 @@ def audiotrim(filename, where, dub):
             pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
             audiolenght = pipe.decode().strip()
         except:
-            audiosilence('',filename)
+            audiosilence(filename)
             audiolenght=videolenght
         #if there is no audio lenght
     logger.info('audio is:' + audiolenght)
@@ -5501,10 +5503,10 @@ def audiotrim(filename, where, dub):
 #--------------Audiosilence--------------------
 # make an empty audio file as long as a video file
 
-def audiosilence(foldername,filename):
+def audiosilence(renderfilename):
     global channels
     writemessage('Creating audiosilence..')
-    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + foldername + filename + '.mp4', shell=True)
+    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
     videolenght = pipe.decode()
     logger.info('Video lenght is ' + videolenght)
     #separate seconds and milliseconds
@@ -5512,7 +5514,7 @@ def audiosilence(foldername,filename):
     videos = int(videolenght) / 1000
     logger.info('Videofile is: ' + str(videos) + 's ' + str(videoms))
     run_command('sox -V0 -n -r '+soundrate+' -c 2 /dev/shm/silence.wav trim 0.0 ' + str(videos))
-    os.system('cp /dev/shm/silence.wav ' + foldername + filename + '.wav')
+    os.system('cp /dev/shm/silence.wav ' + renderfilename + '.wav')
     os.system('rm /dev/shm/silence.wav')
 
 #--------------USB filmfolder-------------------
