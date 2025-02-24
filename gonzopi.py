@@ -4291,25 +4291,25 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             take=counttakes2(scenedir)
             updatethumb=True
             rendermenu = True
-            trimfile = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
-            renderfilename=trimfile
+            trimfile = 'take' + str(counttakes2(scenedir)).zfill(3)
+            print(trimfile)
+            time.sleep(3)
+            renderfilename=scenedir+trimfile
         if os.path.isfile(scenedir+'.end') == True:
-            try:
-                settings = pickle.load(open(scenedir + ".end", "rb"))
-                if trimfile == '':
-                    s, trimfile = settings
-                else:
-                    s, trimfileoriginal = settings
-                logger.info("settings loaded")
-                videotrim(scenedir,trimfile,'end', s)
-                os.remove(scenedir+'.end')
-            except:
-                logger.info("couldnt load settings")
+            settings = pickle.load(open(scenedir + ".end", "rb"))
+            if trimfile == '':
+                s, trimfile = settings
+            else:
+                p, trimfileoriginal = settings
+                s=p-s
+            logger.info("settings loaded")
+            videotrim(scenedir,trimfile,'end', s)
+            os.remove(scenedir+'.end')
             take=counttakes2(scenedir)
             updatethumb=True
             rendermenu = True
             newaudiomix = True
-            renderfilename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
         ###---------BLEND----------
         if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.h264') == True:
             compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
