@@ -536,17 +536,17 @@ def main():
                 #BLEND
                 elif pressed == 'middle' and menu[selected] == 'BLEND:':
                     videolenght=0
-                    filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
+                    blenddir = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
+                    filename=yanked
+                    #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
                     compileshot(filename,filmfolder,filmname)
                     pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
                     videolenght = pipe.decode().strip()
-                    videolenght=(int(videolenght)/1000)-0.2
-                    if videolenght > 1:
-                        selected=3
-                        vumetermessage('select what shot to blend on')
-                        blending=True
-                        reclenght=videolenght
-                        pressed='record_now'
+                    videolenght=(int(videolenght)/1000)
+                    os.makedirs(blenddir)
+                    #videotrim(blenddir,filename,'end', videolenght)
+                    os.system('cp '+filename+'.mp4 '+blenddir+blendmodes[blendselect]+'.mp4')
+                    vumetermessage('blend done.')
                 #CROSSFADE
                 elif pressed == 'middle' and menu[selected] == 'CROSSFADE:':
                     folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
@@ -1375,26 +1375,20 @@ def main():
                 overlay = removeimage(camera, overlay)
                 if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
                     #camera_recording=0 
-                    if blending == False:
-                        scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
-                        if pressed == "record":
-                            #shot = shots+1
-                            take = takes+1
-                        elif pressed == "retake":
-                            take = takes+1
-                        elif pressed == 'record_now':
-                            shot=shots+1
-                            take=1
-                        elif pressed == 'retake_now':
-                            takes = counttakes(filmname, filmfolder, scene, shot)
-                            take = takes + 1
-                        foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                        filename = 'take' + str(take).zfill(3)
-                    else:
-                        foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
-                        filename = blendmodes[blendselect]
-                        blending=False
-                        reclenght=0
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
+                    if pressed == "record":
+                        #shot = shots+1
+                        take = takes+1
+                    elif pressed == "retake":
+                        take = takes+1
+                    elif pressed == 'record_now':
+                        shot=shots+1
+                        take=1
+                    elif pressed == 'retake_now':
+                        takes = counttakes(filmname, filmfolder, scene, shot)
+                        take = takes + 1
+                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    filename = 'take' + str(take).zfill(3)
                     if beeps > 0 and beeping == False:
                         beeping = True
                         beepcountdown = beeps
@@ -4311,8 +4305,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             newaudiomix = True
             renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
         ###---------BLEND----------
-        if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.h264') == True:
-            compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
+        if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.mp4') == True:
+            #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
             run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
