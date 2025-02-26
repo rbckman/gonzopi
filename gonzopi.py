@@ -543,7 +543,7 @@ def main():
                     pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
                     videolenght = pipe.decode().strip()
                     videolenght=(int(videolenght)/1000)
-                    os.makedirs(blenddir)
+                    os.makedirs(blenddir,exist_ok=True)
                     #videotrim(blenddir,filename,'end', videolenght)
                     os.system('cp '+filename+'.mp4 '+blenddir+blendmodes[blendselect]+'.mp4')
                     vumetermessage('blend done.')
@@ -1407,7 +1407,7 @@ def main():
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
-                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality)
+                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
                             recording = True
@@ -3594,7 +3594,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             else:
                                 run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
-                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=bitrate, level=profilelevel, quality=quality)
+                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=bitrate, level=profilelevel, quality=quality, intra_period=1)
                         if sound == True:
                             os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
@@ -4025,7 +4025,7 @@ def stretchaudio(filename,fps):
 #-------------Compile Shot--------------
 
 def compileshot(filename,filmfolder,filmname):
-    global fps, soundrate, channels
+    global fps, soundrate, channels, bitrate
     videolenght=0
     audiolenght=0
 
@@ -4042,7 +4042,10 @@ def compileshot(filename,filmfolder,filmname):
         os.system('rm ' + filename + '.mp4')
         os.system('rm ' + video_origins + '.mp4')
         print(filename+'.mp4 removed!')
-        run_command('MP4Box -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
+        #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
+        run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
+        run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
+        #run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 ' + video_origins + '.mp4')
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
         if not os.path.isfile(filename + '.wav'):
             audiosilence(filename)
@@ -4225,7 +4228,7 @@ def scenefiles(filmfolder, filmname):
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
-    global fps, take, rendermenu, updatethumb
+    global fps, take, rendermenu, updatethumb, bitrate
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     if os.path.exists(renderfilename+'.wav') == False:
@@ -4307,11 +4310,13 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         ###---------BLEND----------
         if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.mp4') == True:
             #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
-            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
+            call(['MP4Box', '-rem', '2', scenedir+'blend/'+blendmodes[blendselect] + '.mp4'], shell=False)
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -c:v h264_omx -b:v '+str(bitrate)+' -filter_complex -c:a copy "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
             run_command('cp /dev/shm/blend.mp4 '+screen_filename+'.mp4')
             run_command('rm /dev/shm/blend.mp4')
+            run_command('rm '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4')
             run_command('ffmpeg -y -sseof -1 -i ' + screen_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + screen_filename + '.jpeg')
             #ffmpeg -i blendtest.mp4 -i blendtest3.mp4 -filter_complex "blend=screen" output2.mp4
             newaudiomix = True
