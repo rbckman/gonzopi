@@ -4043,9 +4043,9 @@ def compileshot(filename,filmfolder,filmname):
         os.system('rm ' + video_origins + '.mp4')
         print(filename+'.mp4 removed!')
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
-        run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
-        run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
-        #run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 ' + video_origins + '.mp4')
+        #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
+        #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
+        run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
         if not os.path.isfile(filename + '.wav'):
             audiosilence(filename)
@@ -5332,7 +5332,9 @@ def videotrim(foldername ,filename, where, s):
     if where == 'beginning':
         logger.info('trimming clip from beginning')
         #run_command('ffmpeg -ss ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
-        run_command('MP4Box ' + filename + '.mp4 -splitx ' + str(s) + ':end -out ' + trim_filename +  '.mp4')
+        #ffmpeg -fflags +genpts -r 25 -i take009.mp4 -c:v h264_omx -crf 20 -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v 8888888 take010.mp4
+        #run_command('MP4Box ' + filename + '.mp4 -splitx ' + str(s) + ':end -out ' + trim_filename +  '.mp4')
+        run_command('ffmpeg -i '+filename+'.mp4 -ss '+str(s)+' -c:v copy -c:a copy -y '+trim_filename+'.mp4')
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'beginning','')
         if os.path.exists(foldername+'dub') == True:
@@ -5346,7 +5348,8 @@ def videotrim(foldername ,filename, where, s):
     if where == 'end':
         logger.info('trimming clip from end')
         #run_command('ffmpeg -to ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
-        run_command('MP4Box ' + filename + '.mp4 -splitx 0:' + str(s) + ' -out ' + trim_filename + '.mp4')
+        #run_command('MP4Box ' + filename + '.mp4 -splitx 0:' + str(s) + ' -out ' + trim_filename + '.mp4')
+        run_command('ffmpeg -i '+filename+'.mp4 -t '+str(s)+' -c:v copy -c:a copy -y '+trim_filename+'.mp4')
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'end','')
         if os.path.exists(foldername+'dub') == True:
