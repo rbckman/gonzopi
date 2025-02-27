@@ -1532,7 +1532,17 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'BRIGHT:':
                 camera.brightness = 50
             elif pressed == 'middle' and menu[selected] == 'CONT:':
-                camera.contrast = 0
+                if yanked == '':
+                    camera.contrast = 0
+                else:
+                    newtake = nexttakefilename(filmname, filmfolder, scene, shot)
+                    #why didnt i do this earlier cuz copy paste & that works too
+                    vumetermessage('applying effect...')
+                    run_command('ffmpeg -i '+yanked+'.mp4 -vf "eq=contrast='+str(1.0+(int(camera.contrast)/100))+'" -c:v copy -c:a copy -y '+encoder()+newtake+'.mp4')
+                    vumetermessage('done!')
+                    yanked=''
+                    scenes, shots, takes = countlast(filmname, filmfolder)
+                    take=takes
             elif pressed == 'middle' and menu[selected] == 'SAT:':
                 camera.saturation = 0
             elif pressed == 'middle' and menu[selected] == 'MIC:':
@@ -2473,6 +2483,40 @@ def counttakes(filmname, filmfolder, scene, shot):
                     takes = takes + 1
                 doubles = a
     return takes
+
+def counttakes2(folder):
+    takes = 0
+    doubles = ''
+    try:
+        allfiles = os.listdir(folder)
+    except:
+        allfiles = []
+        return takes
+    for a in allfiles:
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                doubles = a
+    return takes
+
+#------------Count last take name --------
+
+def nexttakefilename(filmname, filmfolder, scene, shot):
+    takes = 0
+    doubles = ''
+    try:
+        allfiles = os.listdir(filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3))
+    except:
+        allfiles = []
+        return takes
+    for a in allfiles:
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                doubles = a
+    return filmfolder+filmname+'/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3)+'/take'+str(takes+1).zfill(3)
 
 def counttakes2(folder):
     takes = 0
@@ -4022,6 +4066,12 @@ def stretchaudio(filename,fps):
     #time.sleep(5)
     return
 
+#---------#ffmpeg settings------------
+
+def encoder():
+    global bitrate
+    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '
+
 #-------------Compile Shot--------------
 
 def compileshot(filename,filmfolder,filmname):
@@ -4045,7 +4095,7 @@ def compileshot(filename,filmfolder,filmname):
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
-        run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
+        run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
         if not os.path.isfile(filename + '.wav'):
             audiosilence(filename)
@@ -4467,6 +4517,7 @@ def renderscene(filmfolder, filmname, scene):
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
     # Check if video corrupt
     renderfixscene = False
+    renderfix=False
     #try:
     #    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
     #    videolenght = pipe.decode().strip()
