@@ -808,7 +808,7 @@ def main():
                     copying = ''
                     moving = False
                     vumetermessage('Pasted!')
-                    #time.sleep(3)
+                    time.sleep(1)
                 #INSERT SHOT
                 elif pressed == 'insert' and menu[selected] != 'SCENE:' and yanked == '':
                     insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
@@ -3889,7 +3889,11 @@ def organize(filmfolder, filmname):
         origin_scene_files=[]
         shots = next(os.walk(filmfolder + filmname + '/' + i))[1]
         for p in sorted(shots):
-            takes = next(os.walk(filmfolder + filmname + '/' + i + '/' + p))[2]
+            takes=[]
+            takefiles = next(os.walk(filmfolder + filmname + '/' + i + '/' + p))[2]
+            for t in takefiles:
+                if 'take' in t:
+                    takes.append(t)
             if len(takes) == 0:
                 logger.info('no takes in this shot, removing shot if no placeholder')
                 if not os.path.isfile(filmfolder + filmname + '/' + i + '/' + p + '/.placeholder'):
