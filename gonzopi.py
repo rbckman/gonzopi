@@ -4365,7 +4365,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.mp4') == True:
             #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
             call(['MP4Box', '-rem', '2', scenedir+'blend/'+blendmodes[blendselect] + '.mp4'], shell=False)
-            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -c:v h264_omx -b:v '+str(bitrate)+' -filter_complex -c:a copy "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -c:v h264_omx -b:v '+str(bitrate)+' -c:a copy -filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
             run_command('cp /dev/shm/blend.mp4 '+screen_filename+'.mp4')
