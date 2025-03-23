@@ -539,6 +539,12 @@ def main():
                     blenddir = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
                     filename=yanked
                     #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
+                    if filename[-7:-3] == 'shot':
+                        takename = gettake(filename)
+                        if '.h264' in takename:
+                            filename=filename+'/'+takename[:-5]
+                        if '.mp4' in takename:
+                            filename=filename+'/'+takename[:-4]
                     compileshot(filename,filmfolder,filmname)
                     pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
                     videolenght = pipe.decode().strip()
@@ -2500,6 +2506,23 @@ def counttakes2(folder):
                 doubles = a
     return takes
 
+def gettake(folder):
+    takes = 0
+    doubles = ''
+    try:
+        allfiles = os.listdir(folder)
+    except:
+        allfiles = []
+        return takes
+    for a in allfiles:
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                    filename=a
+                doubles = a
+    return filename
+
 #------------Count last take name --------
 
 def nexttakefilename(filmname, filmfolder, scene, shot):
@@ -4074,7 +4097,7 @@ def stretchaudio(filename,fps):
 
 def encoder():
     global bitrate
-    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '
+    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
 
 #-------------Compile Shot--------------
 
@@ -4365,7 +4388,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.mp4') == True:
             #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
             call(['MP4Box', '-rem', '2', scenedir+'blend/'+blendmodes[blendselect] + '.mp4'], shell=False)
-            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -c:v h264_omx -b:v '+str(bitrate)+' -filter_complex -c:a copy "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 '+encoder()+'-filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
             run_command('cp /dev/shm/blend.mp4 '+screen_filename+'.mp4')
