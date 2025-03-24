@@ -5095,7 +5095,7 @@ def playdub(filmname, filename, player_menu):
     buttontime = time.time()
     holdbutton = ''
     playing = False
-    pause = False
+    pause = True
     trim = False
     videolag = 0
     trimfromstart=0
@@ -5103,6 +5103,7 @@ def playdub(filmname, filename, player_menu):
     remove_shots = []
     if video == True:
         if player_menu == 'dubbb':
+            pause = False
             try:
                 player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
@@ -5111,7 +5112,7 @@ def playdub(filmname, filename, player_menu):
                 return
         else:
             try:
-                player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
                 time.sleep(0.5)
@@ -5141,6 +5142,8 @@ def playdub(filmname, filename, player_menu):
             p+=1
     if video == True:
         player.play()
+        player.pause()
+        player.set_position(0)
         #run_command('aplay -D plughw:0 ' + filename + '.wav &')
         #run_command('mplayer ' + filename + '.wav &')
     if player_menu == 'dub':
@@ -5219,12 +5222,23 @@ def playdub(filmname, filename, player_menu):
                     miclevel = miclevel + 2
                     run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
             else:
-                try:
-                    player.set_position(t+2)
-                    time.sleep(0.2)
-                    #playerAudio.set_position(player.position())
-                except:
-                    print('couldnt set position of player')
+                if pause == False:
+                    try:
+                        player.set_position(t+2)
+                        time.sleep(0.2)
+                        #playerAudio.set_position(player.position())
+                    except:
+                        print('couldnt set position of player')
+                else:
+                    try:
+                        player.play()
+                        time.sleep(0.3)
+                        t=t+0.1
+                        player.set_position(t)
+                        player.pause()
+                        #playerAudio.set_position(player.position())
+                    except:
+                        print('couldnt set position of player')
         elif pressed == 'down':
             if menu[selected] == 'PHONES:':
                 if headphoneslevel > 0:
@@ -5235,10 +5249,21 @@ def playdub(filmname, filename, player_menu):
                     miclevel = miclevel - 2
                     run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
             else:
-                if t > 1:
+                if pause == False:
+                    if t > 1:
+                        try:
+                            player.set_position(t-2)
+                            time.sleep(0.25)
+                            #playerAudio.set_position(player.position())
+                        except:
+                            print('couldnt set position of player')
+                else:
                     try:
-                        player.set_position(t-2)
-                        time.sleep(0.25)
+                        player.play()
+                        time.sleep(0.3)
+                        t=t-0.1
+                        player.set_position(t)
+                        player.pause()
                         #playerAudio.set_position(player.position())
                     except:
                         print('couldnt set position of player')
@@ -5345,12 +5370,14 @@ def playdub(filmname, filename, player_menu):
                 os.system('pkill aplay') 
                 if dub == True:
                     os.system('pkill arecord')
+                player.quit()
                 return [trimfromstart, trimfromend]
                 #return remove_shots
         if t > (clipduration - 0.3):
             os.system('pkill aplay') 
             if dub == True:
                 os.system('pkill arecord')
+            player.quit()
             return [trimfromstart, trimfromend]
     try:
         player.quit()
