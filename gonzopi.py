@@ -1413,7 +1413,7 @@ def main():
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
-                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality)
+                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
                             recording = True
@@ -4097,7 +4097,7 @@ def stretchaudio(filename,fps):
 
 def encoder():
     global bitrate
-    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset ultrafast -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
+    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slow -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
 
 #-------------Compile Shot--------------
 
