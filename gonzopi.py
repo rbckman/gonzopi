@@ -4097,7 +4097,7 @@ def stretchaudio(filename,fps):
 
 def encoder():
     global bitrate
-    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
+    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset ultrafast -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
 
 #-------------Compile Shot--------------
 
