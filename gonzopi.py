@@ -528,6 +528,7 @@ def main():
                             imagename = foldername + filename + '.jpeg'
                             overlay = displayimage(camera, imagename, overlay, 3)
                             camera.start_preview()
+                            take = counttakes(filmname, filmfolder, scene, shot)
                         else:
                             vumetermessage('nothing here! hit rec!')
                             playdub(filmname, renderfilename, 'shot')
