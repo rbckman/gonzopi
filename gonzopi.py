@@ -41,6 +41,7 @@ import web
 # Check for slider support
 import serial
 import serial.tools.list_ports
+from pymediainfo import MediaInfo
 # Get a list of all serial ports
 slidecommander = ''
 slideports = serial.tools.list_ports.comports()
@@ -528,10 +529,10 @@ def main():
                             imagename = foldername + filename + '.jpeg'
                             overlay = displayimage(camera, imagename, overlay, 3)
                             camera.start_preview()
-                            take = counttakes(filmname, filmfolder, scene, shot)
                         else:
                             vumetermessage('nothing here! hit rec!')
                             playdub(filmname, renderfilename, 'shot')
+                            take = counttakes(filmname, filmfolder, scene, shot)
                         rendermenu = True
                         updatethumb=True
                 #BLEND
@@ -1414,9 +1415,10 @@ def main():
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
-                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
+                                #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
+                                rec_process=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4')
                                 starttime = time.time()
-                            os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
+                            os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+foldername+filename+'.mp4')
                             recording = True
                             showmenu = 0
                         if cammode == 'picture':
@@ -1445,7 +1447,8 @@ def main():
                     if showmenu_settings == True:
                         showmenu = 1
                     if onlysound != True:
-                        camera.stop_recording()
+                        #camera.stop_recording()
+                        stoprecording(camera, rec_process)
                     os.system('pkill arecord')
                     soundlag=starttime-sound_start
                     db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
@@ -4098,7 +4101,23 @@ def stretchaudio(filename,fps):
 
 def encoder():
     global bitrate
-    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slow -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
+    #return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slow -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
+    return '-c:v copy -c:a copy '
+
+def has_audio_track(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Audio":
+                return True
+        return False
+
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
 
 #-------------Compile Shot--------------
 
@@ -4125,6 +4144,11 @@ def compileshot(filename,filmfolder,filmname):
         #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
         run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+    if has_audio_track(filename+'.mp4'):
+        print('cool has audio')
+    else:
+        print('trimming audio')
+        video_origins = (os.path.realpath(filename+'.mp4'))[:-4]
         if not os.path.isfile(filename + '.wav'):
             audiosilence(filename)
         #add audio/video start delay sync
@@ -4318,7 +4342,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
         #return if no file
         # Video Hash
-        if os.path.isfile(renderfilename + '.h264') == True:
+        #if os.path.isfile(renderfilename + '.h264') == True:
+        if has_audio_track(renderfilename+'.mp4') == False:
             compileshot(renderfilename,filmfolder,filmname)
             audiohash = str(int(countsize(renderfilename + '.wav')))
             with open(scenedir + '.audiohash', 'w') as f:
@@ -4642,7 +4667,7 @@ def renderscene(filmfolder, filmname, scene):
                 audiosize = countsize(renderfilename + '.wav') * 0.453
             except:
                 print('noothing here')
-            os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+            #os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
             if debianversion == 'stretch':
                 p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
             else:
@@ -4657,8 +4682,10 @@ def renderscene(filmfolder, filmname, scene):
             ##MERGE AUDIO & VIDEO
             writemessage('Merging audio & video')
             #os.remove(renderfilename + '.mp4') 
-            call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
-            call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
+            call(['MP4Box', '-rem', '2',  renderfilename + '.mp4'], shell=False)
+            #call(['MP4Box', '-inter', '40', '-v', renderfilename + '_tmp.mp4'], shell=False)
+            call(['MP4Box', '-add', renderfilename + '.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '_tmp.mp4'], shell=False)
+            call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
             os.remove(renderfilename + '_tmp.mp4')
             os.remove(renderfilename + '.mp3')
     else:
@@ -4750,7 +4777,7 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
                 #muxing mp3 layer to mp4 file
                 #count estimated audio filesize with a bitrate of 320 kb/s
                 audiosize = countsize(renderfilename + '.wav') * 0.453
-                os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+                #os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
                 if debianversion == 'stretch':
                     p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
                 else:
@@ -4765,9 +4792,10 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
                 ##MERGE AUDIO & VIDEO
                 writemessage('Merging audio & video')
                 #os.remove(renderfilename + '.mp4') 
-                call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
-                call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
-                #call(['MP4Box', '-inter', '500', renderfilename + '.mp4'], shell=False)
+                call(['MP4Box', '-rem', '2',  renderfilename + '.mp4'], shell=False)
+                #call(['MP4Box', '-inter', '40', '-v', renderfilename + '_tmp.mp4'], shell=False)
+                call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-c', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+                call(['MP4Box', '-add', renderfilename + '.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '_tmp.mp4'], shell=False)
                 os.remove(renderfilename + '_tmp.mp4')
                 os.remove(renderfilename + '.mp3')
         else:
@@ -5836,6 +5864,21 @@ def stopstream(camera, stream):
     print("Good bye")
     stream = ''
     return stream
+
+def startrecording(camera, takename):
+    global bitrate, quality, profilelevel
+    # FFmpeg command to take H.264 input from stdin and output to MP4
+    ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-bsf:v', 'dump_extra', '-b:v', str(bitrate), '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
+    rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
+    camera.start_recording(rec_process.stdin, format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
+    return rec_process
+
+def stoprecording(camera, rec_process):
+    camera.stop_recording() 
+    # Close the FFmpeg process
+    rec_process.stdin.close()
+    rec_process.wait()
+    print("Recording complete!")
 
 #-------------Beeps-------------------
 
