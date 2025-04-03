@@ -5151,7 +5151,7 @@ def playdub(filmname, filename, player_menu):
         clipduration = player.duration()
         #vumetermessage('up [fast-forward], down [rewind], help button for more')
     #sound
-    #if player_menu != 'film':
+    #if player_menu != 'film' or player_menu != 'scene':
     #    try:
     #        playerAudio = OMXPlayer(filename + '.wav', args=['--adev','alsa:hw:'+str(plughw)], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
     #        time.sleep(0.2)
