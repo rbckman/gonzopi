@@ -161,7 +161,7 @@ def main():
     blendselect=0
     blending=False
     fade='in'
-    fadelenght=3
+    fadelength=3
     cammode = 'film'
     camera_model=''
     slidemode=False
@@ -187,7 +187,7 @@ def main():
     overlay = None
     overlay2 = None
     underlay = None
-    reclenght = 0
+    reclength = 0
     t = 0
     rectime = ''
     scene = 1
@@ -537,7 +537,7 @@ def main():
                         updatethumb=True
                 #BLEND
                 elif pressed == 'middle' and menu[selected] == 'BLEND:':
-                    videolenght=0
+                    videolength=0
                     blenddir = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
                     filename=yanked
                     #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
@@ -548,11 +548,12 @@ def main():
                         if '.mp4' in takename:
                             filename=filename+'/'+takename[:-4]
                     compileshot(filename,filmfolder,filmname)
-                    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-                    videolenght = pipe.decode().strip()
-                    videolenght=(int(videolenght)/1000)
+                    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+                    #videolength = pipe.decode().strip()
+                    videolength=get_video_length(filename+'.mp4')
+                    videolength=(int(videolength)/1000)
                     os.makedirs(blenddir,exist_ok=True)
-                    #videotrim(blenddir,filename,'end', videolenght)
+                    #videotrim(blenddir,filename,'end', videolength)
                     os.system('cp '+filename+'.mp4 '+blenddir+blendmodes[blendselect]+'.mp4')
                     vumetermessage('blend done.')
                 #CROSSFADE
@@ -583,7 +584,7 @@ def main():
                         #add audio/video start delay sync
                         run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
                         run_command('mv /dev/shm/temp.wav '+ newdub)
-                        audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
+                        audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
                         vumetermessage('new shot dubbing made!')
                         #rerender audio
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
@@ -603,7 +604,7 @@ def main():
                         #add audio/video start delay sync
                         run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
                         run_command('mv /dev/shm/temp.wav '+ newdub)
-                        audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
+                        audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
                         vumetermessage('new scene dubbing made!')
                         #rerender audio
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
@@ -1379,7 +1380,7 @@ def main():
                 newselected_maybe=int(pressed.split(':')[1])
                 if len(cameras) > newselected_maybe:
                     newselected=newselected_maybe
-            if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclenght != 0 and t > reclenght:
+            if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclength != 0 and t > reclength:
                 overlay = removeimage(camera, overlay)
                 if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
                     #camera_recording=0 
@@ -1411,7 +1412,7 @@ def main():
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
-                            db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolenght=0, videolenght=0)
+                            db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
@@ -1522,7 +1523,7 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'BEEP:':
                 beeps = 0
             elif pressed == 'middle' and menu[selected] == 'LENGTH:':
-                reclenght = 0
+                reclength = 0
             elif pressed == 'middle' and menu[selected] == 'LIVE:':
                 if stream == '':
                     if udp_ip == '':
@@ -1622,10 +1623,10 @@ def main():
                         flip = 'yes'
                         time.sleep(0.2)
                 elif menu[selected] == 'LENGTH:':
-                    if reclenght < 1:
-                        reclenght = reclenght + 0.2
+                    if reclength < 1:
+                        reclength = reclength + 0.2
                     else:
-                        reclenght = int(reclenght + 1)
+                        reclength = int(reclength + 1)
                     time.sleep(0.1)
                 elif menu[selected] == 'MIC:':
                     if miclevel < 100:
@@ -1818,14 +1819,14 @@ def main():
                         flip = 'yes'
                         time.sleep(0.2)
                 elif menu[selected] == 'LENGTH:':
-                    if reclenght > 1:
-                        reclenght = int(reclenght - 1)
+                    if reclength > 1:
+                        reclength = int(reclength - 1)
                         time.sleep(0.1)
-                    elif reclenght > 0.3:
-                        reclenght = reclenght - 0.2
+                    elif reclength > 0.3:
+                        reclength = reclength - 0.2
                         time.sleep(0.1)
                     else:
-                        reclenght = 0
+                        reclength = 0
                 elif menu[selected] == 'MIC:':
                     if miclevel > 0:
                         miclevel = miclevel - 2
@@ -2130,12 +2131,12 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, str(slide)
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, str(slide)
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 writemenu(menu,settings,selected,'',showmenu)
@@ -2230,7 +2231,7 @@ def get_film_files(filmname,filmfolder,db):
         videodb=db.select('videos')
         return db
     except:
-        db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolenght FLOAT, videolenght FLOAT,soundlag FLOAT, audiosync FLOAT);")
+        db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolength FLOAT, videolength FLOAT,soundlag FLOAT, audiosync FLOAT);")
     videodb=db.select('videos')
     return db
 
@@ -3657,7 +3658,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                 while True:
                     t = time.time() - starttime
                     pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
-                    vumetermessage('Timelapse lenght is now ' + str(round(n * duration,2)) + ' second clip   ')
+                    vumetermessage('Timelapse length is now ' + str(round(n * duration,2)) + ' second clip   ')
                     if recording == False and t > between:
                         if beeps > 0:
                             if bus:
@@ -4077,19 +4078,21 @@ def add_organize(filmfolder, filmname):
 def stretchaudio(filename,fps):
     fps_rounded=round(fps)
     if int(fps_rounded) != 25:
-        pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-        videolenght = pipe.decode().strip()
+        #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+        #videolength = pipe.decode().strip()
+        videolength=get_video_length(filename+'.mp4')
         try:
-            pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
-            audiolenght = pipe.decode().strip()
+            #pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+            #audiolength = pipe.decode().strip()
+            audiolength = get_audio_length(filename+'.wav')
         except:
             audiosilence(filename)
-            audiolenght=videolenght
-        #if there is no audio lenght
-        logger.info('audio is:' + audiolenght)
-        if not audiolenght.strip():
-            audiolenght = 0
-        ratio = int(audiolenght)/int(videolenght)
+            audiolength=videolength
+        #if there is no audio length
+        logger.info('audio is:' + str(audiolength))
+        if not audiolength.strip():
+            audiolength = 0
+        ratio = int(audiolength)/int(videolength)
         print(str(ratio))
         run_command('cp '+filename+'.wav '+filename+'_temp.wav')
         run_command('ffmpeg -y -i ' + filename + '_temp.wav -filter:a atempo="'+str(ratio) + '" ' + filename + '.wav')
@@ -4119,13 +4122,39 @@ def has_audio_track(file_path):
         print(f"Error parsing {file_path}: {e}")
         return None
 
+def get_video_length(filepath):
+    # Parse the file
+    media_info = MediaInfo.parse(filepath)
+    # Find the video track (usually the first video track)
+    for track in media_info.tracks:
+        if track.track_type == "Video":
+            # Duration is in milliseconds, convert to seconds
+            duration_ms = track.duration
+            if duration_ms is None:
+                return None  # No duration found
+            return int(duration_ms)
+    return None  # No video track found
+
+def get_audio_length(filepath):
+    # Parse the file
+    media_info = MediaInfo.parse(filepath)
+    # Find the video track (usually the first video track)
+    for track in media_info.tracks:
+        if track.track_type == "Audio":
+            # Duration is in milliseconds, convert to seconds
+            duration_ms = track.duration
+            if duration_ms is None:
+                return None  # No duration found
+            return int(duration_ms)
+    return None  # No video track found
+
 #-------------Compile Shot--------------
 
 def compileshot(filename,filmfolder,filmname):
     global fps, soundrate, channels, bitrate
-    videolenght=0
-    audiolenght=0
-
+    videolength=0
+    audiolength=0
+    
     #Check if file already converted
     if '.h264' in filename:
         filename=filename.replace('.h264','')
@@ -4155,8 +4184,8 @@ def compileshot(filename,filmfolder,filmname):
         run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
         run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
         stretchaudio(filename,fps)
-        audiosync, videolenght, audiolenght = audiotrim(filename, 'end','')
-        muxing = True
+        audiosync, videolength, audiolength = audiotrim(filename, 'end','')
+        muxing = False
         if muxing == True:
             #muxing mp3 layer to mp4 file
             #count estimated audio filesize with a bitrate of 320 kb/s
@@ -4178,7 +4207,7 @@ def compileshot(filename,filmfolder,filmname):
             os.remove(video_origins + '_tmp.mp4')
             os.remove(filename + '.mp3')
         origin=os.path.realpath(filename+'.mp4')
-        db.update('videos', where='filename="'+origin+'"', videolenght=videolenght/1000, audiolenght=audiolenght/1000, audiosync=audiosync)
+        db.update('videos', where='filename="'+origin+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
         os.system('rm ' + video_origins + '.h264')
         os.system('rm ' + filename + '.h264')
         os.system('rm /dev/shm/temp.wav')
@@ -4267,25 +4296,26 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
             os.system('cp '+audiofiles[0]+'.wav '+filename+'.wav')
     #DUBBING
     p = 1
-    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-    videolenght = pipe.decode().strip()
-    audiolenght=videolenght
+    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+    #videolength = pipe.decode().strip()
+    videolength = get_video_length(filename+'.mp4')
+    audiolength = get_audio_length(filename+'.wav')
     for i, d in zip(dubmix, dubfiles):
         writemessage('Dub ' + str(p) + ' audio found lets mix...')
         #first trimit!
         audiotrim(filename, 'end', d)
         try:
             pipe = subprocess.check_output('soxi -D ' + d, shell=True)
-            dubaudiolenght = pipe.decode()
-            if dubaudiolengt != videolenght:
-                print('dub wrong lenght!')
+            dubaudiolength = pipe.decode()
+            if dubaudiolengt != videolength:
+                print('dub wrong length!')
                 time.sleep(5)
         except:
             pass
         os.system('cp ' + filename + '.wav ' + filename + '_tmp.wav')
         #Fade and make stereo
         run_command('sox -V0 -G ' + d + ' /dev/shm/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
-        run_command('sox -V0 -G -m -v ' + str(round(i[0],1)) + ' /dev/shm/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav ' + filename + '.wav trim 0 ' + audiolenght)
+        run_command('sox -V0 -G -m -v ' + str(round(i[0],1)) + ' /dev/shm/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav ' + filename + '.wav trim 0 ' + str(audiolength))
         try:
             os.remove(filename + '_tmp.wav')
             os.remove('/dev/shm/fade.wav')
@@ -4298,18 +4328,18 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
 #-------------Fast Edit-----------------
 def fastedit(filmfolder, filmname, filmfiles, scene):
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
-    totlenght = 0
+    totlength = 0
     try:
         os.remove(scenedir + '.fastedit')
     except:
         print('no fastedit file')
     #for f in filmfiles:
         #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + f + '.mp4', shell=True)
-        #videolenght = pipe.decode().strip()
-        #totlenght = int(videolenght) + totlenght
-        #print('writing shot lenghts for fastedit mode')
+        #videolength = pipe.decode().strip()
+        #totlength = int(videolength) + totlength
+        #print('writing shot lengths for fastedit mode')
         #with open(scenedir + '.fastedit', 'a') as f:
-        #    f.write(str(totlenght)+'\n')
+        #    f.write(str(totlength)+'\n')
     
 
 #-------------Get scene files--------------
@@ -4368,11 +4398,11 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             run_command('ffmpeg -sseof -1 -i ' + renderfilename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + renderfilename + '.jpeg')
         #try:
         #    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-        #    videolenght = pipe.decode().strip()
+        #    videolength = pipe.decode().strip()
         #except:
-        #    videolenght = ''
-        #print('Shot lenght ' + videolenght)
-        #if videolenght == '':
+        #    videolength = ''
+        #print('Shot length ' + videolength)
+        #if videolength == '':
         #    print('Okey, shot file not found or is corrupted')
         #    # For backwards compatibility remove old rendered scene files
         #    # run_command('rm ' + renderfilename + '*')
@@ -4428,22 +4458,22 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             settings = pickle.load(open(scenedir + ".crossfade", "rb"))
             s, trimfile = settings
             logger.info("settings loaded")
-            videolenght=0
+            videolength=0
             foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
             crossfade_folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot+1).zfill(3) + '/'
             crossfade_filename = 'take' + str(counttakes2(crossfade_folder)).zfill(3)
             filename = trimfile
             compileshot(crossfade_folder+crossfade_filename,crossfade_folder,filmname)
             pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + foldername+filename + '.mp4', shell=True)
-            videolenght = pipe.decode().strip()
-            videolenght=(int(videolenght)/1000)-0.2
+            videolength = pipe.decode().strip()
+            videolength=(int(videolength)/1000)-0.2
             pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + crossfade_folder+ crossfade_filename + '.mp4', shell=True)
-            videolenght2 = pipe.decode().strip()
-            videolenght2=(int(videolenght2)/1000)-0.2
-            if videolenght > int(s)/2:
-                if videolenght2 > int(s)/2:           
+            videolength2 = pipe.decode().strip()
+            videolength2=(int(videolength2)/1000)-0.2
+            if videolength > int(s)/2:
+                if videolength2 > int(s)/2:           
                     #crossfade(scenedir,trimfile,'end', s)
-                    crossfade_start = int(videolenght)-crossfade
+                    crossfade_start = int(videolength)-crossfade
                     output = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
                     run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+crossfade_folder+crossfade_filename+'.mp4 -filter_complex "xfade=offset='+str(crossfade_start)+':duration='+str(crossfade)+'" '+output+'.mp4')
                     run_command('ffmpeg -y -i '+renderfilename+'.wav -i '+crossfade_folder+crossfade_filename+'.wav -filter_complex "acrossfade=d='+str(crossfade)+'" '+output+'.wav')
@@ -4488,7 +4518,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 if os.path.exists(scenedir+'dub') == True:
                     os.system('cp '+scenedir+'dub/original.wav '+renderfilename+'.wav')
                 #os.system('cp '+dubfolder+'original.wav '+renderfilename+'.wav')
-                renderaudio(renderfilename, renderfilename, dubfiles, dubmix)
+                #renderaudio(renderfilename, renderfilename, dubfiles, dubmix)
                 print('updating audiohash...')
                 with open(scenedir + '.audiohash', 'w') as f:
                     f.write(audiohash)
@@ -4496,7 +4526,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                     os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
                 print('Audio rendered!')
                 newaudiomix = True
-                muxing = True
+                muxing = False
                 if muxing == True:
                     #muxing mp3 layer to mp4 file
                     #count estimated audio filesize with a bitrate of 320 kb/s
@@ -4573,12 +4603,12 @@ def renderscene(filmfolder, filmname, scene):
     renderfix=False
     #try:
     #    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-    #    videolenght = pipe.decode().strip()
+    #    videolength = pipe.decode().strip()
     #except:
-    #    videolenght = ''
+    #    videolength = ''
     #    renderfixscene = True
-    #print('Scene lenght ' + videolenght)
-    #if videolenght == '':
+    #print('Scene length ' + videolength)
+    #if videolength == '':
     #    print('Okey, hold your horses, rendering!')
     #    # For backwards compatibility remove old rendered scene files
     #    #run_command('rm ' + renderfilename + '.mp4')
@@ -4651,7 +4681,7 @@ def renderscene(filmfolder, filmname, scene):
         renderfixscene=True
         os.system('rm '+scenedir+'/.rerender')
     if audiohash != oldaudiohash or newmix == True or renderfix == True or renderfixscene == True:
-        renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
+        #renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
         print('updating audiohash...')
         with open(scenedir + '.audiohash', 'w') as f:
             f.write(audiohash)
@@ -4659,7 +4689,7 @@ def renderscene(filmfolder, filmname, scene):
             os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
         print('Audio rendered!')
         newaudiomix = True
-        muxing = True
+        muxing = False
         if muxing == True:
             #muxing mp3 layer to mp4 file
             #count estimated audio filesize with a bitrate of 320 kb/s
@@ -4683,11 +4713,14 @@ def renderscene(filmfolder, filmname, scene):
             writemessage('Merging audio & video')
             #os.remove(renderfilename + '.mp4') 
             call(['MP4Box', '-rem', '2',  renderfilename + '.mp4'], shell=False)
-            #call(['MP4Box', '-inter', '40', '-v', renderfilename + '_tmp.mp4'], shell=False)
-            call(['MP4Box', '-add', renderfilename + '.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '_tmp.mp4'], shell=False)
-            call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+            #call(['MP4Box', '-inter', '40', '-v', renderfilename + '.mp4'], shell=False)
+            #call(['MP4Box', '-add', renderfilename + '.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '_tmp.mp4'], shell=False)
+            #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
             os.remove(renderfilename + '_tmp.mp4')
             os.remove(renderfilename + '.mp3')
+        os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+        call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+
     else:
         print('Already rendered!')
     return renderfilename, newaudiomix
@@ -4759,7 +4792,7 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
         if newaudiomix == True:
             newmix = True
         if audiohash != oldaudiohash or newmix == True:
-            renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
+            #renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
             print('updating audiohash...')
             with open(filmdir+ '.audiohash', 'w') as f:
                 f.write(audiohash)
@@ -4773,6 +4806,7 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
                 #run_command('sox ' + renderfilename + '_tmp.wav ' + renderfilename + '.wav compand 0.3,1 6:-70,-60,-20 -5 -90 0.2')
                 run_command('sox ' + renderfilename + '_tmp.wav ' + renderfilename + '.wav compand 0.0,1 6:-70,-43,-20 -6 -90 0.1')
                 os.remove(renderfilename + '_tmp.wav')
+            muxing = False
             if muxing == True:
                 #muxing mp3 layer to mp4 file
                 #count estimated audio filesize with a bitrate of 320 kb/s
@@ -5523,45 +5557,46 @@ def getaudiocards():
     return audiocards
 
 #--------------Fast Audio Trim--------------------
-# make audio file same lenght as video file
+# make audio file same length as video file
 def fastaudiotrim(filename, beginning, end):
     run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim ' + beginning + ' ' + end)
     run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
 
 #--------------Audio Trim--------------------
-# make audio file same lenght as video file
+# make audio file same length as video file
 def audiotrim(filename, where, dub):
     global channels, fps
     videofile=filename
     audiosync=0
     print("chaaaaaaaaaaaaaaaanel8: " +str(channels))
     writemessage('Audio syncing..')
-    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-    videolenght = pipe.decode().strip()
-    print('videolenght:'+str(videolenght))
+    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+    #videolength = pipe.decode().strip()
+    videolength = get_video_length(filename+'.mp4')
+    print('videolength:'+str(videolength))
     if dub:
-        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
-        audiolenght = pipe.decode().strip()
+        #pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
+        #audiolength = pipe.decode().strip()
+        audiolength = get_audio_length(dub[:-4] + '.wav')
     else:
         try:
-            pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
-            audiolenght = pipe.decode().strip()
+            #pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+            #audiolength = pipe.decode().strip()
+            audiolength = get_audio_length(filename+'.wav')
         except:
             audiosilence(filename)
-            audiolenght=videolenght
-        #if there is no audio lenght
-    logger.info('audio is:' + audiolenght)
-    if not audiolenght.strip():
-        audiolenght = 0
+            audiolength=videolength
+        #if there is no audio length
+    logger.info('audio is:' + str(audiolength))
     #separate seconds and milliseconds
-    #videoms = int(videolenght) % 1000
-    #audioms = int(audiolenght) % 1000
-    #videos = int(videolenght) / 1000
-    #audios = int(audiolenght) / 1000
-    elif int(audiolenght) > int(videolenght):
+    #videoms = int(videolength) % 1000
+    #audioms = int(audiolength) % 1000
+    #videos = int(videolength) / 1000
+    #audios = int(audiolength) / 1000
+    if int(audiolength) > int(videolength):
         #calculate difference
-        audiosync = int(audiolenght) - int(videolenght)
-        newaudiolenght = int(audiolenght) - audiosync
+        audiosync = int(audiolength) - int(videolength)
+        newaudiolength = int(audiolength) - audiosync
         logger.info('Audiofile is: ' + str(audiosync) + 'ms longer')
         #trim from end or beginning and put a 0.01 in- and outfade
         if where == 'end':
@@ -5588,8 +5623,8 @@ def audiotrim(filename, where, dub):
         #    time.sleep(10)
         delayerr = 'A' + str(audiosync)
         print(delayerr)
-    elif int(audiolenght) < int(videolenght):
-        audiosync = int(videolenght) - int(audiolenght)
+    elif int(audiolength) < int(videolength):
+        audiosync = int(videolength) - int(audiolength)
         #calculate difference
         #audiosyncs = videos - audios
         #audiosyncms = videoms - audioms
@@ -5620,19 +5655,19 @@ def audiotrim(filename, where, dub):
         #os.remove('/dev/shm/silence.wav')
         delayerr = 'V' + str(audiosync)
         print(delayerr)
-    print('the results:')
-    if dub:
-        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
-        audiolenght = pipe.decode().strip()
-    else:
-        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
-        audiolenght = pipe.decode().strip()
-    print('aftersyncvideo: '+str(videolenght) + ' audio:'+str(audiolenght))
-    if int(audiolenght) != int(videolenght):
-        vumetermessage('SYNCING FAILED!')
-        time.sleep(10)
+    #print('the results:')
+    #if dub:
+    #    pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
+    #    audiolength = pipe.decode().strip()
+    #else:
+    #    pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+    #    audiolength = pipe.decode().strip()
+    #print('aftersyncvideo: '+str(videolength) + ' audio:'+str(audiolength))
+    #if int(audiolength) != int(videolength):
+    #    vumetermessage('SYNCING FAILED!')
+    #    time.sleep(10)
     #os.remove('/dev/shm/' + filename + '.wav')
-    return float(audiosync)/1000, int(videolenght), int(audiolenght)
+    return float(audiosync)/1000, int(videolength), int(audiolength)
     #os.system('mv audiosynced.wav ' + filename + '.wav')
     #os.system('rm silence.wav')
 
@@ -5642,12 +5677,13 @@ def audiotrim(filename, where, dub):
 def audiosilence(renderfilename):
     global channels
     writemessage('Creating audiosilence..')
-    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-    videolenght = pipe.decode()
-    logger.info('Video lenght is ' + videolenght)
+    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
+    #videolength = pipe.decode()
+    videolength = get_video_length(renderfilename+'.mp4')
+    logger.info('Video length is ' + videolength)
     #separate seconds and milliseconds
-    videoms = int(videolenght) % 1000
-    videos = int(videolenght) / 1000
+    videoms = int(videolength) % 1000
+    videos = int(videolength) / 1000
     logger.info('Videofile is: ' + str(videos) + 's ' + str(videoms))
     run_command('sox -V0 -n -r '+soundrate+' -c 2 /dev/shm/silence.wav trim 0.0 ' + str(videos))
     os.system('cp /dev/shm/silence.wav ' + renderfilename + '.wav')
@@ -5868,7 +5904,7 @@ def stopstream(camera, stream):
 def startrecording(camera, takename):
     global bitrate, quality, profilelevel
     # FFmpeg command to take H.264 input from stdin and output to MP4
-    ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-bsf:v', 'dump_extra', '-b:v', str(bitrate), '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
+    ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-bsf:v', 'dump_extra', '-b:v', str(bitrate), '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
     camera.start_recording(rec_process.stdin, format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
     return rec_process
@@ -5876,6 +5912,7 @@ def startrecording(camera, takename):
 def stoprecording(camera, rec_process):
     camera.stop_recording() 
     # Close the FFmpeg process
+    time.sleep(0.5)
     rec_process.stdin.close()
     rec_process.wait()
     print("Recording complete!")
@@ -5912,9 +5949,9 @@ def longbeep(bus):
         run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep_long.wav')
     return
 
-def buzz(buzzerlenght):
+def buzz(buzzerlength):
     buzzerdelay = 0.0001
-    for _ in range(buzzerlenght):
+    for _ in range(buzzerlength):
         for value in [0xC, 0x4]:
             #GPIO.output(1, value)
             bus.write_byte_data(DEVICE,OLATA,value)
