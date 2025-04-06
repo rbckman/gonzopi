@@ -4176,15 +4176,27 @@ def compileshot(filename,filmfolder,filmname):
     if has_audio_track(filename+'.mp4'):
         print('cool has audio')
     else:
-        print('trimming audio')
         video_origins = (os.path.realpath(filename+'.mp4'))[:-4]
         if not os.path.isfile(filename + '.wav'):
             audiosilence(filename)
         #add audio/video start delay sync
-        run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
-        run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
+        videolength = get_video_length(filename+'.mp4')
+        print('videolength:'+str(videolength))
+        try:
+            audiolength = get_audio_length(filename+'.wav')
+        except:
+            audiolength=videolength
+            audiosilence(filename)
+        #if there is no audio length
+        logger.info('audio is:' + str(audiolength))
+        print('trimming audio')
+        if int(audiolength) > int(videolength):
+            run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
+            run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
         stretchaudio(filename,fps)
-        audiosync, videolength, audiolength = audiotrim(filename, 'end','')
+        if int(audiolength) != int(videolength):
+            audiosync, videolength, audiolength = audiotrim(filename, 'end','')
+            db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
         muxing = False
         if muxing == True:
             #muxing mp3 layer to mp4 file
@@ -4206,10 +4218,9 @@ def compileshot(filename,filmfolder,filmname):
             os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
             os.remove(video_origins + '_tmp.mp4')
             os.remove(filename + '.mp3')
-        origin=os.path.realpath(filename+'.mp4')
-        db.update('videos', where='filename="'+origin+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
-        os.system('rm ' + video_origins + '.h264')
-        os.system('rm ' + filename + '.h264')
+        #origin=os.path.realpath(filename+'.mp4')
+        #os.system('rm ' + video_origins + '.h264')
+        #os.system('rm ' + filename + '.h264')
         os.system('rm /dev/shm/temp.wav')
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
         logger.info('compile done!')
@@ -4300,14 +4311,17 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
     #videolength = pipe.decode().strip()
     videolength = get_video_length(filename+'.mp4')
     audiolength = get_audio_length(filename+'.wav')
+    if audiolength > videolength:
+        audiotrim(filename, 'end','')
     for i, d in zip(dubmix, dubfiles):
         writemessage('Dub ' + str(p) + ' audio found lets mix...')
         #first trimit!
         audiotrim(filename, 'end', d)
         try:
-            pipe = subprocess.check_output('soxi -D ' + d, shell=True)
-            dubaudiolength = pipe.decode()
-            if dubaudiolengt != videolength:
+            #pipe = subprocess.check_output('soxi -D ' + d, shell=True)
+            #dubaudiolength = pipe.decode()
+            dubaudiolength=get_audio_lenght(d)
+            if dubaudiolength != videolength:
                 print('dub wrong length!')
                 time.sleep(5)
         except:
@@ -4681,7 +4695,7 @@ def renderscene(filmfolder, filmname, scene):
         renderfixscene=True
         os.system('rm '+scenedir+'/.rerender')
     if audiohash != oldaudiohash or newmix == True or renderfix == True or renderfixscene == True:
-        #renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
+        renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
         print('updating audiohash...')
         with open(scenedir + '.audiohash', 'w') as f:
             f.write(audiohash)
@@ -5152,6 +5166,7 @@ def playdub(filmname, filename, player_menu):
             video = False
         else:
             return
+    sound = has_audio_track(filename + '.mp4')
     t = 0
     pressed = ''
     buttonpressed = ''
@@ -5184,16 +5199,14 @@ def playdub(filmname, filename, player_menu):
         writemessage('Loading..')
         clipduration = player.duration()
         #vumetermessage('up [fast-forward], down [rewind], help button for more')
-    #sound
-    #if player_menu != 'film' or player_menu != 'scene':
-    #    try:
-    #        playerAudio = OMXPlayer(filename + '.wav', args=['--adev','alsa:hw:'+str(plughw)], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
-    #        time.sleep(0.2)
-    #    except:
-    #        writemessage('something wrong with audio player')
-    #        time.sleep(2)
-    #        return
-        #omxplayer hack to play really short videos.
+    if sound == False:
+        try:
+            playerAudio = OMXPlayer(filename + '.wav', args=['--adev','alsa:hw:'+str(plughw)], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
+        except:
+            writemessage('something wrong with audio player')
+            time.sleep(0.5)
+            return
+    #omxplayer hack to play really short videos.
     if clipduration < 4:
         logger.info("clip duration shorter than 4 sec")
         player.previous()
@@ -5207,6 +5220,10 @@ def playdub(filmname, filename, player_menu):
         player.play()
         player.pause()
         player.set_position(0)
+        if sound == False:
+            playerAudio.play()
+            playerAudio.pause()
+            playerAudio.set_position(0)
         #run_command('aplay -D plughw:0 ' + filename + '.wav &')
         #run_command('mplayer ' + filename + '.wav &')
     if player_menu == 'dub':
@@ -5288,6 +5305,8 @@ def playdub(filmname, filename, player_menu):
                 if pause == False:
                     try:
                         player.set_position(t+2)
+                        if sound == False:
+                            playerAudio.set_position(t+2)
                         time.sleep(0.2)
                         #playerAudio.set_position(player.position())
                     except:
@@ -5295,10 +5314,15 @@ def playdub(filmname, filename, player_menu):
                 else:
                     try:
                         player.play()
+                        if sound == False:
+                            playerAudio.play()
                         time.sleep(0.3)
-                        t=t+0.1
+                        t=t+0.1 
                         player.set_position(t)
                         player.pause()
+                        if sound == False:
+                            playerAudio.set_position(t)
+                            playerAudio.pause()
                         #playerAudio.set_position(player.position())
                     except:
                         print('couldnt set position of player')
@@ -5316,6 +5340,8 @@ def playdub(filmname, filename, player_menu):
                     if t > 1:
                         try:
                             player.set_position(t-2)
+                            if sound == False:
+                                playerAudio.set_position(t-2)
                             time.sleep(0.25)
                             #playerAudio.set_position(player.position())
                         except:
@@ -5323,10 +5349,15 @@ def playdub(filmname, filename, player_menu):
                 else:
                     try:
                         player.play()
+                        if sound == False:
+                            playerAudio.play()
                         time.sleep(0.3)
                         t=t-0.1
                         player.set_position(t)
                         player.pause()
+                        if sound == False:
+                            playerAudio.set_position(t)
+                            playerAudio.pause()
                         #playerAudio.set_position(player.position())
                     except:
                         print('couldnt set position of player')
@@ -5336,12 +5367,18 @@ def playdub(filmname, filename, player_menu):
             player.pause()
             time.sleep(0.5)
             player.play()
+            if sound == False:
+                playerAudio.play()
         elif pressed == 'retake':
             trimfromend = player.position()
             vumetermessage('shot end position set to: '+ str(trimfromend))
             player.pause()
+            if sound == False:
+                playerAudio.pause()
             time.sleep(0.5)
             player.play()
+            if sound == False:
+                playerAudio.play()
         elif pressed == 'middle' or pressed == 'record':
             time.sleep(0.2)
             if menu[selected] == 'BACK' or player.playback_status() == "Stopped" or pressed == 'record':
@@ -5350,7 +5387,7 @@ def playdub(filmname, filename, player_menu):
                         #player.stop()
                         #playerAudio.stop()
                         player.quit()
-                        #playerAudio.quit()
+                        playerAudio.quit()
                     #os.system('pkill -9 aplay') 
                 except:
                     #kill it if it dont stop
@@ -5370,9 +5407,9 @@ def playdub(filmname, filename, player_menu):
                     if video == True:
                         player.pause()
                         player.set_position(0)
-                        #if player_menu != 'film':
-                            #playerAudio.pause()
-                            #playerAudio.set_position(0)
+                        if sound == False:
+                            playerAudio.pause()
+                            playerAudio.set_position(0)
                     if dub == True:
                         p = 0
                         while p < 3:
@@ -5380,6 +5417,8 @@ def playdub(filmname, filename, player_menu):
                             time.sleep(1)
                             p+=1
                     player.play()
+                    if sound == False:
+                        playerAudio.play()
                     #if player_menu != 'film':
                     #    playerAudio.play()
                     #run_command('aplay -D plughw:0 ' + filename + '.wav &')
@@ -5392,6 +5431,8 @@ def playdub(filmname, filename, player_menu):
             elif menu[selected] == 'PAUSE':
                 try:
                     player.pause()
+                    if sound == False:
+                        playerAudio.pause()
                     pause = True
                 except:
                     pass
@@ -5402,6 +5443,8 @@ def playdub(filmname, filename, player_menu):
             elif menu[selected] == 'PLAY':
                 try:
                     player.play()
+                    if sound == False:
+                        playerAudio.play()
                     pause = False
                 except:
                     pass
@@ -5423,7 +5466,8 @@ def playdub(filmname, filename, player_menu):
             elif menu[selected] == 'FROM END':
                 trim = ['end', player.position()]
                 player.quit()
-                #playerAudio.quit()
+                if sound == False:
+                    playerAudio.quit()
                 return trim
         time.sleep(0.02)
         if pause == False:
@@ -5434,6 +5478,8 @@ def playdub(filmname, filename, player_menu):
                 if dub == True:
                     os.system('pkill arecord')
                 player.quit()
+                if sound == False:
+                    playerAudio.quit()
                 return [trimfromstart, trimfromend]
                 #return remove_shots
         if t > (clipduration - 0.3):
@@ -5441,9 +5487,13 @@ def playdub(filmname, filename, player_menu):
             if dub == True:
                 os.system('pkill arecord')
             player.quit()
+            if sound == False:
+                playerAudio.quit()
             return [trimfromstart, trimfromend]
     try:
         player.quit()
+        if sound == False:
+            playerAudio.quit()
     except:
         pass
     #playerAudio.quit()
