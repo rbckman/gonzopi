@@ -5172,8 +5172,8 @@ def playdub(filmname, filename, player_menu):
     buttonpressed = ''
     buttontime = time.time()
     holdbutton = ''
-    playing = False
-    pause = True
+    #playing = False
+    pause = False
     trim = False
     videolag = 0
     trimfromstart=0
@@ -5218,11 +5218,11 @@ def playdub(filmname, filename, player_menu):
             p+=1
     if video == True:
         player.play()
-        player.pause()
+        #player.pause()
         player.set_position(0)
         if sound == False:
             playerAudio.play()
-            playerAudio.pause()
+            #playerAudio.pause()
             playerAudio.set_position(0)
         #run_command('aplay -D plughw:0 ' + filename + '.wav &')
         #run_command('mplayer ' + filename + '.wav &')
