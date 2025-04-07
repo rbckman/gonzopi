@@ -372,7 +372,8 @@ class films:
 class player:
     def GET(self, film):
         i=web.input(scene=None,shot=None,take=None)
-        return render.player(filmfolder,film,i.scene,i.shot,i.take,str)
+        randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+        return render.player(filmfolder,film,i.scene,i.shot,i.take,str,randhash)
 
 class api:
     def GET(self):

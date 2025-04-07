@@ -1,4 +1,4 @@
-$def with (filmfolder,film,scene,shot,take,str)
+$def with (filmfolder,film,scene,shot,take,str,randhash)
 $ video=''
 $ audio=''
 $if shot != None and take != None:
@@ -16,11 +16,11 @@ $elif film != None:
 <h3>$title</h3>
 <div class="player-container">
 <video id="videoPlayer" controls>
-    <source src="$video" type="video/mp4">
+    <source src="$video?randhash" type="video/mp4">
     Your browser does not support the video element.
 </video>
 <audio id="audioPlayer">
-    <source src="$audio" type="audio/wav">
+    <source src="$audio?randhash" type="audio/wav">
     Your browser does not support the audio element.
 </audio>
 <div class="controls">
