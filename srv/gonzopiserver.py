@@ -19,6 +19,7 @@ urls = (
     '/','intro',   
     '/c/?', 'index',
     '/f/(.*)?', 'films',
+    '/p/(.*)?', 'player',
     '/api','api'
 )
 
@@ -368,6 +369,10 @@ class films:
         scenes = countscenes(filmfolder, film)
         return render.filmpage(allfilms, film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash)
 
+class player:
+    def GET(self, film):
+        i=web.input(scene=None,shot=None,take=None)
+        return render.player(filmfolder,film,i.scene,i.shot,i.take,str)
 
 class api:
     def GET(self):
@@ -487,22 +492,23 @@ class api:
             video = ''
             if film != None:
                 if selected == 0:
-                    video = '/'+filmfolder + film +'/'+ film+'.mp4'
+                    video = '/p/'+film
                     menudone+=menudone+'video'
                 if selected == 4:
-                    video = '/'+filmfolder + film +'/'+ film+'.mp4'
+                    video = '/p/'+film
                 elif selected == 5:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
+                    video = '/p/'+film+'?scene=' + str(scene)
                 elif selected == 6:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                    video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
                 elif selected == 7:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                    video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
                 else:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                    video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
                 thumb = '/'+filmfolder + film + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg" 
             if os.path.isfile(basedir+thumb) == True:
                 randhashimg = '?'+hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
                 writemenu=menudone+'<br><br>'+vumetermessage+'<br><a href="'+video+'"><img src="'+thumb+randhashimg+'"></a>'
+                #writemenu=menudone+render.player(filmfolder,film,scene,shot,take,str)
             else:
                 writemenu=menudone+'<br><br>'+vumetermessage+'<br>'
             f = open(basedir+'/static/menu.html', 'w')

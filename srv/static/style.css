@@ -100,3 +100,26 @@ img
     padding: 5px;
     border-radius: 10px
 }
+
+.player-container {
+width: 90vw;           /* 100% of viewport width */
+margin: 0 auto;
+font-family: Arial, sans-serif;
+}
+video {
+width: 100%;           /* Takes full width of container */
+height: auto;          /* Maintains aspect ratio */
+display: block;        /* Removes bottom gap */
+}
+.controls {
+padding: 10px;         /* Better spacing on mobile */
+text-align: center;    /* Center buttons */
+}
+/* Optional: Add max-width for very large screens */
+@media (min-width: 1200px) {
+.player-container {
+max-width: 1200px; /* Optional maximum width */
+margin: 0 auto;    /* Centers on large screens */
+}
+}
+
