@@ -1412,7 +1412,7 @@ def main():
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
-                            db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
+                            #db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
@@ -1452,7 +1452,7 @@ def main():
                         stoprecording(camera, rec_process)
                     os.system('pkill arecord')
                     soundlag=starttime-sound_start
-                    db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
+                    #db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
                     #time.sleep(0.005) #get audio at least 0.1 longer
                     #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
                     #if slidecommander:
@@ -4196,7 +4196,7 @@ def compileshot(filename,filmfolder,filmname):
         stretchaudio(filename,fps)
         if int(audiolength) != int(videolength):
             audiosync, videolength, audiolength = audiotrim(filename, 'end','')
-            db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
+            #db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
         muxing = False
         if muxing == True:
             #muxing mp3 layer to mp4 file
