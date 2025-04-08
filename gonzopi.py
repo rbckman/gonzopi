@@ -922,7 +922,7 @@ def main():
                             dsk=2
                             loadfilmsettings = True
                     else:
-                        camera_model, camera_revision , filmfolder = getconfig(camera)
+                        #camera_model, camera_revision, filmfolder = getconfig(camera)
                         if os.path.isdir(filmfolder) == False:
                             os.makedirs(filmfolder)
                     #COUNT DISKSPACE
@@ -5742,6 +5742,10 @@ def audiosilence(renderfilename):
 #--------------USB filmfolder-------------------
 
 def usbfilmfolder(dsk):
+    if dsk == 1:
+        usbmount = 1
+    else:
+        usbmount = 0
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -5751,10 +5755,6 @@ def usbfilmfolder(dsk):
         os.system('sudo mount /dev/sda1 /media/usb0')
         os.system('sudo chown pi /media/usb0')
         #os.system('sudo umount -l /media/usb0')
-    if dsk == 1:
-        usbmount = 1
-    else:
-        usbmount = 0
     waiting = time.time() 
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
