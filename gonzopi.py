@@ -123,7 +123,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide,smooth
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide,smooth, muxing
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -136,7 +136,7 @@ def main():
     if slidecommander:
         standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
     else:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'MUX:'
     gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
@@ -241,6 +241,8 @@ def main():
     gonzopivername = f.readline()
     db=''
     synclist=[]
+    muxing=False
+    mux='no'
 
     if rpimode:
         #START INTERFACE
@@ -460,7 +462,7 @@ def main():
                         #Check if rendered video exist
                         camera.stop_preview()
                         #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
-                        renderfilename = renderfilm(filmfolder, filmname, comp, scene, True)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, scene)
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film')
                             #fastedit (maybe deploy sometime)
@@ -487,7 +489,7 @@ def main():
                     if len(filmfiles) > 0:
                         camera.stop_preview()
                         #removeimage(camera, overlay)
-                        renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film')
                         #overlay = displayimage(camera, imagename, overlay, 3)
@@ -618,7 +620,7 @@ def main():
                     newdub = clipsettings(filmfolder, filmname, 0, 0, take, plughw)
                     if newdub:
                         camera.stop_preview()
-                        renderfilename = renderfilm(filmfolder, filmname, comp, 0, False)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         playdub(filmname,renderfilename, 'dub')
                         run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
                         vumetermessage('new film dubbing made!')
@@ -636,7 +638,7 @@ def main():
                     if webz_on() == True:
                         filmfiles = viewfilm(filmfolder, filmname)
                         if len(filmfiles) > 0:
-                            renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
+                            renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                             cmd = uploadfilm(renderfilename, filmname)
                             if cmd != None:
                                 stopinterface(camera)
@@ -1763,6 +1765,13 @@ def main():
                         if serverstate == 'on':
                             gonzopiserver(False)
                             gonzopiserver(True)
+                elif menu[selected] == 'MUX:':
+                    if muxing == False:
+                        muxing=True
+                        mux='yes'
+                    else:
+                        muxing=False
+                        mux='no'
 
             #LEFT
             elif pressed == 'left':
@@ -1966,6 +1975,14 @@ def main():
                         if serverstate == 'on':
                             gonzopiserver(False)
                             gonzopiserver(True)
+                elif menu[selected] == 'MUX:':
+                    if muxing == False:
+                        muxing=True
+                        mux='yes'
+                    else:
+                        muxing=False
+                        mux='no'
+
             #RIGHT
             elif pressed == 'right':
                 if selected < len(menu) - 1:
@@ -2131,7 +2148,7 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, str(slide)
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, mux, str(slide)
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
@@ -4151,7 +4168,7 @@ def get_audio_length(filepath):
 #-------------Compile Shot--------------
 
 def compileshot(filename,filmfolder,filmname):
-    global fps, soundrate, channels, bitrate
+    global fps, soundrate, channels, bitrate, muxing
     videolength=0
     audiolength=0
     
@@ -4197,36 +4214,36 @@ def compileshot(filename,filmfolder,filmname):
         if int(audiolength) != int(videolength):
             audiosync, videolength, audiolength = audiotrim(filename, 'end','')
             #db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
-        muxing = False
-        if muxing == True:
-            #muxing mp3 layer to mp4 file
-            #count estimated audio filesize with a bitrate of 320 kb/s
-            audiosize = countsize(filename + '.wav') * 0.453
-            p = Popen(['ffmpeg', '-y', '-i', filename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', filename + '.mp3'])
-            while p.poll() is None:
-                time.sleep(0.2)
-                try:
-                    rendersize = countsize(filename + '.mp3')
-                except:
-                    continue
-                writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-            ##MERGE AUDIO & VIDEO
-            writemessage('Merging audio & video')
-            #os.remove(renderfilename + '.mp4') 
-            call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
-            call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', filename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
-            os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
-            os.remove(video_origins + '_tmp.mp4')
-            os.remove(filename + '.mp3')
-        #origin=os.path.realpath(filename+'.mp4')
-        #os.system('rm ' + video_origins + '.h264')
-        #os.system('rm ' + filename + '.h264')
-        os.system('rm /dev/shm/temp.wav')
-        os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
-        logger.info('compile done!')
-        #run_command('omxplayer --layer 3 ' + filmfolder + '/.rendered/' + filename + '.mp4 &')
-        #time.sleep(0.8)
-        #run_command('aplay ' + foldername + filename + '.wav')
+    mux=False
+    if mux == True:
+        #muxing mp3 layer to mp4 file
+        #count estimated audio filesize with a bitrate of 320 kb/s
+        audiosize = countsize(filename + '.wav') * 0.453
+        p = Popen(['ffmpeg', '-y', '-i', filename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', filename + '.mp3'])
+        while p.poll() is None:
+            time.sleep(0.2)
+            try:
+                rendersize = countsize(filename + '.mp3')
+            except:
+                continue
+            writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+        ##MERGE AUDIO & VIDEO
+        writemessage('Merging audio & video')
+        #os.remove(renderfilename + '.mp4') 
+        call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
+        call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', filename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
+        os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
+        os.remove(video_origins + '_tmp.mp4')
+        os.remove(filename + '.mp3')
+    #origin=os.path.realpath(filename+'.mp4')
+    #os.system('rm ' + video_origins + '.h264')
+    #os.system('rm ' + filename + '.h264')
+    os.system('rm /dev/shm/temp.wav')
+    #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+    logger.info('compile done!')
+    #run_command('omxplayer --layer 3 ' + filmfolder + '/.rendered/' + filename + '.mp4 &')
+    #time.sleep(0.8)
+    #run_command('aplay ' + foldername + filename + '.wav')
     return
 
 #-------------Get shot files--------------
@@ -4374,7 +4391,7 @@ def scenefiles(filmfolder, filmname):
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
-    global fps, take, rendermenu, updatethumb, bitrate
+    global fps, take, rendermenu, updatethumb, bitrate, muxing
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     if os.path.exists(renderfilename+'.wav') == False:
@@ -4540,37 +4557,36 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                     os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
                 print('Audio rendered!')
                 newaudiomix = True
-                muxing = False
-                if muxing == True:
-                    #muxing mp3 layer to mp4 file
-                    #count estimated audio filesize with a bitrate of 320 kb/s
-                    audiosize = countsize(renderfilename + '.wav') * 0.453
-                    p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-                    while p.poll() is None:
-                        time.sleep(0.2)
-                        try:
-                            rendersize = countsize(renderfilename + '.mp3')
-                        except:
-                            continue
-                        writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-                    ##MERGE AUDIO & VIDEO
-                    writemessage('Merging audio & video')
-                    #os.remove(renderfilename + '.mp4') 
-                    call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
-                    call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
-                    os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
-                    try:
-                        os.remove(video_origins + '_tmp.mp4')
-                        os.remove(renderfilename + '.mp3')
-                    except:
-                        print('nothing to remove')
-                #origin=os.path.realpath(renderfilename+'.mp4')
-                #os.system('rm ' + filename + '.h264')
-                #os.system('rm /dev/shm/temp.wav')
-                #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
                 logger.info('compile done!')
             else:
                 print('Already rendered!')
+            if muxing == True:
+                #muxing mp3 layer to mp4 file
+                #count estimated audio filesize with a bitrate of 320 kb/s
+                audiosize = countsize(renderfilename + '.wav') * 0.453
+                p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+                while p.poll() is None:
+                    time.sleep(0.2)
+                    try:
+                        rendersize = countsize(renderfilename + '.mp3')
+                    except:
+                        continue
+                    writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+                ##MERGE AUDIO & VIDEO
+                writemessage('Merging audio & video')
+                #os.remove(renderfilename + '.mp4') 
+                call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
+                call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
+                os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
+                try:
+                    os.remove(video_origins + '_tmp.mp4')
+                    os.remove(renderfilename + '.mp3')
+                except:
+                    print('nothing to remove')
+            #origin=os.path.realpath(renderfilename+'.mp4')
+            #os.system('rm ' + filename + '.h264')
+            #os.system('rm /dev/shm/temp.wav')
+            #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
         status=renderfilename,newaudiomix
         q.put(status)
     q = mp.Queue()
@@ -4604,7 +4620,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
 #-------------Render Scene-------------
 
 def renderscene(filmfolder, filmname, scene):
-    global fps
+    global fps, muxing
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     videohash = ''
@@ -4703,47 +4719,47 @@ def renderscene(filmfolder, filmname, scene):
             os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
         print('Audio rendered!')
         newaudiomix = True
-        muxing = False
-        if muxing == True:
-            #muxing mp3 layer to mp4 file
-            #count estimated audio filesize with a bitrate of 320 kb/s
-            try:
-                audiosize = countsize(renderfilename + '.wav') * 0.453
-            except:
-                print('noothing here')
-            #os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-            if debianversion == 'stretch':
-                p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-            else:
-                p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-            while p.poll() is None:
-                time.sleep(0.02)
-                try:
-                    rendersize = countsize(renderfilename + '.mp3')
-                except:
-                    continue
-                writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-            ##MERGE AUDIO & VIDEO
-            writemessage('Merging audio & video')
-            #os.remove(renderfilename + '.mp4') 
-            call(['MP4Box', '-rem', '2',  renderfilename + '.mp4'], shell=False)
-            #call(['MP4Box', '-inter', '40', '-v', renderfilename + '.mp4'], shell=False)
-            #call(['MP4Box', '-add', renderfilename + '.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '_tmp.mp4'], shell=False)
-            #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
-            os.remove(renderfilename + '_tmp.mp4')
-            os.remove(renderfilename + '.mp3')
         os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
         call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
-
+        os.remove(renderfilename + '_tmp.mp4')
     else:
         print('Already rendered!')
+    if muxing == True:
+        #muxing mp3 layer to mp4 file
+        #count estimated audio filesize with a bitrate of 320 kb/s
+        try:
+            audiosize = countsize(renderfilename + '.wav') * 0.453
+        except:
+            print('noothing here')
+        os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+        if debianversion == 'stretch':
+            p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+        else:
+            p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+        while p.poll() is None:
+            time.sleep(0.02)
+            try:
+                rendersize = countsize(renderfilename + '.mp3')
+            except:
+                continue
+            writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+        ##MERGE AUDIO & VIDEO
+        writemessage('Merging audio & video')
+        #os.remove(renderfilename + '.mp4') 
+        call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
+        #call(['MP4Box', '-inter', '40', '-v', renderfilename + '.mp4'], shell=False)
+        call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
+        #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+        os.remove(renderfilename + '_tmp.mp4')
+        os.remove(renderfilename + '.mp3')
     return renderfilename, newaudiomix
 
 #-------------Render film------------
 
-def renderfilm(filmfolder, filmname, comp, scene, muxing):
-    global fps
-    def render(q, filmfolder, filmname, comp, scene, muxing):
+def renderfilm(filmfolder, filmname, comp, scene):
+    global fps, muxing
+    def render(q, filmfolder, filmname, comp, scene):
+        global fps, muxing
         newaudiomix = False
         #if comp == 1:
         #    newaudiomix = True
@@ -4820,37 +4836,37 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
                 #run_command('sox ' + renderfilename + '_tmp.wav ' + renderfilename + '.wav compand 0.3,1 6:-70,-60,-20 -5 -90 0.2')
                 run_command('sox ' + renderfilename + '_tmp.wav ' + renderfilename + '.wav compand 0.0,1 6:-70,-43,-20 -6 -90 0.1')
                 os.remove(renderfilename + '_tmp.wav')
-            muxing = False
-            if muxing == True:
-                #muxing mp3 layer to mp4 file
-                #count estimated audio filesize with a bitrate of 320 kb/s
-                audiosize = countsize(renderfilename + '.wav') * 0.453
-                #os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-                if debianversion == 'stretch':
-                    p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-                else:
-                    p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-                while p.poll() is None:
-                    time.sleep(0.02)
-                    try:
-                        rendersize = countsize(renderfilename + '.mp3')
-                    except:
-                        continue
-                    writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-                ##MERGE AUDIO & VIDEO
-                writemessage('Merging audio & video')
-                #os.remove(renderfilename + '.mp4') 
-                call(['MP4Box', '-rem', '2',  renderfilename + '.mp4'], shell=False)
-                #call(['MP4Box', '-inter', '40', '-v', renderfilename + '_tmp.mp4'], shell=False)
-                call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-c', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
-                call(['MP4Box', '-add', renderfilename + '.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '_tmp.mp4'], shell=False)
-                os.remove(renderfilename + '_tmp.mp4')
-                os.remove(renderfilename + '.mp3')
         else:
             print('Already rendered!')
+        #muxing = False
+        if muxing == True:
+            #muxing mp3 layer to mp4 file
+            #count estimated audio filesize with a bitrate of 320 kb/s
+            audiosize = countsize(renderfilename + '.wav') * 0.453
+            os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+            if debianversion == 'stretch':
+                p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+            else:
+                p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+            while p.poll() is None:
+                time.sleep(0.02)
+                try:
+                    rendersize = countsize(renderfilename + '.mp3')
+                except:
+                    continue
+                writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+            ##MERGE AUDIO & VIDEO
+            writemessage('Merging audio & video')
+            #os.remove(renderfilename + '.mp4') 
+            call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
+            #call(['MP4Box', '-inter', '40', '-v', renderfilename + '_tmp.mp4'], shell=False)
+            #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-c', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+            call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
+            os.remove(renderfilename + '_tmp.mp4')
+            os.remove(renderfilename + '.mp3')
         q.put(renderfilename)
     q = mp.Queue()
-    proc = mp.Process(target=render, args=(q,filmfolder,filmname,comp,scene,muxing))
+    proc = mp.Process(target=render, args=(q,filmfolder,filmname,comp,scene))
     proc.start()
     procdone = False
     status = ''
@@ -5118,7 +5134,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
                 filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/scene'
             else:
                 filename = filmfolder + filmname + '/' + filmname
-            renderfilename = renderfilm(filmfolder, filmname, 0, scene, False)
+            renderfilename = renderfilm(filmfolder, filmname, 0, scene)
             playdub(filmname,renderfilename, 'scene')
         time.sleep(0.05)
     #Save dubmix before returning
