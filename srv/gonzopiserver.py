@@ -9,6 +9,7 @@ import time
 import random
 import hashlib
 import configparser
+from pymediainfo import MediaInfo
 
 # Get path of the current dir, then use it as working directory:
 rundir = os.path.dirname(__file__)
@@ -57,12 +58,14 @@ vumeterold = ''
 #if config.read(configfile):
 #    filmfolder = config['USER']['filmfolder']+'/'
 filmfolder = '/home/pi/gonzopifilms/'
+real_filmfolder=filmfolder
 
 os.system("unlink static/*")
 #CHECK IF FILMING TO USB STORAGE
 filmfolderusb=usbfilmfolder()
 if filmfolderusb:
     filmfolder=filmfolderusb
+    real_filmfolder=filmfolder
     # Link video directory to static dir
     os.system("ln -s -t static/ " + filmfolder)
     filmfolder='static/gonzopifilms/'
@@ -224,6 +227,21 @@ def checkvideo(video,filmfolder,film,scene,shot,take):
         return p, v
     return '', v
 
+def has_audio_track(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Audio":
+                return True
+        return False
+
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
 class intro:
     def GET(self):
         return render.intro()
@@ -373,7 +391,7 @@ class player:
     def GET(self, film):
         i=web.input(scene=None,shot=None,take=None)
         randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
-        return render.player(filmfolder,film,i.scene,i.shot,i.take,str,randhash)
+        return render.player(real_filmfolder,filmfolder,film,i.scene,i.shot,i.take,str,randhash,has_audio_track)
 
 class api:
     def GET(self):

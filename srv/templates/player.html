@@ -1,78 +1,88 @@
-$def with (filmfolder,film,scene,shot,take,str,randhash)
+$def with (real_filmfolder,filmfolder,film,scene,shot,take,str,randhash,has_audio_track)
 $ video=''
 $ audio=''
 $if shot != None and take != None:
     $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+    $ video_realpath = '/'+real_filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
     $ title = film + ' scene|' + str(scene).zfill(3) + ' shot|' + str(shot).zfill(3) + ' take|' + str(take).zfill(3)
     $ audio = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.wav'
 $elif scene != None:
     $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
+    $ video_realpath = '/'+real_filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
     $ audio = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.wav'
     $ title = film + ' scene|' + str(scene).zfill(3)
 $elif film != None:
     $ video = '/'+filmfolder + film + '/'+film+'.mp4'
+    $ video_realpath = '/'+real_filmfolder + film + '/'+film+'.mp4'
     $ audio = '/'+filmfolder + film + '/'+film+'.wav'
     $ title = film
 <h3>$title</h3>
-<div class="player-container">
-<video id="videoPlayer" controls>
-    <source src="$video?randhash" type="video/mp4">
-    Your browser does not support the video element.
-</video>
-<audio id="audioPlayer">
-    <source src="$audio?randhash" type="audio/wav">
-    Your browser does not support the audio element.
-</audio>
-<div class="controls">
-</div>
-</div>
+$if has_audio_track(video_realpath) == False:
+    <div class="player-container">
+    <video id="videoPlayer" controls>
+        <source src="$video?randhash" type="video/mp4">
+        Your browser does not support the video element.
+    </video>
+    <audio id="audioPlayer">
+        <source src="$audio?randhash" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    <div class="controls">
+    </div>
+    </div>
 
-<script>
-const video = document.getElementById('videoPlayer');
-const audio = document.getElementById('audioPlayer');
+    <script>
+    const video = document.getElementById('videoPlayer');
+    const audio = document.getElementById('audioPlayer');
 
-// Sync video and audio playback
-video.addEventListener('play', () => {
-    audio.play();
-});
+    // Sync video and audio playback
+    video.addEventListener('play', () => {
+        audio.play();
+    });
 
-video.addEventListener('pause', () => {
-    audio.pause();
-});
+    video.addEventListener('pause', () => {
+        audio.pause();
+    });
 
-// Sync playhead movement
-video.addEventListener('seeked', () => {
-    audio.currentTime = video.currentTime;
-});
+    // Sync playhead movement
+    video.addEventListener('seeked', () => {
+        audio.currentTime = video.currentTime;
+    });
 
-// Keep audio in sync during playback
-video.addEventListener('timeupdate', () => {
-    if (Math.abs(video.currentTime - audio.currentTime) > 0.5) {
-	audio.currentTime = video.currentTime;
+    // Keep audio in sync during playback
+    video.addEventListener('timeupdate', () => {
+        if (Math.abs(video.currentTime - audio.currentTime) > 0.5) {
+            audio.currentTime = video.currentTime;
+        }
+    });
+
+    // Optional: Handle playback rate changes
+    video.addEventListener('ratechange', () => {
+        audio.playbackRate = video.playbackRate;
+    });
+
+    // Control functions
+    function playBoth() {
+        video.play();
+        audio.play();
     }
-});
 
-// Optional: Handle playback rate changes
-video.addEventListener('ratechange', () => {
-    audio.playbackRate = video.playbackRate;
-});
+    function pauseBoth() {
+        video.pause();
+        audio.pause();
+    }
 
-// Control functions
-function playBoth() {
-    video.play();
-    audio.play();
-}
-
-function pauseBoth() {
-    video.pause();
-    audio.pause();
-}
-
-// Ensure audio stays muted if video is muted
-video.addEventListener('volumechange', () => {
-    audio.muted = video.muted;
-    audio.volume = video.volume;
-});
-</script>
+    // Ensure audio stays muted if video is muted
+    video.addEventListener('volumechange', () => {
+        audio.muted = video.muted;
+        audio.volume = video.volume;
+    });
+    </script>
+$else:
+    <div class="player-container">
+    <video id="videoPlayer" controls>
+        <source src="$video?randhash" type="video/mp4">
+        Your browser does not support the video element.
+    </video>
 
 <h3><a href="/c">BACK</a></h3>
