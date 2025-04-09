@@ -467,6 +467,7 @@ def main():
                         camera.stop_preview()
                         #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
                         renderfilename = renderfilm(filmfolder, filmname, comp, scene)
+                        writemessage('Render done!')
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film')
                             #fastedit (maybe deploy sometime)
@@ -1418,7 +1419,7 @@ def main():
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
                             video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
-                            #db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
+                            db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
@@ -1458,7 +1459,11 @@ def main():
                         stoprecording(camera, rec_process)
                     os.system('pkill arecord')
                     soundlag=starttime-sound_start
-                    #db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
+                    try:
+                        db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, faststart=False)
+                    except:
+                        db = correct_database(filmname,filmfolder,db)
+                        db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, faststart=False)
                     #time.sleep(0.005) #get audio at least 0.1 longer
                     #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
                     #if slidecommander:
@@ -2252,7 +2257,19 @@ def get_film_files(filmname,filmfolder,db):
         videodb=db.select('videos')
         return db
     except:
-        db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolength FLOAT, videolength FLOAT,soundlag FLOAT, audiosync FLOAT);")
+        db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolength FLOAT, videolength FLOAT,soundlag FLOAT, audiosync FLOAT, faststart BOOL);")
+    videodb=db.select('videos')
+    return db
+
+#---------remove and get correct database------
+
+def correct_database(filmname,filmfolder,db):
+    if not os.path.isdir(filmfolder+'.videos/'):
+        os.makedirs(filmfolder+'.videos/')
+    filmdb = filmfolder+'.videos/gonzopi.db'
+    run_command('rm '+filmdb)
+    db = web.database(dbn='sqlite', db=filmdb)
+    db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolength FLOAT, videolength FLOAT,soundlag FLOAT, audiosync FLOAT, faststart BOOL);")
     videodb=db.select('videos')
     return db
 
@@ -4111,8 +4128,6 @@ def stretchaudio(filename,fps):
             audiolength=videolength
         #if there is no audio length
         logger.info('audio is:' + str(audiolength))
-        if not audiolength.strip():
-            audiolength = 0
         ratio = int(audiolength)/int(videolength)
         print(str(ratio))
         run_command('cp '+filename+'.wav '+filename+'_temp.wav')
@@ -4172,10 +4187,9 @@ def get_audio_length(filepath):
 #-------------Compile Shot--------------
 
 def compileshot(filename,filmfolder,filmname):
-    global fps, soundrate, channels, bitrate, muxing
+    global fps, soundrate, channels, bitrate, muxing, db
     videolength=0
-    audiolength=0
-    
+    audiolength=0 
     #Check if file already converted
     if '.h264' in filename:
         filename=filename.replace('.h264','')
@@ -4194,30 +4208,38 @@ def compileshot(filename,filmfolder,filmname):
         #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
         run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
-    if has_audio_track(filename+'.mp4'):
-        print('cool has audio')
-    else:
-        video_origins = (os.path.realpath(filename+'.mp4'))[:-4]
-        if not os.path.isfile(filename + '.wav'):
-            audiosilence(filename)
-        #add audio/video start delay sync
-        videolength = get_video_length(filename+'.mp4')
-        print('videolength:'+str(videolength))
-        try:
-            audiolength = get_audio_length(filename+'.wav')
-        except:
-            audiolength=videolength
-            audiosilence(filename)
-        #if there is no audio length
-        logger.info('audio is:' + str(audiolength))
-        print('trimming audio')
-        if int(audiolength) > int(videolength):
-            run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
-            run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
+    video_origins = (os.path.realpath(filename+'.mp4'))[:-4]
+    if not os.path.isfile(filename + '.wav'):
+        vumetermessage('creating audio track...')
+        audiosilence(filename)
+    #add audio/video start delay sync
+    vumetermessage('checking video audio length...')
+    videolength = get_video_length(filename+'.mp4')
+    print('videolength:'+str(videolength))
+    try:
+        audiolength = get_audio_length(filename+'.wav')
+    except:
+        audiolength=videolength
+    #if there is no audio length
+    logger.info('audio is:' + str(audiolength))
+    print('trimming audio')
+    if int(audiolength) > int(videolength):
+        vumetermessage('trimming audio...')
+        run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
+        run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
+        os.system('rm /dev/shm/temp.wav')
+    fps_rounded=round(fps)
+    if int(fps_rounded) != 25:
+        vumetermessage('stretching audio...')
         stretchaudio(filename,fps)
-        if int(audiolength) != int(videolength):
-            audiosync, videolength, audiolength = audiotrim(filename, 'end','')
-            #db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
+    if int(audiolength) != int(videolength):
+        vumetermessage('trimming audio to video...')
+        audiosync, videolength, audiolength = audiotrim(filename, 'end','')
+        try:
+            db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
+        except:
+            db = correct_database(filmname,filmfolder,db)
+            db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
     mux=False
     if mux == True:
         #muxing mp3 layer to mp4 file
@@ -4242,7 +4264,6 @@ def compileshot(filename,filmfolder,filmname):
     #origin=os.path.realpath(filename+'.mp4')
     #os.system('rm ' + video_origins + '.h264')
     #os.system('rm ' + filename + '.h264')
-    os.system('rm /dev/shm/temp.wav')
     #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
     logger.info('compile done!')
     #run_command('omxplayer --layer 3 ' + filmfolder + '/.rendered/' + filename + '.mp4 &')
@@ -4395,32 +4416,49 @@ def scenefiles(filmfolder, filmname):
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
-    global fps, take, rendermenu, updatethumb, bitrate, muxing
+    global fps, take, rendermenu, updatethumb, bitrate, muxing, db
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
-    if os.path.exists(renderfilename+'.wav') == False:
-        ##MAKE AUDIO SILENCE
-        audiosilence(renderfilename)
+    vumetermessage('render shot '+renderfilename)
+    video_origins = (os.path.realpath(renderfilename+'.mp4'))[:-4]
     def render(q, filmfolder, filmname, renderfilename, scene, shot):
+        global fps, take, rendermenu, updatethumb, bitrate, muxing, db
         videohash = ''
         oldvideohash = ''
         scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
         #return if no file
         # Video Hash
         #if os.path.isfile(renderfilename + '.h264') == True:
-        if has_audio_track(renderfilename+'.mp4') == False:
+        video_db=db.select('videos', where='filename="'+video_origins+'.mp4"')
+        faststart=True
+        try:
+            if video_db[0].faststart == 0:
+                faststart=False
+            if video_db[0].faststart == 1:
+                faststart=True
+        except:
+            pass
+        if faststart == False:
+            vumetermessage('found new clip compiling...')
+            os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+            call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
+            run_command('rm '+renderfilename+'_tmp.mp4')
+            try:
+                db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
+            except:
+                db = correct_database(filmname,filmfolder,db)
+                db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
             compileshot(renderfilename,filmfolder,filmname)
             audiohash = str(int(countsize(renderfilename + '.wav')))
             with open(scenedir + '.audiohash', 'w') as f:
                 f.write(audiohash)
-        #if something shutdown in middle of process
-        elif os.path.isfile(renderfilename + '_tmp.mp4') == True:
-            os.system('cp ' + renderfilename + '_tmp.mp4 ' + renderfilename + '.mp4')
-        elif os.path.isfile(renderfilename + '.mp4') == True:
+        if os.path.isfile(renderfilename + '.mp4') == True:
             videohash = videohash + str(int(countsize(renderfilename + '.mp4')))
-            video_origins = (os.path.realpath(renderfilename+'.mp4'))[:-4]
             print('Videohash of shot is: ' + videohash)
             #time.sleep(3)
+            #if something shutdown in middle of process
+            #elif os.path.isfile(renderfilename + '_tmp.mp4') == True:
+            #    os.system('cp ' + renderfilename + '_tmp.mp4 ' + renderfilename + '.mp4')
         else:
             vumetermessage('Nothing here to play hit record')
             status='',''
@@ -4564,7 +4602,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 logger.info('compile done!')
             else:
                 print('Already rendered!')
-            if muxing == True:
+            muxings=False
+            if muxings == True:
                 #muxing mp3 layer to mp4 file
                 #count estimated audio filesize with a bitrate of 320 kb/s
                 audiosize = countsize(renderfilename + '.wav') * 0.453
@@ -4674,7 +4713,6 @@ def renderscene(filmfolder, filmname, scene):
         print('no videohash found, making one...')
         with open(scenedir + '.videohash', 'w') as f:
             f.write(videohash)
-
     print('renderfix is:'+str(renderfixscene))
     # Render if needed
     if videohash != oldvideohash or renderfixscene == True:
@@ -4724,7 +4762,7 @@ def renderscene(filmfolder, filmname, scene):
         print('Audio rendered!')
         newaudiomix = True
         os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-        call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+        call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
         os.remove(renderfilename + '_tmp.mp4')
     else:
         print('Already rendered!')
