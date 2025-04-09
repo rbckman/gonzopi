@@ -168,8 +168,12 @@ def main():
     fps = 25
     fps_selected=8
     fps_selection=[]
-    quality = 20
-    bitrate = 8888888
+    if 'Raspberry Pi 4 Model B' in raspberrypiversion:
+        quality = 20
+        bitrate = 8888888
+    if 'Raspberry Pi 3 Model B' in raspberrypiversion:
+        quality = 30
+        bitrate = 1111111
     profilelevel='4.2'
     headphoneslevel = 40
     miclevel = 50
