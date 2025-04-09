@@ -4441,7 +4441,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         if faststart == False:
             vumetermessage('found new clip compiling...')
             os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-            call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
+            call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-c:v', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
             run_command('rm '+renderfilename+'_tmp.mp4')
             try:
                 db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
