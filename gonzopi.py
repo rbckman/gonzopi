@@ -467,7 +467,7 @@ def main():
                         camera.stop_preview()
                         #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
                         renderfilename = renderfilm(filmfolder, filmname, comp, scene)
-                        writemessage('Render done!')
+                        #writemessage('Render done!')
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film')
                             #fastedit (maybe deploy sometime)
@@ -608,9 +608,11 @@ def main():
                         renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
                         playdub(filmname,renderfilename, 'dub')
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
-                        #add audio/video start delay sync
-                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
-                        run_command('mv /dev/shm/temp.wav '+ newdub)
+                        #add audio/video start delay sync 
+                        dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/dub/'
+                        os.makedirs(dubfolder,exist_ok=True)
+                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 '+newdub+' trim 0.013')
+                        run_command('rm /dev/shm/dub.wav')
                         audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
                         vumetermessage('new scene dubbing made!')
                         #rerender audio
@@ -627,7 +629,7 @@ def main():
                         camera.stop_preview()
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         playdub(filmname,renderfilename, 'dub')
-                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
+                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub+' trim 0.013')
                         vumetermessage('new film dubbing made!')
                         camera.start_preview()
                         time.sleep(1)
@@ -3954,6 +3956,9 @@ def organize(filmfolder, filmname):
     for i in sorted(scenes):
         origin_scene_files=[]
         shots = next(os.walk(filmfolder + filmname + '/' + i))[1]
+        for p in shots:
+            if 'shot' not in p:
+                shots.remove(p)
         for p in sorted(shots):
             takes=[]
             takefiles = next(os.walk(filmfolder + filmname + '/' + i + '/' + p))[2]
@@ -4294,7 +4299,8 @@ def shotfiles(filmfolder, filmname, scene):
 
 #---------------Render Video------------------
 
-def rendervideo(filmfiles, filename, renderinfo):
+def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
+    scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
     if len(filmfiles) < 1:
         writemessage('Nothing here!')
         time.sleep(2)
@@ -4303,14 +4309,33 @@ def rendervideo(filmfiles, filename, renderinfo):
     writemessage('Hold on, rendering ' + renderinfo + ' with ' + str(len(filmfiles)) + ' files')
     videosize = 0
     rendersize = 0
-    videomerge = ['MP4Box']
-    videomerge.append('-force-cat')
+    #videomerge = ['MP4Box']
+    #videomerge.append('-force-cat')
+    #for f in filmfiles[:]:
+    #    videosize = videosize + countsize(f + '.mp4')
+    #    videomerge.append('-cat')
+    #    videomerge.append(f + '.mp4#video')
+    #videomerge.append('-new')
+    #videomerge.append(filename + '.mp4')
+    videomerge = ['ffmpeg']
+    videomerge.append('-f')
+    videomerge.append('concat')
+    videomerge.append('-safe')
+    videomerge.append('0')
+    run_command('rm '+scenedir+'.renderlist')
     for f in filmfiles[:]:
         videosize = videosize + countsize(f + '.mp4')
-        videomerge.append('-cat')
-        videomerge.append(f + '.mp4#video')
-    videomerge.append('-new')
+        #videomerge.append(f + '.mp4')
+        with open(scenedir + '.renderlist', 'a') as l:
+            l.write("file '"+str(f)+".mp4'\n")
+    videomerge.append('-i')
+    videomerge.append(scenedir+'.renderlist')
+    videomerge.append('-c:v')
+    videomerge.append('copy')
+    videomerge.append('-movflags')
+    videomerge.append('+faststart')
     videomerge.append(filename + '.mp4')
+    #videomerge.append(filename + '.h264')
     #videomerge.append(filename + '.h264')
     #call(videomerge, shell=True) #how to insert somekind of estimated time while it does this?
     p = Popen(videomerge)
@@ -4441,7 +4466,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         if faststart == False:
             vumetermessage('found new clip compiling...')
             os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-            call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-c:v', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
+            call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
             run_command('rm '+renderfilename+'_tmp.mp4')
             try:
                 db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
@@ -4716,8 +4741,15 @@ def renderscene(filmfolder, filmname, scene):
     print('renderfix is:'+str(renderfixscene))
     # Render if needed
     if videohash != oldvideohash or renderfixscene == True:
-        rendervideo(filmfiles, renderfilename, 'scene ' + str(scene))
-        fastedit(filmfolder, filmname, filmfiles, scene)
+        rendervideo(filmfolder,filmname,scene,filmfiles, renderfilename, 'scene ' + str(scene))
+        #fastedit(filmfolder, filmname, filmfiles, scene)
+        #run_command('cp '+renderfilename+ '.mp4 '+renderfilename+'_tmp.mp4')
+        #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-vsync', '1', '-c:v', 'copy', '-fflags', '+genpts+igndts', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
+        #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-c:v', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
+        try:
+            os.remove(renderfilename + '_tmp.mp4')
+        except:
+            pass
         print('updating videohash...')
         with open(scenedir + '.videohash', 'w') as f:
             f.write(videohash)
@@ -4734,6 +4766,7 @@ def renderscene(filmfolder, filmname, scene):
             audiohash=0
             renderfix=True
     dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, 0)
+    print(dubfiles)
     for p in dubfiles:
         try:
             audiohash += str(int(countsize(p)))
@@ -4761,9 +4794,7 @@ def renderscene(filmfolder, filmname, scene):
             os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
         print('Audio rendered!')
         newaudiomix = True
-        os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-        call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
-        os.remove(renderfilename + '_tmp.mp4')
+        #os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
     else:
         print('Already rendered!')
     if muxing == True:
@@ -4838,7 +4869,7 @@ def renderfilm(filmfolder, filmname, comp, scene):
             with open(filmdir + '.videohash', 'w') as f:
                 f.write(videohash)
         if videohash != oldvideohash:
-            rendervideo(filmfiles, renderfilename, filmname)
+            rendervideo(filmfolder,filmname,scene,filmfiles, renderfilename, filmname)
             print('updating video hash')
             with open(filmdir + '.videohash', 'w') as f:
                 f.write(videohash)
@@ -5428,15 +5459,16 @@ def playdub(filmname, filename, player_menu):
             if sound == False:
                 playerAudio.play()
         elif pressed == 'retake':
-            trimfromend = player.position()
-            vumetermessage('shot end position set to: '+ str(trimfromend))
-            player.pause()
-            if sound == False:
-                playerAudio.pause()
-            time.sleep(0.5)
-            player.play()
-            if sound == False:
-                playerAudio.play()
+            if player.position() < clipduration:
+                trimfromend = player.position()
+                vumetermessage('shot end position set to: '+ str(trimfromend))
+                player.pause()
+                if sound == False:
+                    playerAudio.pause()
+                time.sleep(0.5)
+                player.play()
+                if sound == False:
+                    playerAudio.play()
         elif pressed == 'middle' or pressed == 'record':
             time.sleep(0.2)
             if menu[selected] == 'BACK' or player.playback_status() == "Stopped" or pressed == 'record':
@@ -5834,6 +5866,7 @@ def usbfilmfolder(dsk):
                 writemessage('Oh-no! dont know your filesystem')
                 waitforanykey()
             filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
+            os.system('sudo chmod 755 /media/usb0'+str(usbmount))
             os.system('sudo chmod 755 '+filmfolder)
             #run_command('pumount /media/usb'+str(usbmount))
             writemessage('Filming to USB'+str(usbmount))
