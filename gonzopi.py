@@ -4335,6 +4335,7 @@ def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
     videomerge.append('-movflags')
     videomerge.append('+faststart')
     videomerge.append(filename + '.mp4')
+    videomerge.append('-y')
     #videomerge.append(filename + '.h264')
     #videomerge.append(filename + '.h264')
     #call(videomerge, shell=True) #how to insert somekind of estimated time while it does this?
