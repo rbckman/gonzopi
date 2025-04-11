@@ -5866,7 +5866,7 @@ def usbfilmfolder(dsk):
                 writemessage('Oh-no! dont know your filesystem')
                 waitforanykey()
             filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
-            os.system('sudo chmod 755 /media/usb0'+str(usbmount))
+            os.system('sudo chmod 755 /media/usb'+str(usbmount))
             os.system('sudo chmod 755 '+filmfolder)
             #run_command('pumount /media/usb'+str(usbmount))
             writemessage('Filming to USB'+str(usbmount))
