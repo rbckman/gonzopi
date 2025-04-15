@@ -169,10 +169,10 @@ def main():
     fps_selected=8
     fps_selection=[]
     if 'Raspberry Pi 4 Model B' in raspberrypiversion:
-        quality = 30
+        quality = 20
         bitrate = 8888888
     if 'Raspberry Pi 3 Model B' in raspberrypiversion:
-        quality = 30
+        quality = 20
         bitrate = 1111111
     profilelevel='4.2'
     headphoneslevel = 40
@@ -5843,7 +5843,7 @@ def usbfilmfolder(dsk):
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
     if os.path.exists('/dev/sda1') == True:
-        os.system('sudo mount /dev/sda1 /media/usb0')
+        os.system('sudo mount -o  noatime,nodiratime,async /dev/sda1 /media/usb0')
         os.system('sudo chown pi /media/usb0')
         #os.system('sudo umount -l /media/usb0')
     waiting = time.time() 
@@ -6048,7 +6048,7 @@ def startrecording(camera, takename):
     # FFmpeg command to take H.264 input from stdin and output to MP4
     ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-bsf:v', 'dump_extra', '-b:v', str(bitrate), '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-    camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, quality=quality, intra_period=5, bitrate = bitrate)
+    camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, quality=quality, intra_period=1, bitrate = bitrate)
     return rec_process
 
 def stoprecording(camera, rec_process):
