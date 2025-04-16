@@ -84,7 +84,6 @@ if rpimode:
     os.system('sudo cpufreq-set -g performance')
 
     #set IO
-    os.system('sudo echo none | sudo tee /sys/block/sda/queue/scheduler')
     os.system('sudo echo 20 | sudo tee /proc/sys/vm/dirty_background_ratio')
     os.system('sudo echo 40 | sudo tee /proc/sys/vm/dirty_ratio')
 
@@ -5850,6 +5849,7 @@ def usbfilmfolder(dsk):
     if os.path.exists('/dev/sda1') == True:
         os.system('sudo mount -o  noatime,nodiratime,async /dev/sda1 /media/usb0')
         os.system('sudo chown pi /media/usb0')
+        os.system('sudo echo none | sudo tee /sys/block/sda/queue/scheduler')
         #os.system('sudo umount -l /media/usb0')
     waiting = time.time() 
     while True:
