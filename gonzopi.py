@@ -83,6 +83,11 @@ if rpimode:
     #make cpu freq performance
     os.system('sudo cpufreq-set -g performance')
 
+    #set IO
+    os.system('sudo echo none | sudo tee /sys/block/sda/queue/scheduler')
+    os.system('sudo echo 20 | sudo tee /proc/sys/vm/dirty_background_ratio')
+    os.system('sudo echo 40 | sudo tee /proc/sys/vm/dirty_ratio')
+
     #I2CBUTTONS
     probei2c = 0
     while probei2c < 3:
