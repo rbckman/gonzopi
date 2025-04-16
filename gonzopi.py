@@ -6046,9 +6046,9 @@ def stopstream(camera, stream):
 def startrecording(camera, takename):
     global bitrate, quality, profilelevel
     # FFmpeg command to take H.264 input from stdin and output to MP4
-    ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-bsf:v', 'dump_extra', '-b:v', str(bitrate), '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
+    ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-    camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, quality=quality, intra_period=1, bitrate = bitrate)
+    camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
     return rec_process
 
 def stoprecording(camera, rec_process):
