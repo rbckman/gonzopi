@@ -566,6 +566,7 @@ def main():
                     os.makedirs(blenddir,exist_ok=True)
                     #videotrim(blenddir,filename,'end', videolength)
                     os.system('cp '+filename+'.mp4 '+blenddir+blendmodes[blendselect]+'.mp4')
+                    rendermenu = True
                     vumetermessage('blend done.')
                 #CROSSFADE
                 elif pressed == 'middle' and menu[selected] == 'CROSSFADE:':
@@ -4149,8 +4150,8 @@ def stretchaudio(filename,fps):
 
 def encoder():
     global bitrate
-    #return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slow -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
-    return '-c:v copy -c:a copy '
+    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slow -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
+    #return '-c:v copy -c:a copy '
 
 def has_audio_track(file_path):
     try:
@@ -4215,7 +4216,9 @@ def compileshot(filename,filmfolder,filmname):
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
-        run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
+        i#run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
+        ffmpeg_cmd = ['ffmpeg','-i', video_origins+'.h264', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', video_origins+'.mp4', '-loglevel','debug', '-y']
+        ffmpeg_process = subprocess.Popen(ffmpeg_cmd)
         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
     video_origins = (os.path.realpath(filename+'.mp4'))[:-4]
     if not os.path.isfile(filename + '.wav'):
@@ -4555,6 +4558,11 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             run_command('rm '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4')
             run_command('ffmpeg -y -sseof -1 -i ' + screen_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + screen_filename + '.jpeg')
             #ffmpeg -i blendtest.mp4 -i blendtest3.mp4 -filter_complex "blend=screen" output2.mp4
+            newaudiomix = True
+            take=counttakes2(scenedir)
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
+            updatethumb=True
+            rendermenu = True
             newaudiomix = True
         ###---------CROSSFADE--------
         if os.path.isfile(scenedir+'.crossfade') == True:
