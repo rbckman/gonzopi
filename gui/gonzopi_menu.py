@@ -59,6 +59,11 @@ moverow = 0
 oldmenu=""
 oldvumeter=""
 hidemenu=False
+#font='VTV323'
+#font='VeraMono'
+#font='fixedsys'
+font='firacode'
+
 if display_width == 1920:
     y_offset2 = 5
     y_offset3 = 45
@@ -79,17 +84,28 @@ if display_width == 800:
     y_offset6 = 450
     y_offset = 465
     rectime = 700
-    text_size = 15
-    text_size_selected = 11
-    space = 10
-    morespace = 5
+    if font == 'VeraMono':
+        text_size = 15
+        text_size_selected = 11
+        space = 10
+        morespace = 5
+    if font == 'VTV323':
+        text_size = 19
+        text_size_selected = 15
+        space = 9
+        morespace = 5
+    else:
+        text_size = 15
+        text_size_selected = 11
+        space = 10
+        morespace = 5
     moverow = 0
 
-fontObj = pygame.font.Font("/home/pi/gonzopi/gui/VeraMono.ttf", text_size,bold=True)
+fontObj = pygame.font.Font("/home/pi/gonzopi/gui/"+font+'.ttf', text_size,bold=True)
 
 def render_menu(text, size, row, y_offset, color, bakg):
     t = fontObj.render(text, True, color)
-    rect = t.get_rect().move(row,y_offset).inflate(0,-3)
+    rect = t.get_rect().move(row,y_offset).inflate(0,-4)
     #print(rect)
     pygame.draw.rect(pygame_surface, bakg, rect)
     #pygame_surface.set_alpha(55)
@@ -128,7 +144,7 @@ while True:
         render_vumenu(vumeter, text_size, 0, y_offset, color, bakg)
         oldvumeter = vumeter
         vumenulayer.updateLayer()
-    if menu != oldmenu:
+    if menu != oldmenu and menu != '':
         pygame_surface.fill((0,0,0,0))
         #print(menu)
         #text1 = fontObj.render(menu[3], True, WHITE, BLUE)

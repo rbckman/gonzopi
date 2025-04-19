@@ -145,6 +145,8 @@ def main():
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
     menu = standardmenu
+    hide_menu_time=4
+    showmenutime = time.time()+6
     showgonzopictrl = False
     recordwithports = False
     pressagain = ''
@@ -191,7 +193,7 @@ def main():
     showmenu = 1
     showmenu_settings = True
     showhelp = False
-    oldchecksync = ''
+    oldchecksync = 0
     overlay = None
     overlay2 = None
     underlay = None
@@ -2171,9 +2173,16 @@ def main():
             else:
                 camerared = str(float(camera.awb_gains[0]))[:4]
                 camerablue = str(float(camera.awb_gains[1]))[:4]
-
+            if time.time() - showmenutime > hide_menu_time: 
+                #showmenutime = time.time()
+                showmenu=0
+                showmenu_settings = False
+                rendermenu=True
             #Check if menu is changed and save settings / sec
             if buttonpressed == True or recording == True or rendermenu == True:
+                if buttonpressed == True and recording == False:
+                    showmenu=1
+                    showmenutime = time.time()
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
@@ -2228,12 +2237,12 @@ def main():
                                 vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
                         disk = os.statvfs(filmfolder)
                         diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                        checksync = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )) + 'Mb'
-                        if checksync == oldchecksync:
-                            rectime = ''
-                        else:
-                            rectime = 'SYNCING.. '
-                            oldchecksync = checksync
+                        #checksync = int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )
+                        #if checksync == oldchecksync:
+                        #    rectime = str(checksync)+'Mb/s'
+                        #elif checksync - oldchecksync > 1000:
+                        #    rectime = 'SYNCING.. '
+                        #oldchecksync = checksync
                         #print(term.yellow+'filming with '+camera_model +' ip:'+ network
                         print(camselected,camera_recording,cameras)
                 #writemessage(pressed)
