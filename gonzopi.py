@@ -546,6 +546,12 @@ def main():
                             take = counttakes(filmname, filmfolder, scene, shot)
                         rendermenu = True
                         updatethumb=True
+                    else:
+                        shot = shots
+                        takes = counttakes(filmname, filmfolder, scene, shot)
+                        take=takes
+                    rendermenu = True
+                    updatethumb=True
                 #BLEND
                 elif pressed == 'middle' and menu[selected] == 'BLEND:':
                     videolength=0
@@ -1115,7 +1121,7 @@ def main():
                             rendermenu = True
                             vumetermessage('SYNC DONE!')
                 elif 'RETAKE' in pressed:
-                    pressed="retake_now"
+                    pressed="retake"
                 elif 'RETAKE:' in pressed:
                     shot=pressed.split(':')[1]
                     shot=int(shot)
@@ -1406,6 +1412,9 @@ def main():
                         #shot = shots+1
                         take = takes+1
                     elif pressed == "retake":
+                        if shot == shots+1 and takes == 0:
+                            shot = shots
+                            takes = counttakes(filmname, filmfolder, scene, shot)
                         take = takes+1
                     elif pressed == 'record_now':
                         shot=shots+1
@@ -1503,20 +1512,24 @@ def main():
                     t = 0
                     rectime = ''
                     vumetermessage('Gonzopi ' + gonzopiversion[:-1] + ' ' + gonzopivername[:-1])
-                    updatethumb = True
+                    shot=shots+1
+                    take=1
+                    takes=0
+                    #updatethumb = True
                     #camera_recording=0
                 #if not in last shot or take then go to it
                 if pressed == 'record' and recordable == False:
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     shot=shots+1
                     take=1
+                    takes=0
                     #take = takes
                     #takes = counttakes(filmname, filmfolder, scene, shot)
                 if pressed == 'retake' and recordable == False:
                     #scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    takes = counttakes(filmname, filmfolder, scene, shot)
                     #take = takes
                     #takes = counttakes(filmname, filmfolder, scene, shot)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     take = takes + 1
             #ENTER (auto shutter, iso, awb on/off)
             elif pressed == 'middle' and menu[selected] == 'SHUTTER:':
@@ -6269,9 +6282,9 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
                 pressed=nextstatus
             elif "RETAKE" in nextstatus:
                 if recordwithports == True:
-                    pressed="retake"
-                else:
                     pressed="retake_now"
+                else:
+                    pressed="retake"
             elif "RETAKE:" in nextstatus:
                 pressed=nextstatus
             elif "SCENE:" in nextstatus:
