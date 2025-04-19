@@ -2194,7 +2194,7 @@ def main():
                     settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
-                writemenu(menu,settings,selected,'',showmenu)
+                menudone=writemenu(menu,settings,selected,'',showmenu)
                 rendermenu = False
                 #save settings if menu has been updated and x seconds passed
                 if recording == False:
@@ -2426,7 +2426,7 @@ def writemenu(menu,settings,selected,header,showmenu):
         n += 1
     spaces = len(menudone) - 500
     menudone += spaces * ' '
-    if oldmenu != menudone or rendermenu == True:
+    if oldmenu != menudone:
         print(term.clear+term.home)
         if showmenu == 0:
             print(term.red+menudoneprint)

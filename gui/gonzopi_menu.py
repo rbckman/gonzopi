@@ -144,7 +144,7 @@ while True:
         render_vumenu(vumeter, text_size, 0, y_offset, color, bakg)
         oldvumeter = vumeter
         vumenulayer.updateLayer()
-    if menu != oldmenu and menu != '':
+    if menu != oldmenu and len(menu) > 5:
         pygame_surface.fill((0,0,0,0))
         #print(menu)
         #text1 = fontObj.render(menu[3], True, WHITE, BLUE)

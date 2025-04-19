@@ -1,6 +1,6 @@
 #!/bin/bash
-echo "Have fun!" > /dev/shm/vumeter
-echo "For the lulz" > /dev/shm/interface
+echo 'Gonzo Pi v.' | tr '\n' ' ' > /dev/shm/vumeter
+cat VERSION | tr '\n' ' ' >> /dev/shm/vumeter
 #cd ./gui
 #./tarinagui.bin
 cd ./gui
