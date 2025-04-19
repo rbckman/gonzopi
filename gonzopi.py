@@ -6069,7 +6069,7 @@ def stoprecording(camera, rec_process):
     # Close the FFmpeg process
     time.sleep(0.5)
     rec_process.stdin.close()
-    rec_process.wait()
+    #rec_process.wait()
     print("Recording complete!")
 
 #-------------Beeps-------------------
