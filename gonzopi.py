@@ -255,10 +255,10 @@ def main():
     mux='no'
 
     if rpimode:
-        #START INTERFACE
-        startinterface()
         #FIRE UP CAMERA
         camera = startcamera(lens,fps)
+        #START INTERFACE
+        startinterface()
     else:
         camera=None
 
@@ -2426,7 +2426,7 @@ def writemenu(menu,settings,selected,header,showmenu):
         n += 1
     spaces = len(menudone) - 500
     menudone += spaces * ' '
-    if oldmenu != menudone:
+    if oldmenu != menudone and len(menudone) > 4:
         print(term.clear+term.home)
         if showmenu == 0:
             print(term.red+menudoneprint)
@@ -6413,7 +6413,7 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
     return pressed, buttonpressed, buttontime, holdbutton, event, keydelay
 
 def startinterface():
-    call(['./startinterface.sh &'], shell = True)
+    call([gonzopifolder+'/startinterface.sh &'], shell = True)
 
 def stopinterface(camera):
     try:

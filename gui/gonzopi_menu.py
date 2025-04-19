@@ -119,12 +119,16 @@ def render_vumenu(text, size, row, y_offset, color, bakg):
     pygame_surface2.blit(t, (row, y_offset))
 
 while True:
-    with open('/dev/shm/interface', 'r') as f:
-        if f:
-            menu = [line.rstrip() for line in f]
-    with open('/dev/shm/vumeter', 'r') as f:
-        if f:
-            vumeter = f.read()
+    try:
+        with open('/dev/shm/interface', 'r') as f:
+            if f:
+                menu = [line.rstrip() for line in f]
+        with open('/dev/shm/vumeter', 'r') as f:
+            if f:
+                vumeter = f.read()
+    except:
+        menu=''
+        vumeter=''
     if vumeter != oldvumeter: 
         pygame_surface2.fill((0,0,0,0))
         try:
@@ -144,7 +148,7 @@ while True:
         render_vumenu(vumeter, text_size, 0, y_offset, color, bakg)
         oldvumeter = vumeter
         vumenulayer.updateLayer()
-    if menu != oldmenu and len(menu) > 5:
+    if menu != oldmenu and len(menu) > 4:
         pygame_surface.fill((0,0,0,0))
         #print(menu)
         #text1 = fontObj.render(menu[3], True, WHITE, BLUE)
