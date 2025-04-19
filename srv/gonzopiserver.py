@@ -345,7 +345,8 @@ class index:
         if i.func == 'retake': 
             print(i.func)
             if recording == False:
-                sendtocamera(ip,port,'RETAKE:'+shot)
+                #sendtocamera(ip,port,'RETAKE:'+shot)
+                sendtocamera(ip,port,'RETAKE')
                 recording = True
             else:
                 sendtocamera(ip,port,'STOPRETAKE')
