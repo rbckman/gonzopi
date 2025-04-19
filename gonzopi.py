@@ -1396,6 +1396,9 @@ def main():
                     newselected=newselected_maybe
             if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclength != 0 and t > reclength:
                 overlay = removeimage(camera, overlay)
+                foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                filename = 'take' + str(take).zfill(3)
+                recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
                 if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
                     #camera_recording=0 
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
@@ -1431,7 +1434,7 @@ def main():
                             sound_start = time.time()
                             if onlysound != True:
                                 #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
-                                rec_process=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4')
+                                rec_process, camera=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4',bitrate, quality, profilelevel)
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+foldername+filename+'.mp4')
                             recording = True
@@ -1463,7 +1466,7 @@ def main():
                         showmenu = 1
                     if onlysound != True:
                         #camera.stop_recording()
-                        stoprecording(camera, rec_process)
+                        recprocess, camera = stoprecording(camera, rec_process)
                     os.system('pkill arecord')
                     soundlag=starttime-sound_start
                     try:
@@ -2104,9 +2107,6 @@ def main():
             if oldscene != scene or oldshot != shot or oldtake != take or updatethumb == True:
                 if recording == False:
                     #logger.info('film:' + filmname + ' scene:' + str(scene) + '/' + str(scenes) + ' shot:' + str(shot) + '/' + str(shots) + ' take:' + str(take) + '/' + str(takes))
-                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                    filename = 'take' + str(take).zfill(3)
-                    recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
                     overlay = removeimage(camera, overlay)
                     if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
                         p = counttakes(filmname, filmfolder, scene, 1)
@@ -6056,13 +6056,12 @@ def stopstream(camera, stream):
     stream = ''
     return stream
 
-def startrecording(camera, takename):
-    global bitrate, quality, profilelevel
+def startrecording(camera, takename,bitrate, quality, profilelevel): 
     # FFmpeg command to take H.264 input from stdin and output to MP4
     ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
     camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
-    return rec_process
+    return rec_process, camera
 
 def stoprecording(camera, rec_process):
     camera.stop_recording() 
@@ -6071,6 +6070,7 @@ def stoprecording(camera, rec_process):
     rec_process.stdin.close()
     #rec_process.wait()
     print("Recording complete!")
+    return rec_process, camera
 
 #-------------Beeps-------------------
 
