@@ -1417,6 +1417,7 @@ def main():
                         shot = shots+1
                         take = 1
                         takes=1
+                        shots=shots+1
                     elif pressed == "retake":
                         if shot == shots+1 and takes == 0:
                             shot = shots
@@ -1427,6 +1428,7 @@ def main():
                         shot=shots+1
                         take=1
                         takes=1
+                        shots=shots+1
                     elif pressed == 'retake_now':
                         takes = counttakes(filmname, filmfolder, scene, shot)
                         take = takes + 1
