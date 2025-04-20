@@ -2193,7 +2193,7 @@ def main():
                 rendermenu=True
             #Check if menu is changed and save settings / sec
             if buttonpressed == True or recording == True or rendermenu == True:
-                if buttonpressed == True and recording == False:
+                if buttonpressed == True and recording == False and not pressed == 'record' and not pressed == 'retake':
                     showmenu=1
                     showmenutime = time.time()
                 lastmenu = menu[selected]
