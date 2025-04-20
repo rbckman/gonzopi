@@ -512,11 +512,13 @@ def main():
                     rendermenu = True
                 #VIEW SHOT OR TAKE
                 elif pressed == 'view':
-                    writemessage('Loading clip...')
-                    organize(filmfolder, filmname)
                     takes = counttakes(filmname, filmfolder, scene, shot)
-                    vumetermessage('press middlebutton to cancel')
+                    if take == takes+1:
+                        take = takes
                     if takes > 0:
+                        vumetermessage('press middlebutton to cancel')
+                        writemessage('Loading clip...')
+                        organize(filmfolder, filmname)
                         removeimage(camera, overlay)
                         camera.stop_preview()
                         foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
@@ -1412,19 +1414,23 @@ def main():
                     #camera_recording=0 
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
                     if pressed == "record":
-                        #shot = shots+1
-                        take = takes+1
+                        shot = shots+1
+                        take = 1
+                        takes=1
                     elif pressed == "retake":
                         if shot == shots+1 and takes == 0:
                             shot = shots
                             takes = counttakes(filmname, filmfolder, scene, shot)
                         take = takes+1
+                        takes=take
                     elif pressed == 'record_now':
                         shot=shots+1
                         take=1
+                        takes=1
                     elif pressed == 'retake_now':
                         takes = counttakes(filmname, filmfolder, scene, shot)
                         take = takes + 1
+                        takes=take
                     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                     filename = 'take' + str(take).zfill(3)
                     if beeps > 0 and beeping == False:
@@ -1498,7 +1504,6 @@ def main():
                             logger.warning('something wrong with camera jpeg capture')
                     #delayerr = audiotrim(foldername,filename)
                     onlysound = False
-                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     if beeps > 0:
                         if bus:
                             buzz(300)
@@ -1514,12 +1519,16 @@ def main():
                             run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                     t = 0
                     rectime = ''
-                    vumetermessage('Gonzopi ' + gonzopiversion[:-1] + ' ' + gonzopivername[:-1])
-                    shot=shots+1
-                    take=1
-                    takes=0
-                    #updatethumb = True
-                    #camera_recording=0
+                    vumetermessage('Gonzo Pi v.' + gonzopiversion[:-1] + ' ' + gonzopivername[:-1])
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if shot == shots and pressed == 'record':
+                        shot=shots+1
+                        take=1
+                        takes=0
+                    elif pressed == 'retake':
+                        take=takes+1
+                        #updatethumb = True
+                        #camera_recording=0
                 #if not in last shot or take then go to it
                 if pressed == 'record' and recordable == False:
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
@@ -3679,6 +3688,7 @@ def newcamera_ip(abc, network):
 #------------Timelapse--------------------------
 
 def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlight):
+    global fps, soundrate, channels, bitrate, muxing, db
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -3741,7 +3751,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             else:
                                 run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
-                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=bitrate, level=profilelevel, quality=quality, intra_period=1)
+                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=bitrate, level=profilelevel, intra_period=5)
                         if sound == True:
                             os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
@@ -3780,40 +3790,63 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                         writemessage('Compiling timelapse')
                         logger.info('Hold on, rendering ' + str(len(files)) + ' scenes')
                         #RENDER VIDEO
-                        renderfilename = foldername + filename
+                        print('Rendering videofiles')
+                        writemessage('Hold on, rendering timelapse with ' + str(len(files)) + ' files')
+                        videosize = 0
+                        rendersize = 0
+                        scenedir=foldername
+                        filename = foldername + filename
                         n = 1
-                        videomerge = ['MP4Box']
-                        videomerge.append('-force-cat')
-                        for f in files:
-                            if sound == True:
-                                compileshot(f,filmfolder,filmname)
-                                #audiotrim(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3), 'end', '')
-                                videomerge.append('-cat')
-                                videomerge.append(f + '.mp4#video')
-                            else:
-                                videomerge.append('-cat')
-                                videomerge.append(f + '.h264')
-                            n = n + 1                            
-                        videomerge.append('-new')
-                        videomerge.append(renderfilename + '.mp4')
-                        call(videomerge, shell=False) #how to insert somekind of estimated time while it does this?
+                        videomerge = ['ffmpeg']
+                        videomerge.append('-f')
+                        videomerge.append('concat')
+                        videomerge.append('-safe')
+                        videomerge.append('0')
+                        run_command('rm '+scenedir+'.renderlist')
+                        for f in files[:-1]:
+                            compileshot(f+'.h264',filmfolder,filmname)
+                            videosize = videosize + countsize(f + '.mp4')
+                            #videomerge.append(f + '.mp4')
+                            with open(scenedir + '.renderlist', 'a') as l:
+                                l.write("file '"+str(f)+".mp4'\n")
+                        videomerge.append('-i')
+                        videomerge.append(scenedir+'.renderlist')
+                        videomerge.append('-c:v')
+                        videomerge.append('copy')
+                        videomerge.append('-movflags')
+                        videomerge.append('+faststart')
+                        videomerge.append(filename + '.mp4')
+                        videomerge.append('-y')
+                        #videomerge.append(filename + '.h264')
+                        #videomerge.append(filename + '.h264')
+                        #call(videomerge, shell=True) #how to insert somekind of estimated time while it does this?
+                        p = Popen(videomerge)
+                        #show progress
+                        while p.poll() is None:
+                            time.sleep(0.1)
+                            try:
+                                rendersize = countsize(filename + '.mp4')
+                            except:
+                                continue
+                            writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done')
+                        run_command('rm '+scenedir+'.renderlist')
+                        print('Video rendered!')
                         ##RENDER AUDIO
-                        if sound == True:
-                            writemessage('Rendering sound')
-                            audiomerge = ['sox']
-                            #if render > 2:
-                            #    audiomerge.append(filename + '.wav')
-                            for f in files:
-                                audiomerge.append(f + '.wav')
-                            audiomerge.append(renderfilename + '.wav')
-                            call(audiomerge, shell=False)
+                        writemessage('Rendering sound')
+                        audiomerge = ['sox']
+                        #if render > 2:
+                        #    audiomerge.append(filename + '.wav')
+                        for f in files[:-1]:
+                            audiomerge.append(f + '.wav')
+                        audiomerge.append(filename + '.wav')
+                        call(audiomerge, shell=False)
                         ##MAKE AUDIO SILENCE
-                        if sound == False:
-                            audiosilence(foldername+filename)
+                        #if sound == False:
+                        #    audiosilence(foldername+filename)
                         #cleanup
                         #os.system('rm -r ' + foldername + 'timelapse')
                         vumetermessage('timelapse done! ;)')
-                        return renderfilename, between, duration
+                        return filename, between, duration
                     time.sleep(keydelay)
             if menu[selected] == 'BACK':
                 vumetermessage('ok!')
@@ -4247,10 +4280,12 @@ def compileshot(filename,filmfolder,filmname):
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
-        i#run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
+        #run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
         ffmpeg_cmd = ['ffmpeg','-i', video_origins+'.h264', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', video_origins+'.mp4', '-loglevel','debug', '-y']
         ffmpeg_process = subprocess.Popen(ffmpeg_cmd)
-        os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+        stdout, stderr = ffmpeg_process.communicate()
+        #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+        print(filename+'.h264 converted to mp4')
     video_origins = (os.path.realpath(filename+'.mp4'))[:-4]
     if not os.path.isfile(filename + '.wav'):
         vumetermessage('creating audio track...')
@@ -4305,7 +4340,7 @@ def compileshot(filename,filmfolder,filmname):
         os.remove(video_origins + '_tmp.mp4')
         os.remove(filename + '.mp3')
     #origin=os.path.realpath(filename+'.mp4')
-    #os.system('rm ' + video_origins + '.h264')
+    os.system('rm ' + video_origins + '.h264')
     #os.system('rm ' + filename + '.h264')
     #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
     logger.info('compile done!')
@@ -4387,6 +4422,7 @@ def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
             continue
         writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done')
     print('Video rendered!')
+    run_command('rm '+scenedir+'.renderlist')
     return
 
 #---------------Render Audio----------------
@@ -5346,6 +5382,8 @@ def playdub(filmname, filename, player_menu):
     if clipduration < 4:
         logger.info("clip duration shorter than 4 sec")
         player.previous()
+        if sound == False:
+            playerAudio.previous()
     if dub == True:
         p = 0
         while p < 3:
@@ -5862,12 +5900,13 @@ def audiotrim(filename, where, dub):
 # make an empty audio file as long as a video file
 
 def audiosilence(renderfilename):
-    global channels
+    global channels, soundrate
     writemessage('Creating audiosilence..')
     #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
     #videolength = pipe.decode()
+    logger.info('checking video length')
     videolength = get_video_length(renderfilename+'.mp4')
-    logger.info('Video length is ' + videolength)
+    logger.info('Video length is ' + str(videolength))
     #separate seconds and milliseconds
     videoms = int(videolength) % 1000
     videos = int(videolength) / 1000
@@ -6416,11 +6455,11 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = holdbutton
             keydelay = 0.1
     if time.time() - buttontime > 2 and buttonpressed == True:
-        keydelay = 0.1
+        keydelay = 0.08
     if time.time() - buttontime > 6 and buttonpressed == True:
         keydelay = 0.05
     if time.time() - buttontime > 8 and buttonpressed == True:
-        keydelay = 0.08
+        keydelay = 0.01
     if time.time() - buttontime > 10 and buttonpressed == True:
         keydelay = 0.01
     return pressed, buttonpressed, buttontime, holdbutton, event, keydelay
