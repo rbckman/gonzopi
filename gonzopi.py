@@ -147,6 +147,7 @@ def main():
     menu = standardmenu
     hide_menu_time=4
     showmenutime = time.time()+6
+    oldmenu=''
     showgonzopictrl = False
     recordwithports = False
     pressagain = ''
@@ -2122,6 +2123,9 @@ def main():
             if oldscene != scene or oldshot != shot or oldtake != take or updatethumb == True:
                 if recording == False:
                     #logger.info('film:' + filmname + ' scene:' + str(scene) + '/' + str(scenes) + ' shot:' + str(shot) + '/' + str(shots) + ' take:' + str(take) + '/' + str(takes))
+                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    filename = 'take' + str(take).zfill(3)
+                    recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
                     overlay = removeimage(camera, overlay)
                     if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
                         p = counttakes(filmname, filmfolder, scene, 1)
@@ -2194,7 +2198,7 @@ def main():
                     settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
-                menudone=writemenu(menu,settings,selected,'',showmenu)
+                oldmenu=writemenu(menu,settings,selected,'',showmenu,oldmenu)
                 rendermenu = False
                 #save settings if menu has been updated and x seconds passed
                 if recording == False:
@@ -2408,9 +2412,7 @@ def listenforclients(host, port, q):
 
 #--------------Write the menu layer to dispmanx--------------
 
-def writemenu(menu,settings,selected,header,showmenu):
-    global menudone, rendermenu
-    oldmenu=menudone
+def writemenu(menu,settings,selected,header,showmenu,oldmenu):
     menudone = ''
     menudoneprint = ''
     menudone += str(selected) + '\n'
@@ -2436,7 +2438,7 @@ def writemenu(menu,settings,selected,header,showmenu):
         f = open('/dev/shm/interface', 'w')
         f.write(menudone)
         f.close()
-        return menudone
+        return oldmenu
 
 #------------Write to screen----------------
 
@@ -2638,6 +2640,7 @@ def countonfloor(filmname, filmfolder):
 
 def vfx_colorpoint():
     global camera
+    oldmenu=''
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -2647,7 +2650,7 @@ def vfx_colorpoint():
     menu =  'BACK','GREEN','RED/YELLOW','BLUE','PURPLE'
     while True:
         settings = '','','','',''
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(settings) - 1):
@@ -2674,6 +2677,7 @@ def vfx_colorpoint():
 
 def vfx_solarize():
     global camera
+    oldmenu=''
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -2687,7 +2691,7 @@ def vfx_solarize():
     menu =  'BACK','STRENGHT:','R:','G:','B:'
     while True:
         settings = '',str(strenght),str(r),str(g),str(b)
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(settings) - 1):
@@ -2918,6 +2922,7 @@ def getfilms(filmfolder):
 #-------------Load gonzopi config---------------
 
 def getconfig(camera):
+    oldmenu=''
     filmfolder=''
     if camera != None:
         version = camera.revision
@@ -2977,7 +2982,7 @@ def getconfig(camera):
         menu = 'rev.C', 'rev.D', 'hq-camera'
         while True:
             settings = '', '', ''
-            writemenu(menu,settings,selected,header,showmenu)
+            oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
             pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
             if pressed == 'right':
                 if selected < (len(settings) - 1):
@@ -3045,6 +3050,7 @@ def cleanupdisk(filmname, filmfolder):
 #-------------Load film---------------
 
 def loadfilm(filmname, filmfolder, camera, overlay):
+    oldmenu=''
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -3060,7 +3066,7 @@ def loadfilm(filmname, filmfolder, camera, overlay):
     menu = 'FILM:', 'BACK'
     while True:
         settings = films[selectedfilm][0], ''
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         vumetermessage('filmsize: '+filmsize[selectedfilm]+' date: '+time.strftime('%Y-%m-%d %H:%M:%S',time.gmtime(films[selectedfilm][1])))
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down':
@@ -3107,9 +3113,10 @@ def slide_menu(slidecommander):
     selected = 0
     header = 'Future Tech Slide Commander'
     menu =  'BACK','SPEED:', 'SMOOTH:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'SAVE', 'RESET', 'STATUS'
+    oldmenu=''
     while True:
         settings = '',str(speed), str(smooth), str(pan), str(tilt), str(move), '', '', '' , '', '', ''
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down' and menu[selected] == 'SPEED:':
             if speed > 10:
@@ -3680,9 +3687,10 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
     selected = 0
     header = 'Adjust delay in seconds between videos'
     menu = 'DELAY:', 'DURATION:', 'SOUND:', 'START', 'BACK'
+    oldmenu=''
     while True:
         settings = str(round(between,2)), str(round(duration,2)), str(sound), '', ''
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         seconds = (3600 / between) * duration
         vumetermessage('1 h timelapse filming equals ' + str(round(seconds,2)) + ' second clip   ')
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
@@ -3832,8 +3840,9 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
     otf_shot += 1
     otf_take = counttakes(filmname+'_onthefloor', filmfolder, otf_scene, otf_shot)
     otf_take += 1
+    oldmenu=''
     while True:
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(settings) - 1):
@@ -5069,8 +5078,9 @@ def removedub(dubfolder, dubnr):
     header = 'Are you sure you want to remove dub ' + str(dubnr) + '?'
     menu = 'NO', 'YES'
     settings = '', ''
+    oldmenu=''
     while True:
-        writemenu(menu,settings,selected,header,showmenu)
+        writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(menu) - 1):
@@ -5139,6 +5149,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
     newdub = [1.0, 1.0, 0.1, 0.1]
     dubselected = len(dubfiles) - 1
     dubrecord = ''
+    oldmenu=''
     while True:
         nmix = round(newdub[0],1)
         ndub = round(newdub[1],1)
@@ -5154,7 +5165,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
         else:
             menu = 'BACK', 'ADD:', '', ''
             settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout)
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
 
         #NEW DUB SETTINGS
@@ -5303,6 +5314,7 @@ def playdub(filmname, filename, player_menu):
     trimfromstart=0
     trimfromend=0
     remove_shots = []
+    oldmenu=''
     if video == True:
         if player_menu == 'dubbb':
             pause = False
@@ -5393,7 +5405,7 @@ def playdub(filmname, filename, player_menu):
             header = 'Dubbing ' + str(round(t,1))
         else:
             header = 'Playing ' + str(datetime.timedelta(seconds=round(t))) + ' of ' + str(datetime.timedelta(seconds=round(clipduration))) + ' s'
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if buttonpressed == True:
             flushbutton()
@@ -6028,9 +6040,10 @@ def uploadfilm(filename, filmname):
         settings.append('')
     menu = mods
     selected = 0
+    oldmenu=''
     while True:
         header = 'Where do you want to upload?'
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(menu) - 1):
