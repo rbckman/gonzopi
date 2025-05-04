@@ -138,9 +138,9 @@ def main():
 
     #MENUS
     if slidecommander:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
     else:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'MUX:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'MUX:'
     gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
@@ -3690,7 +3690,7 @@ def newcamera_ip(abc, network):
 #------------Timelapse--------------------------
 
 def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlight):
-    global fps, soundrate, channels, bitrate, muxing, db
+    global fps, soundrate, channels, bitrate, muxing, db, quality
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -3753,7 +3753,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             else:
                                 run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
-                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=bitrate, level=profilelevel, intra_period=5)
+                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=quality, level=profilelevel, intra_period=5)
                         if sound == True:
                             os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
