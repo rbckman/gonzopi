@@ -4376,6 +4376,8 @@ def shotfiles(filmfolder, filmname, scene):
 
 def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
+    if scene == 0:
+        scenedir = filmfolder + filmname + '/'
     if len(filmfiles) < 1:
         writemessage('Nothing here!')
         time.sleep(2)
@@ -4977,7 +4979,7 @@ def renderfilm(filmfolder, filmname, comp, scene):
         if newaudiomix == True:
             newmix = True
         if audiohash != oldaudiohash or newmix == True:
-            #renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
+            renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
             print('updating audiohash...')
             with open(filmdir+ '.audiohash', 'w') as f:
                 f.write(audiohash)
@@ -4993,7 +4995,7 @@ def renderfilm(filmfolder, filmname, comp, scene):
                 os.remove(renderfilename + '_tmp.wav')
         else:
             print('Already rendered!')
-        #muxing = False
+        #muxing = True
         if muxing == True:
             #muxing mp3 layer to mp4 file
             #count estimated audio filesize with a bitrate of 320 kb/s
