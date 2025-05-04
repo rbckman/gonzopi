@@ -3924,10 +3924,10 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
                         if os.path.isdir(onthefloor) == False:
                             os.makedirs(onthefloor)
-                        os.system('mv ' + foldername + filename + '.h264 ' + onthefloor + '.h264')
-                        os.system('mv ' + foldername + filename + '.mp4 ' + onthefloor + '.mp4')
-                        os.system('mv ' + foldername + filename + '.wav ' + onthefloor + '.wav')
-                        os.system('mv ' + foldername + filename + '.jpeg ' + onthefloor + '.jpeg')
+                        os.system('mv ' + foldername + filename + '.h264 ' + onthefloor + '')
+                        os.system('mv ' + foldername + filename + '.mp4 ' + onthefloor + '')
+                        os.system('mv ' + foldername + filename + '.wav ' + onthefloor + '')
+                        os.system('mv ' + foldername + filename + '.jpeg ' + onthefloor + '')
                         os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
                         take = take - 1
                         if take == 0:
