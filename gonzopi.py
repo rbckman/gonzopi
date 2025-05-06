@@ -569,7 +569,11 @@ def main():
                             filename=filename+'/'+takename[:-5]
                         if '.mp4' in takename:
                             filename=filename+'/'+takename[:-4]
-                    compileshot(filename,filmfolder,filmname)
+                        compileshot(filename,filmfolder,filmname)
+                    elif filename[-8:-3] == 'scene':
+                        filename=filename+'/scene'
+                    else:
+                        filename=filename+'/'+filmname
                     #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
                     #videolength = pipe.decode().strip()
                     videolength=get_video_length(filename+'.mp4')
@@ -5362,14 +5366,14 @@ def playdub(filmname, filename, player_menu):
                 player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
-                time.sleep(0.5)
+                time.sleep(0.1)
                 return
         else:
             try:
                 player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
-                time.sleep(0.5)
+                time.sleep(0.1)
                 return
             #player = OMXPlayer(filename + '.mp4', args=['--fps', '25', '--layer', '3', '--win', '0,70,800,410', '--no-osd', '--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
         writemessage('Loading..')
@@ -5377,10 +5381,10 @@ def playdub(filmname, filename, player_menu):
         #vumetermessage('up [fast-forward], down [rewind], help button for more')
     if sound == False:
         try:
-            playerAudio = OMXPlayer(filename + '.wav', args=['--adev','alsa:hw:'+str(plughw)], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
+            playerAudio = OMXPlayer(filename + '.wav', args=['--adev','alsa:hw:'+str(plughw), '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
         except:
             writemessage('something wrong with audio player')
-            time.sleep(0.5)
+            time.sleep(0.1)
             return
     #omxplayer hack to play really short videos.
     if clipduration < 4:
@@ -5543,6 +5547,8 @@ def playdub(filmname, filename, player_menu):
             trimfromstart = player.position()
             vumetermessage('shot start position set to: '+ str(trimfromstart))
             player.pause()
+            if sound == False:
+                playerAudio.pause()
             time.sleep(0.5)
             player.play()
             if sound == False:
@@ -5566,7 +5572,8 @@ def playdub(filmname, filename, player_menu):
                         #player.stop()
                         #playerAudio.stop()
                         player.quit()
-                        playerAudio.quit()
+                        if sound == False:
+                            playerAudio.quit()
                     #os.system('pkill -9 aplay') 
                 except:
                     #kill it if it dont stop
