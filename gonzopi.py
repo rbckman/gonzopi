@@ -4704,7 +4704,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 if os.path.exists(scenedir+'dub') == True:
                     os.system('cp '+scenedir+'dub/original.wav '+renderfilename+'.wav')
                 #os.system('cp '+dubfolder+'original.wav '+renderfilename+'.wav')
-                #renderaudio(renderfilename, renderfilename, dubfiles, dubmix)
+                renderaudio(renderfilename, renderfilename, dubfiles, dubmix)
                 print('updating audiohash...')
                 with open(scenedir + '.audiohash', 'w') as f:
                     f.write(audiohash)
