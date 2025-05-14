@@ -746,7 +746,7 @@ def main():
                         vumetermessage('')
                     rendermenu = True
                 #(YANK) COPY FILM
-                elif pressed == 'copy' and menu[selected] == 'FILM:' and recordable == False:
+                elif pressed == 'copy' and menu[selected] == 'FILM:':
                     copying = 'film'
                     yanked = filmfolder + filmname
                     vumetermessage('Film ' + filmname + ' copied! (I)nsert button to place it...')
@@ -1422,12 +1422,17 @@ def main():
                         take = 1
                         takes=1
                         shots=shots+1
-                    elif pressed == "retake":
+                    elif pressed == "retake" and takes > 0:
                         if shot == shots+1 and takes == 0:
                             shot = shots
                             takes = counttakes(filmname, filmfolder, scene, shot)
                         take = takes+1
                         takes=take
+                    elif pressed == "retake" and takes == 0:
+                        take=1
+                        shot=1
+                        takes=1
+                        shots=1
                     elif pressed == 'record_now':
                         shot=shots+1
                         take=1
@@ -1458,7 +1463,7 @@ def main():
                             sound_start = time.time()
                             if onlysound != True:
                                 #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
-                                rec_process, camera=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4',bitrate, quality, profilelevel)
+                                rec_process, camera=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4',bitrate, quality, profilelevel, reclength)
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+foldername+filename+'.mp4')
                             recording = True
@@ -4575,6 +4580,10 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         #    os.system('rm ' + renderfilename + '.h264 ')
         # Check if video corrupt
         renderfix = False
+        if not os.path.isfile(renderfilename + '.wav'):
+            vumetermessage('creating audio track...')
+            audiosilence(renderfilename)
+            renderfix = True
         if os.path.isfile(renderfilename + '.jpeg') == False: 
             run_command('ffmpeg -sseof -1 -i ' + renderfilename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + renderfilename + '.jpeg')
         #try:
@@ -4885,7 +4894,9 @@ def renderscene(filmfolder, filmname, scene):
         #os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
     else:
         print('Already rendered!')
-    if muxing == True:
+    #dont mux scenes for now
+    mux = False
+    if mux == True:
         #muxing mp3 layer to mp4 file
         #count estimated audio filesize with a bitrate of 320 kb/s
         try:
@@ -5456,7 +5467,9 @@ def playdub(filmname, filename, player_menu):
         if buttonpressed == True:
             flushbutton()
         if pressed == 'remove':
-            vumetermessage('add direct remove here')
+            vumetermessage('video cuts removed!')
+            trimfromstart=0
+            trimfromend=0
         #SHOWHELP
         elif pressed == 'showhelp':
             vumetermessage('Button layout')
@@ -5682,6 +5695,7 @@ def playdub(filmname, filename, player_menu):
             playerAudio.quit()
     except:
         pass
+    return [trimfromstart, trimfromend]
     #playerAudio.quit()
     #os.system('pkill dbus-daemon')
 
@@ -5922,7 +5936,7 @@ def audiosilence(renderfilename):
     videoms = int(videolength) % 1000
     videos = int(videolength) / 1000
     logger.info('Videofile is: ' + str(videos) + 's ' + str(videoms))
-    run_command('sox -V0 -n -r '+soundrate+' -c 2 /dev/shm/silence.wav trim 0.0 ' + str(videos))
+    run_command('sox -V0 -n -b 16 -r '+soundrate+' -c 2 /dev/shm/silence.wav trim 0.0 ' + str(videos))
     os.system('cp /dev/shm/silence.wav ' + renderfilename + '.wav')
     os.system('rm /dev/shm/silence.wav')
 
@@ -6141,11 +6155,14 @@ def stopstream(camera, stream):
     stream = ''
     return stream
 
-def startrecording(camera, takename,bitrate, quality, profilelevel): 
+def startrecording(camera, takename,bitrate, quality, profilelevel, reclength): 
     # FFmpeg command to take H.264 input from stdin and output to MP4
     ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-    camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+    if reclength > 1:
+        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+    else:
+        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
     return rec_process, camera
 
 def stoprecording(camera, rec_process):

@@ -20,11 +20,11 @@ $elif film != None:
 $if has_audio_track(video_realpath) == False:
     <div class="player-container">
     <video id="videoPlayer" controls>
-        <source src="$video?randhash" type="video/mp4">
+        <source src="$video?randhash=$randhash" type="video/mp4">
         Your browser does not support the video element.
     </video>
     <audio id="audioPlayer">
-        <source src="$audio?randhash" type="audio/wav">
+        <source src="$audio?randhash=$randhash" type="audio/wav">
         Your browser does not support the audio element.
     </audio>
     <div class="controls">
@@ -81,7 +81,7 @@ $if has_audio_track(video_realpath) == False:
 $else:
     <div class="player-container">
     <video id="videoPlayer" controls>
-        <source src="$video?randhash" type="video/mp4">
+        <source src="$video?randhash=$randhash" type="video/mp4">
         Your browser does not support the video element.
     </video>
 
