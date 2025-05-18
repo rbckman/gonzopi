@@ -591,7 +591,7 @@ def main():
                     crossfadesave(folder,crossfade,filename) 
                 #DUB SHOT
                 elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
-                    newdub = clipsettings(filmfolder, filmname, scene, shot, take, plughw)
+                    newdub, yanked = clipsettings(filmfolder, filmname, scene, shot, take, plughw,yanked)
                     take = counttakes(filmname, filmfolder, scene, shot)
                     if newdub:
                         camera.stop_preview()
@@ -622,7 +622,7 @@ def main():
                     rendermenu = True
                 #DUB SCENE
                 elif pressed == 'middle' and menu[selected] == 'SCENE:':
-                    newdub = clipsettings(filmfolder, filmname, scene, 0, take, plughw)
+                    newdub, yanked = clipsettings(filmfolder, filmname, scene, 0, take, plughw,yanked)
                     if newdub:
                         camera.stop_preview()
                         renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
@@ -644,7 +644,7 @@ def main():
                     rendermenu = True
                 #DUB FILM
                 elif pressed == 'middle' and menu[selected] == 'FILM:':
-                    newdub = clipsettings(filmfolder, filmname, 0, 0, take, plughw)
+                    newdub, yanked = clipsettings(filmfolder, filmname, 0, 0, take, plughw,yanked)
                     if newdub:
                         camera.stop_preview()
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
@@ -785,8 +785,10 @@ def main():
                     vumetermessage('Moving scene ' + str(scene) + ' (I)nsert button to place it...')
                 #PASTE SHOT and PASTE SCENE
                 elif pressed == 'insert' and yanked:
-                    if copying == 'take':
+                    if copying == 'take' and menu[selected] == 'TAKE:':
                         take = counttakes(filmname, filmfolder, scene, shot)
+                        if shot == 0:
+                            shot=1
                         take=take+1
                         vumetermessage('Pasting take, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
@@ -801,7 +803,10 @@ def main():
                         paste = ''
                         if moving == True:
                             os.system('rm -r ' + yanked + '*')
-                    elif copying == 'shot':
+                    elif copying == 'shot' and menu[selected] == 'SHOT:':
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                        if shot == 0:
+                            shot=1
                         vumetermessage('Pasting shot, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
                         try:
@@ -813,7 +818,7 @@ def main():
                             os.system('rm -r ' + yanked+'/*')
                             #Remove hidden placeholder
                             #os.system('rm ' + yanked + '/.placeholder')
-                    elif copying == 'scene':
+                    elif copying == 'scene' and menu[selected]=='SCENE:':
                         vumetermessage('Pasting scene, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
                         os.system('cp -r ' + yanked + ' ' + paste)
@@ -821,7 +826,7 @@ def main():
                             os.system('rm -r ' + yanked+'/*')
                             #Remove hidden placeholder
                             #os.system('rm ' + yanked + '/.placeholder')
-                    elif copying == 'film':
+                    elif copying == 'film' and menu[selected]=='FILM:':
                         vumetermessage('Pasting film, please wait...')
                         paste = filmfolder+filmname+'_copy'
                         os.system('cp -r ' + yanked + ' ' + paste)
@@ -4243,6 +4248,24 @@ def has_audio_track(file_path):
         print(f"Error parsing {file_path}: {e}")
         return None
 
+def is_audio_stereo(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Audio":
+                if track.channel_s == 1:
+                    return False
+                if track.channel_s == 2:
+                    return True
+        return None
+
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
 def get_video_length(filepath):
     # Parse the file
     media_info = MediaInfo.parse(filepath)
@@ -4310,11 +4333,11 @@ def compileshot(filename,filmfolder,filmname):
     except:
         audiolength=videolength
     #if there is no audio length
-    logger.info('audio is:' + str(audiolength))
+
     print('trimming audio')
-    if int(audiolength) > int(videolength):
+    if int(audiolength) > int(videolength+int(0.013*1000)):
         vumetermessage('trimming audio...')
-        run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
+        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
         run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
         os.system('rm /dev/shm/temp.wav')
     fps_rounded=round(fps)
@@ -4330,6 +4353,13 @@ def compileshot(filename,filmfolder,filmname):
             db = correct_database(filmname,filmfolder,db)
             db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
     mux=False
+    #one more if stereo check!
+    stereo = is_audio_stereo(filename+'.wav')
+    if stereo == False:
+        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 /dev/shm/temp.wav')
+        run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
+        os.system('rm /dev/shm/temp.wav')
+    logger.info('audio is:' + str(audiolength))
     if mux == True:
         #muxing mp3 layer to mp4 file
         #count estimated audio filesize with a bitrate of 320 kb/s
@@ -4547,9 +4577,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         try:
             if video_db[0].faststart == 0:
                 faststart=False
-            if video_db[0].faststart == 1:
-                faststart=True
         except:
+            faststart = True
             pass
         if faststart == False:
             vumetermessage('found new clip compiling...')
@@ -5179,7 +5208,7 @@ def removedub(dubfolder, dubnr):
 
 #-------------Clip settings---------------
 
-def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
+def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
     vumetermessage('press record, view or retake to be dubbing')
     pressed = ''
     buttonpressed = ''
@@ -5216,10 +5245,10 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
             fadein = round(dubmix[dubselected][2],1)
             fadeout = round(dubmix[dubselected][3],1)
             menu = 'BACK', 'ADD:', '', '', 'DUB' + str(dubselected + 1) + ':', '', '', ''
-            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout), '', 'd:' + str(mix) + '/o' + str(dub), 'in:' + str(fadein), 'out:' + str(fadeout)
+            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout), '', 'd:' + str(mix) + '/o' + str(dub), 'in:' + str(fadein), 'out:' + str(fadeout), ''
         else:
             menu = 'BACK', 'ADD:', '', ''
-            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout)
+            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout), ''
         oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
 
@@ -5244,6 +5273,15 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
         elif pressed == 'down' and selected == 3:
             if newdub[3] > 0.01:
                 newdub[3] -= 0.1
+        elif pressed == 'insert' and yanked != '':
+            os.makedirs(filefolder, exist_ok=True)
+            dubmix.append(newdub)
+            dubrecord = filefolder + 'dub' + str(len(dubfiles)+1).zfill(3) + '.wav'
+            os.system('cp '+yanked+'.wav '+dubrecord)
+            dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
+            dubselected = len(dubfiles) - 1
+            dubrecord=''
+            yanked = ''
         elif pressed == 'record' or pressed == 'middle' and selected == 1:
             dubmix.append(newdub)
             dubrecord = filefolder + 'dub' + str(len(dubfiles)+1).zfill(3) + '.wav'
@@ -5291,13 +5329,17 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
         elif pressed == 'down' and selected == 7:
             if dubmix[dubselected][3] > 0.01:
                 dubmix[dubselected][3] -= 0.1
-        elif pressed == 'right':
-            if selected < (len(settings) - 1):
+        if pressed == 'right':
+            if selected < (len(settings)-2):
                 selected = selected + 1
+            else:
+                selected = 0
+            selected == 0
         elif pressed == 'left':
             if selected > 0:
                 selected = selected - 1
-
+            else:
+                selected = len(settings) - 2
         elif pressed == 'middle' and menu[selected] == 'BACK':
             os.system('pkill aplay')
             break
@@ -5323,7 +5365,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
                     print(str(round(p,1)))
             c += 1
         dubmix_old = dubmix
-    return dubrecord
+    return dubrecord, yanked
 
 #---------------Play & DUB--------------------
 
