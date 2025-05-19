@@ -792,10 +792,10 @@ def main():
                         take=take+1
                         vumetermessage('Pasting take, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
-                        #try:
-                        #    os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot'+ str(shot).zfill(3))
-                        #except:
-                        #    pass
+                        try:
+                            os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot'+ str(shot).zfill(3))
+                        except:
+                            pass
                         os.system('cp ' + yanked + '.mp4 ' + paste + '.mp4')
                         os.system('cp ' + yanked + '.jpeg ' + paste + '.jpeg')
                         os.system('cp ' + yanked + '.h264 ' + paste + '.h264')
@@ -4855,6 +4855,18 @@ def renderscene(filmfolder, filmname, scene):
                 videohash = videohash + str(int(countsize(p + '.mp4')))
             except:
                 print('no file? ')
+    filmfiles = shotfiles(filmfolder, filmname, scene)
+    for p in filmfiles:
+        scene = int(p.rsplit('scene',1)[1][:3])
+        shot = int(p.rsplit('shot',1)[1][:3])
+        rendershotname, renderfix = rendershot(filmfolder, filmname, p, scene, shot)
+        if renderfix == True:
+            renderfixscene = True
+        if rendershotname:
+            try: 
+                videohash = videohash + str(int(countsize(p + '.mp4')))
+            except:
+                print('no file? ')
     print('Videohash of scene is: ' + videohash)
     try:
         with open(scenedir + '.videohash', 'r') as f:
@@ -4971,6 +4983,11 @@ def renderfilm(filmfolder, filmname, comp, scene):
             return
         scenes = countscenes(filmfolder, filmname)
         for i in range(scenes):
+            scenefilename, audiomix = renderscene(filmfolder, filmname, i + 1)
+            #Check if a scene has a new audiomix
+            print('audiomix of scene ' + str(i + 1) + ' is ' + str(audiomix))
+            if audiomix == True:
+                newaudiomix = True
             scenefilename, audiomix = renderscene(filmfolder, filmname, i + 1)
             #Check if a scene has a new audiomix
             print('audiomix of scene ' + str(i + 1) + ' is ' + str(audiomix))
@@ -6201,7 +6218,7 @@ def startrecording(camera, takename,bitrate, quality, profilelevel, reclength):
     # FFmpeg command to take H.264 input from stdin and output to MP4
     ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-    if reclength > 1:
+    if reclength > 1 or reclength == 0:
         camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
     else:
         camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
