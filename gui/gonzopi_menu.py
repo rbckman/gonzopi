@@ -78,17 +78,18 @@ if display_width == 1280:
     morespace = 5
     moverow = 0
 if display_width == 1920:
-    y_offset2 = 5
-    y_offset3 = 45
-    y_offset4 = 85
-    y_offset5 = 960
-    y_offset6 = 1000
-    y_offset = 1040
+    y_offset2 = 0
+    y_offset3 = 15
+    y_offset4 = 30
+    y_offset5 = 1035
+    y_offset6 = 1050
+    y_offset = 1065
     rectime = 1600
-    text_size = 30
-    text_size_selected = 32
-    space = 23
-    morespace = 27    
+    text_size = 15
+    text_size_selected = 11
+    space = 10
+    morespace = 5    
+    moverow = 0
 if display_width == 800:
     y_offset2 = 0
     y_offset3 = 15

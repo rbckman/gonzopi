@@ -1435,9 +1435,7 @@ def main():
                         takes=take
                     elif pressed == "retake" and takes == 0:
                         take=1
-                        shot=1
                         takes=1
-                        shots=1
                     elif pressed == 'record_now':
                         shot=shots+1
                         take=1
@@ -4630,21 +4628,36 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
 
         #EDITS AND FX
         trimfile = ''
-        if os.path.isfile(scenedir+'.beginning') == True:
+        if os.path.isfile(scenedir+'.beginning') == True and os.path.isfile(scenedir+'.end') == True:
             settings = pickle.load(open(scenedir + ".beginning", "rb"))
             s, trimfile = settings
             logger.info("settings loaded")
-            videotrim(scenedir,trimfile,'beginning', s)
+            trimfile = 'take' + str(counttakes2(scenedir)).zfill(3)
+            renderfilename=scenedir+trimfile
+            settings = pickle.load(open(scenedir + ".end", "rb"))
+            t, trimfile = settings
+            logger.info("settings loaded")
+            videotrim(scenedir,trimfile,'both', s,t)
+            os.remove(scenedir+'.beginning')
+            os.remove(scenedir+'.end')
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
+            newaudiomix = True
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
+        elif os.path.isfile(scenedir+'.beginning') == True:
+            settings = pickle.load(open(scenedir + ".beginning", "rb"))
+            s, trimfile = settings
+            logger.info("settings loaded")
+            videotrim(scenedir,trimfile,'beginning', s, 0)
             os.remove(scenedir+'.beginning')
             newaudiomix = True
             take=counttakes2(scenedir)
             updatethumb=True
             rendermenu = True
             trimfile = 'take' + str(counttakes2(scenedir)).zfill(3)
-            print(trimfile)
-            time.sleep(3)
             renderfilename=scenedir+trimfile
-        if os.path.isfile(scenedir+'.end') == True:
+        elif os.path.isfile(scenedir+'.end') == True:
             settings = pickle.load(open(scenedir + ".end", "rb"))
             if trimfile == '':
                 s, trimfile = settings
@@ -4652,7 +4665,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 p, trimfileoriginal = settings
                 s=p-s
             logger.info("settings loaded")
-            videotrim(scenedir,trimfile,'end', s)
+            videotrim(scenedir,trimfile,'end', s, 0)
             os.remove(scenedir+'.end')
             take=counttakes2(scenedir)
             updatethumb=True
@@ -5812,11 +5825,26 @@ def videotrimsave(filmfolder, where, s, trimfile):
 
 #---------------Video Trim--------------------
 
-def videotrim(foldername ,filename, where, s):
+def videotrim(foldername ,filename, where, s, t):
     #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
     trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
     filename=foldername+filename
-    if where == 'beginning':
+    if where == 'both':
+        s=round(s, 3)
+        t=round(t, 3)
+        video_edit_len=round(float(t)-float(s),3)
+        run_command('ffmpeg -i '+filename+'.mp4 -ss '+str(s)+' -t '+str(video_edit_len)+' -c:v copy -c:a copy -y '+trim_filename+'.mp4')
+        run_command('ffmpeg -i '+filename+'.wav -ss '+str(s)+' -t '+str(video_edit_len)+' -c:a copy -y '+trim_filename+'.wav')
+        #run_command('ecasound -i:'+filename+'.wav -o:'+trim_filename+'.wav -ss:'+str(s)+' -t:'+str(video_edit_len))
+        #if os.path.exists(foldername+'dub') == True:
+        #    dubfiles, dubmix, rerender = getdubs(foldername+'dub/', None, None, None)
+        #    for d in dubfiles:
+        #        writemessage('trimming dubs from beginning and end')
+        #        vumetermessage(d)
+        #        #audiotrim(trim_filename, 'beginning', d)
+        #        run_command('ecasound -i:'+d+' -o:'+d+'_temp -ss '+str(s)+' -t '+str(t))
+        #    writemessage('trimming original sound')
+    elif where == 'beginning':
         logger.info('trimming clip from beginning')
         #run_command('ffmpeg -ss ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
         #ffmpeg -fflags +genpts -r 25 -i take009.mp4 -c:v h264_omx -crf 20 -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v 8888888 take010.mp4
@@ -5832,7 +5860,7 @@ def videotrim(foldername ,filename, where, s):
                 audiotrim(trim_filename, 'beginning', d)
             writemessage('trimming original sound')
             audiotrim(trim_filename, 'beginning', foldername+'dub/original.wav')
-    if where == 'end':
+    elif where == 'end':
         logger.info('trimming clip from end')
         #run_command('ffmpeg -to ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
         #run_command('MP4Box ' + filename + '.mp4 -splitx 0:' + str(s) + ' -out ' + trim_filename + '.mp4')
