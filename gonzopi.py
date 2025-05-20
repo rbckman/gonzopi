@@ -5387,7 +5387,11 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
 #---------------Play & DUB--------------------
 
 def playdub(filmname, filename, player_menu):
-    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder
+    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder, i2cbuttons
+    if i2cbuttons == False:
+        hdmi_mode=True
+    else:
+        hdmi_mode=False
     if showhelp == True:
         overlay2 = removeimage(camera, overlay2)
         overlay2 = displayimage(camera, gonzopifolder+'/extras/view-buttons.png', overlay, 4)
@@ -5433,14 +5437,20 @@ def playdub(filmname, filename, player_menu):
         if player_menu == 'dubbb':
             pause = False
             try:
-                player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                if hdmi_mode==False:
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                else:
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd','--win', '0,15,1920,1080','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
                 time.sleep(0.1)
                 return
         else:
             try:
-                player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                if hdmi_mode==False:
+                    player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                else:
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
                 time.sleep(0.1)
