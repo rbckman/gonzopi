@@ -5920,21 +5920,21 @@ def audiotrim(filename, where, dub):
         #trim from end or beginning and put a 0.01 in- and outfade
         if where == 'end':
             if dub:
-                run_command('sox -V0 ' + dub[:-4] + '.wav -c 2 ' + dub[:-4] + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + dub[:-4] + '.wav -c 2 ' + dub[:-4] + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
             else:
-                run_command('sox -V0 ' + filename + '.wav -c 2 ' + filename + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + filename + '.wav -c 2 ' + filename + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
         if where == 'beginning':
             if dub:
                 logger.info('trimming from beginning at: '+str(int(audiosync)/1000))
-                run_command('sox -V0 ' + dub[:-4] + '.wav -c 2 ' + dub[:-4] + '_temp.wav trim ' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + dub[:-4] + '.wav -c 2 ' + dub[:-4] + '_temp.wav trim ' + str(int(audiosync)/1000))
             else:
                 logger.info('trimming from beginning at: '+str(int(audiosync)/1000))
-                run_command('sox -V0 ' + filename + '.wav -c 2 ' + filename + '_temp.wav trim ' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + filename + '.wav -c 2 ' + filename + '_temp.wav trim ' + str(int(audiosync)/1000))
         if dub:
-            run_command('sox -V0 -G ' + dub[:-4] + '_temp.wav -c 2 ' + dub[:-4] + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -G ' + dub[:-4] + '_temp.wav -c 2 ' + dub[:-4] + '.wav fade 0.01 0 0.01')
             os.remove(dub[:-4] + '_temp.wav')
         else:
-            run_command('sox -V0 -G ' + filename + '_temp.wav -c 2' + filename + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -G ' + filename + '_temp.wav -c 2 ' + filename + '.wav fade 0.01 0 0.01')
             os.remove(filename + '_temp.wav')
         #if int(audiosync) > 400:
         #    writemessage('WARNING!!! VIDEO FRAMES DROPPED!')
