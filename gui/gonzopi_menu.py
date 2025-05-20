@@ -64,6 +64,19 @@ hidemenu=False
 #font='fixedsys'
 font='firacode'
 
+if display_width == 1280:
+    y_offset2 = 0
+    y_offset3 = 15
+    y_offset4 = 30
+    y_offset5 = 970
+    y_offset6 = 985
+    y_offset = 1000
+    rectime = 1200
+    text_size = 15
+    text_size_selected = 11
+    space = 10
+    morespace = 5
+    moverow = 0
 if display_width == 1920:
     y_offset2 = 5
     y_offset3 = 45
