@@ -476,7 +476,7 @@ def main():
                         renderfilename = renderfilm(filmfolder, filmname, comp, scene)
                         #writemessage('Render done!')
                         if renderfilename != '':
-                            remove_shots = playdub(filmname,renderfilename, 'film')
+                            remove_shots = playdub(filmname,renderfilename, 'film',take)
                             #fastedit (maybe deploy sometime)
                             #if remove_shots != []:
                             #    for i in remove_shots:
@@ -503,7 +503,7 @@ def main():
                         #removeimage(camera, overlay)
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         if renderfilename != '':
-                            remove_shots = playdub(filmname,renderfilename, 'film')
+                            remove_shots = playdub(filmname,renderfilename, 'film',take)
                         #overlay = displayimage(camera, imagename, overlay, 3)
                         camera.start_preview()
                     else:
@@ -526,28 +526,32 @@ def main():
                         #compileshot(foldername + filename,filmfolder,filmname)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
                         if renderfilename == foldername+filename:
-                            trim = playdub(filmname,foldername + filename, 'shot')
-                            if trim[0] == 'beginning' or trim[0] == 'end':
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, trim[0], trim[1], filename)
-                            elif trim[0] >= trim[1]:
-                                trim = [trim[0],0]
-                            elif trim[0] != 0 and trim[1] != 0:
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, 'end', trim[1], filename)
-                                videotrimsave(foldername, 'beginning', trim[0], filename)
-                            elif trim[0] == 0 and trim[1] != 0:
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, 'end', trim[1], filename)
-                            if trim[0] != 0 and trim[1] == 0:
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, 'beginning', trim[0], filename)
+                            trim, split_list = playdub(filmname,foldername + filename, 'shot',take)
+                            if split_list:
+                                split_list_save(foldername, split_list)
+                                writemessage('Splits saved! press view to see them.')
+                            else:
+                                if trim[0] == 'beginning' or trim[0] == 'end':
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, trim[0], trim[1], filename)
+                                elif trim[0] >= trim[1]:
+                                    trim = [trim[0],0]
+                                elif trim[0] != 0 and trim[1] != 0:
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, 'end', trim[1], filename)
+                                    videotrimsave(foldername, 'beginning', trim[0], filename)
+                                elif trim[0] == 0 and trim[1] != 0:
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, 'end', trim[1], filename)
+                                if trim[0] != 0 and trim[1] == 0:
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, 'beginning', trim[0], filename)
                             imagename = foldername + filename + '.jpeg'
                             overlay = displayimage(camera, imagename, overlay, 3)
                             camera.start_preview()
                         else:
                             vumetermessage('nothing here! hit rec!')
-                            playdub(filmname, renderfilename, 'shot')
+                            playdub(filmname, renderfilename, 'shot',take)
                             take = counttakes(filmname, filmfolder, scene, shot)
                         rendermenu = True
                         updatethumb=True
@@ -606,7 +610,7 @@ def main():
                             os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
                             time.sleep(0.2)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
-                        playdub(filmname,renderfilename, 'dub')
+                        playdub(filmname,renderfilename, 'dub',take)
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
                         #add audio/video start delay sync
                         run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
@@ -626,7 +630,7 @@ def main():
                     if newdub:
                         camera.stop_preview()
                         renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
-                        playdub(filmname,renderfilename, 'dub')
+                        playdub(filmname,renderfilename, 'dub',take)
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
                         #add audio/video start delay sync 
                         dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/dub/'
@@ -648,7 +652,7 @@ def main():
                     if newdub:
                         camera.stop_preview()
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
-                        playdub(filmname,renderfilename, 'dub')
+                        playdub(filmname,renderfilename, 'dub',take)
                         run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub+' trim 0.013')
                         vumetermessage('new film dubbing made!')
                         camera.start_preview()
@@ -2101,6 +2105,11 @@ def main():
                     camera.hflip = True
                 run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
                 run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+                #check if audiocard there other default to 0
+                if int(plughw) > len(getaudiocards()):
+                    plughw = 0
+                    channels = 1
+                    vumetermessage(getaudiocards()[plughw])
                 print(filmfolder)
                 print(filmname)
                 origin_videos=organize(filmfolder, filmname)
@@ -3870,6 +3879,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
 #------------Remove-----------------------
 
 def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
+    flushbutton()
     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
     filename = 'take' + str(take).zfill(3)
     pressed = ''
@@ -3888,6 +3898,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
     otf_take = counttakes(filmname+'_onthefloor', filmfolder, otf_scene, otf_shot)
     otf_take += 1
     oldmenu=''
+    starttime=time.time()
     while True:
         oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
@@ -3897,6 +3908,8 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
         elif pressed == 'left':
             if selected > 0:
                 selected = selected - 1
+        elif pressed == 'remove' and time.time()-starttime > 1:
+            return
         elif pressed == 'middle':
             if selected == 1:
                 if '_onthefloor' in filmname:
@@ -4628,7 +4641,26 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
 
         #EDITS AND FX
         trimfile = ''
-        if os.path.isfile(scenedir+'.beginning') == True and os.path.isfile(scenedir+'.end') == True:
+        if os.path.isfile(scenedir+'.split') == True:
+            settings = pickle.load(open(scenedir + ".split", "rb"))
+            split_list = settings
+            logger.info("settings loaded")
+            for i in split_list:
+                newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '_insert/'
+                newtakename = 'take' + str(1).zfill(3)
+                try:
+                    os.makedirs(newshotdir)
+                except:
+                    print('is there already prob')
+                videotrim(scenedir,i[1],'both', i[0][0],i[0][1],newshotdir+newtakename)
+                add_organize(filmfolder, filmname)
+                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,1)
+                #vumetermessage('Shot ' + str(shot) + ' inserted')
+                updatethumb = True
+                time.sleep(1)
+                shot=shot+1
+            os.remove(scenedir+'.split')
+        elif os.path.isfile(scenedir+'.beginning') == True and os.path.isfile(scenedir+'.end') == True:
             settings = pickle.load(open(scenedir + ".beginning", "rb"))
             s, trimfile = settings
             logger.info("settings loaded")
@@ -4637,7 +4669,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             settings = pickle.load(open(scenedir + ".end", "rb"))
             t, trimfile = settings
             logger.info("settings loaded")
-            videotrim(scenedir,trimfile,'both', s,t)
+            videotrim(scenedir,trimfile,'both', s,t,'take')
             os.remove(scenedir+'.beginning')
             os.remove(scenedir+'.end')
             take=counttakes2(scenedir)
@@ -4649,7 +4681,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             settings = pickle.load(open(scenedir + ".beginning", "rb"))
             s, trimfile = settings
             logger.info("settings loaded")
-            videotrim(scenedir,trimfile,'beginning', s, 0)
+            videotrim(scenedir,trimfile,'beginning', s, 0,'take')
             os.remove(scenedir+'.beginning')
             newaudiomix = True
             take=counttakes2(scenedir)
@@ -4665,7 +4697,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 p, trimfileoriginal = settings
                 s=p-s
             logger.info("settings loaded")
-            videotrim(scenedir,trimfile,'end', s, 0)
+            videotrim(scenedir,trimfile,'end', s, 0,'take')
             os.remove(scenedir+'.end')
             take=counttakes2(scenedir)
             updatethumb=True
@@ -5381,7 +5413,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
             else:
                 filename = filmfolder + filmname + '/' + filmname
             renderfilename = renderfilm(filmfolder, filmname, 0, scene)
-            playdub(filmname,renderfilename, 'scene')
+            playdub(filmname,renderfilename, 'scene',take)
         time.sleep(0.05)
     #Save dubmix before returning
     if dubmix != dubmix_old:
@@ -5399,8 +5431,9 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
 
 #---------------Play & DUB--------------------
 
-def playdub(filmname, filename, player_menu):
+def playdub(filmname, filename, player_menu, take):
     global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder, i2cbuttons
+    takename = 'take' + str(take).zfill(3)
     if i2cbuttons == False:
         hdmi_mode=True
     else:
@@ -5445,6 +5478,7 @@ def playdub(filmname, filename, player_menu):
     trimfromstart=0
     trimfromend=0
     remove_shots = []
+    split_list=[]
     oldmenu=''
     if video == True:
         if player_menu == 'dubbb':
@@ -5552,6 +5586,7 @@ def playdub(filmname, filename, player_menu):
             vumetermessage('video cuts removed!')
             trimfromstart=0
             trimfromend=0
+            split_list=[]
         #SHOWHELP
         elif pressed == 'showhelp':
             vumetermessage('Button layout')
@@ -5648,6 +5683,16 @@ def playdub(filmname, filename, player_menu):
             player.play()
             if sound == False:
                 playerAudio.play()
+        elif pressed == 'record':
+            split_list.append([[trimfromstart, trimfromend], takename])
+            vumetermessage('split '+str(len(split_list))+' position set to: '+ str(player.position()))
+            player.pause()
+            if sound == False:
+                playerAudio.pause()
+            time.sleep(0.5)
+            player.play()
+            if sound == False:
+                playerAudio.play()
         elif pressed == 'retake':
             if player.position() < clipduration:
                 trimfromend = player.position()
@@ -5659,7 +5704,7 @@ def playdub(filmname, filename, player_menu):
                 player.play()
                 if sound == False:
                     playerAudio.play()
-        elif pressed == 'middle' or pressed == 'record':
+        elif pressed == 'middle':
             time.sleep(0.2)
             if menu[selected] == 'BACK' or player.playback_status() == "Stopped" or pressed == 'record':
                 try:
@@ -5678,7 +5723,7 @@ def playdub(filmname, filename, player_menu):
                     time.sleep(0.2)
                 os.system('pkill -9 omxplayer')
                 #os.system('pkill -9 dbus-daemon')
-                return [trimfromstart, trimfromend]
+                return [trimfromstart, trimfromend], split_list
             elif menu[selected] == 'REPLAY' or menu[selected] == 'REDUB':
                 pause = False
                 try:
@@ -5761,7 +5806,7 @@ def playdub(filmname, filename, player_menu):
                 player.quit()
                 if sound == False:
                     playerAudio.quit()
-                return [trimfromstart, trimfromend]
+                return [trimfromstart, trimfromend], split_list
                 #return remove_shots
         if t > (clipduration - 0.3):
             os.system('pkill aplay') 
@@ -5770,14 +5815,14 @@ def playdub(filmname, filename, player_menu):
             player.quit()
             if sound == False:
                 playerAudio.quit()
-            return [trimfromstart, trimfromend]
+            return [trimfromstart, trimfromend], split_list
     try:
         player.quit()
         if sound == False:
             playerAudio.quit()
     except:
         pass
-    return [trimfromstart, trimfromend]
+    return [trimfromstart, trimfromend], split_list
     #playerAudio.quit()
     #os.system('pkill dbus-daemon')
 
@@ -5823,11 +5868,29 @@ def videotrimsave(filmfolder, where, s, trimfile):
         #logger.warning(e)
     return
 
+#--------------Save split settings-----------------
+
+def split_list_save(foldername, splitlist):
+    #db.insert('videos', tid=datetime.datetime.now())
+    settings=splitlist
+    try:
+        with open(foldername + ".split", "wb") as f:
+            pickle.dump(settings, f)
+            logger.info("split settings saved")
+    except:
+        logger.warning("could not save settings")
+        #logger.warning(e)
+    return
+
+
 #---------------Video Trim--------------------
 
-def videotrim(foldername ,filename, where, s, t):
+def videotrim(foldername ,filename, where, s, t, make_new_take_or_shot):
     #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
-    trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
+    if make_new_take_or_shot == 'take':
+        trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
+    else:
+        trim_filename = make_new_take_or_shot
     filename=foldername+filename
     if where == 'both':
         s=round(s, 3)
@@ -6542,15 +6605,15 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'record'
         elif event == 'KEY_PGDOWN' or (readbus == 253 and readbus2 == 247):
             pressed = 'retake'
-        elif event == 'KEY_TAB' or readbus2 == 246:
+        elif event == 'KEY_TAB' or (readbus == 223 and readbus2 == 247): 
             pressed = 'view'
-        elif event == 'KEY_DELETE' or (readbus == 223 and readbus2 == 247):
+        elif event == 'KEY_DELETE' or readbus2 == 246:
             pressed = 'remove'
         elif event == 'KEY_BACKSPACE':
             pressed = 'remove'
-        elif event == 'N' or (readbus2 == 245 and readbus == 191):
+        elif event == 'N' or (readbus2 == 245 and readbus == 254):
             pressed = 'peak'
-        elif event == 'S' or (readbus2 == 245 and readbus == 223):
+        elif event == 'S' or (readbus2 == 244):
             pressed = 'screen'
         elif event == 'A' or (readbus2 == 245 and readbus == 127):
             pressed = 'showmenu'
@@ -6560,9 +6623,9 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'showhelp'
         elif event == 'P' or (readbus2 == 245 and readbus == 253):
             pressed = 'insert'
-        elif event == 'C' or (readbus2 == 244):
+        elif event == 'C' or (readbus2 == 245 and readbus == 223):
             pressed = 'copy'
-        elif event == 'M' or (readbus2 == 245 and readbus == 254):
+        elif event == 'M' or (readbus2 == 245 and readbus == 191):
             pressed = 'move'
         elif event == '|' or (readbus2 == 245 and readbus == 251):
             pressed = 'split'
