@@ -94,9 +94,14 @@ if display_width == 800:
     y_offset2 = 0
     y_offset3 = 15
     y_offset4 = 30
-    y_offset5 = 435
-    y_offset6 = 450
-    y_offset = 465
+    if display_height == 600:
+        y_offset5 = 555
+        y_offset6 = 570
+        y_offset = 585
+    else:
+        y_offset5 = 435
+        y_offset6 = 450
+        y_offset = 465
     rectime = 700
     if font == 'VeraMono':
         text_size = 15
