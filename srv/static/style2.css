@@ -1,0 +1,126 @@
+body
+{
+    margin: 0px auto;
+    text-align: left;
+    background-color:#000;
+    color: #f4f4f4;
+    font-family: monospace;
+    width: 100%;
+    white-space: nowrap
+}
+
+pre
+{
+    margin: 5px auto;
+    padding: 3px;
+    display: inline-block;
+    background-color: #555;
+    color: #fff;
+}
+
+a
+{
+    color: #FCD612;
+    padding: 5px;
+}
+
+img
+{
+    width: 90%;
+    max-width: 800px;
+}
+
+#controller a
+{
+    margin-bottom: 20px;
+    color: #FFF;
+    line-height:60px;
+    background-color: #555;
+    font-size: 30px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+#controller a:active
+{
+    margin-bottom: 20px;
+    color: #000;
+    line-height:60px;
+    background-color: #FFF;
+    font-size: 30px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+#controller2 a
+{
+    margin-bottom: 20px;
+    color: #FFF;
+    line-height:60px;
+    background-color: #777;
+    font-size: 30px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+#controller2 a:active
+{
+    margin-bottom: 20px;
+    color: #000;
+    line-height:60px;
+    background-color: #FFF;
+    font-size: 30px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+#controller3 a
+{
+    margin-bottom: 20px;
+    color: #FFF;
+    line-height:50px;
+    background-color: #888;
+    font-size: 20px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+#controller3 a:active
+{
+    margin-bottom: 20px;
+    color: #000;
+    line-height:50px;
+    background-color: #FFF;
+    font-size: 20px;
+    text-decoration: none;
+    padding: 5px;
+    border-radius: 10px
+}
+
+.player-container {
+width: 90vw;           /* 100% of viewport width */
+margin: 0 auto;
+font-family: Arial, sans-serif;
+}
+video {
+width: 100%;           /* Takes full width of container */
+height: auto;          /* Maintains aspect ratio */
+display: block;        /* Removes bottom gap */
+}
+.controls {
+padding: 10px;         /* Better spacing on mobile */
+text-align: center;    /* Center buttons */
+}
+/* Optional: Add max-width for very large screens */
+@media (min-width: 1200px) {
+.player-container {
+max-width: 1200px; /* Optional maximum width */
+margin: 0 auto;    /* Centers on large screens */
+}
+}
+

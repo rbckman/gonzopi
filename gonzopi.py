@@ -527,7 +527,9 @@ def main():
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
                         if renderfilename == foldername+filename:
                             trim, split_list = playdub(filmname,foldername + filename, 'shot',take)
-                            if split_list:
+                            if split_list != []:
+                                print(split_list)
+                                #time.sleep(5)
                                 split_list_save(foldername, split_list)
                                 writemessage('Splits saved! press view to see them.')
                             else:
@@ -4175,7 +4177,7 @@ def add_organize(filmfolder, filmname):
             if 'yanked' in p:
                 #print(p)
                 os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr - 1).zfill(3) + '_yanked ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
-            elif 'insert' in p:
+            elif '_insert' in p:
                 os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr - 1).zfill(3) + '_insert ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
                 run_command('touch ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '/.placeholder')
             elif 'shot' in p:
@@ -4195,7 +4197,7 @@ def add_organize(filmfolder, filmname):
         #print(i)
         if 'yanked' in i:
             os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr - 1).zfill(3) + '_yanked ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
-        elif 'insert' in i:
+        elif '_insert' in i:
             #print(p)
             os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr - 1).zfill(3) + '_insert ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
             run_command('touch ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3) + '/.placeholder')
@@ -4211,6 +4213,34 @@ def add_organize(filmfolder, filmname):
         organized_nr -= 1
     return
 
+#------------Organize and move dubs----------------
+
+def organizedubs(foldername):
+    dubs = next(os.walk(foldername))[2]
+    print(dubs)
+    time.sleep(3)
+    for c in dubs:
+        if 'dub' not in c:
+            dubs.remove(c)
+    organized_nr = len(dubs)
+    for p in sorted(dubs, reverse=True):
+        print(p)
+        time.sleep(3)
+        if '_insert' in p:
+            os.system('mv -n ' + foldername + 'dub' + str(organized_nr).zfill(3) + '_insert.wav ' + foldername + 'dub' + str(organized_nr).zfill(3)+'.wav')
+        elif 'dub' in p:
+            print(p)
+            time.sleep(3)
+            unorganized_nr = int(p[5:-4])
+            if organized_nr == unorganized_nr:
+                print('correct')
+                time.sleep(3)
+                pass
+            if organized_nr != unorganized_nr:
+                print('false, correcting from ' + str(unorganized_nr) + ' to ' + str(organized_nr))
+                time.sleep(3)
+                os.system('mv -n ' + foldername + 'dub' + str(unorganized_nr).zfill(3) + '.wav ' + foldername + 'dub' + str(organized_nr).zfill(3)+'.wav') 
+        organized_nr -= 1
 
 #-------------Stretch Audio--------------
 
@@ -4522,6 +4552,9 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
                 time.sleep(5)
         except:
             pass
+        #print(d)
+        #print(filename)
+        #time.sleep(3)
         os.system('cp ' + filename + '.wav ' + filename + '_tmp.wav')
         #Fade and make stereo
         run_command('sox -V0 -b 16 -G ' + d + ' -c 2 /dev/shm/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
@@ -4645,21 +4678,38 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             settings = pickle.load(open(scenedir + ".split", "rb"))
             split_list = settings
             logger.info("settings loaded")
+            nr=1
             for i in split_list:
-                newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '_insert/'
-                newtakename = 'take' + str(1).zfill(3)
-                try:
-                    os.makedirs(newshotdir)
-                except:
-                    print('is there already prob')
-                videotrim(scenedir,i[1],'both', i[0][0],i[0][1],newshotdir+newtakename)
+                if nr == 1:
+                    #make first split as a new take in the original shot
+                    newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
+                    newtakename = 'take' + str(counttakes2(newshotdir)).zfill(3)
+                    if i[0][0] < i[0][1]:
+                        videotrim(scenedir,i[1],'both', i[0][0],i[0][1],'take')
+                    #newtakename = 'take' + str(1).zfill(3)
+                elif nr > 1:
+                    #then make new shots
+                    newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '_insert/'
+                    newtakename = 'take' + str(1).zfill(3)
+                    try:
+                        os.makedirs(newshotdir)
+                    except:
+                        print('is there already prob')
+                    if i[0][0] < i[0][1]:
+                        videotrim(scenedir,i[1],'both', i[0][0],i[0][1],newshotdir+newtakename)
                 add_organize(filmfolder, filmname)
                 scenes, shots, takes = browse(filmname,filmfolder,scene,shot,1)
                 #vumetermessage('Shot ' + str(shot) + ' inserted')
                 updatethumb = True
                 time.sleep(1)
+                nr=nr+1
                 shot=shot+1
             os.remove(scenedir+'.split')
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
+            newaudiomix = True
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
         elif os.path.isfile(scenedir+'.beginning') == True and os.path.isfile(scenedir+'.end') == True:
             settings = pickle.load(open(scenedir + ".beginning", "rb"))
             s, trimfile = settings
@@ -5180,6 +5230,7 @@ def getdubs(filmfolder, filmname, scene, shot):
         if 'dub' in a:
             print('Dub audio found! ' + filefolder + a)
             dubfiles.append(filefolder + a)
+            dubfiles.sort()
     #check if dub mix has changed
     dubnr = 1
     for i in dubfiles:
@@ -5358,6 +5409,15 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
         elif pressed == 'down' and selected == 4:
             if dubselected > 0:
                 dubselected = dubselected - 1
+        elif pressed == 'move' and selected == 4:
+            vumetermessage('press insert button to move dub')
+            movedub = filefolder + 'dub' + str(dubselected + 1).zfill(3) + '.wav'
+        elif pressed == 'insert' and selected == 4:
+            vumetermessage('moving dub please hold on')
+            pastedub = filefolder + 'dub' + str(dubselected + 1).zfill(3) + '_insert.wav'
+            os.system('mv -n ' + movedub + ' ' + pastedub)
+            organizedubs(filefolder)
+            pastedub=''
         elif pressed == 'remove' and selected == 4:
             removedub(filefolder, dubselected + 1)
             dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
@@ -5405,15 +5465,19 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
         elif pressed == 'middle' and menu[selected] == 'BACK':
             os.system('pkill aplay')
             break
-        elif pressed == 'view': # mix dub and listen
+        elif pressed == 'views': # mix dub and listen
             run_command('pkill aplay')
             dubfiles, dubmix, rerender = getdubs(filmfolder, filmname, scene, shot)
             if scene:
                 filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/scene'
+                renderfilename = renderfilm(filmfolder, filmname, 0, scene)
+                playdub(filmname,renderfilename, 'scene',take)
+            elif shot and scene:
+                filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(scene).zfill(3)+'/shot'
+                renderfilename = renderfilm(filmfolder, filmname, 0, scene)
+                playdub(filmname,renderfilename, 'shot',take)
             else:
                 filename = filmfolder + filmname + '/' + filmname
-            renderfilename = renderfilm(filmfolder, filmname, 0, scene)
-            playdub(filmname,renderfilename, 'scene',take)
         time.sleep(0.05)
     #Save dubmix before returning
     if dubmix != dubmix_old:
@@ -5482,12 +5546,11 @@ def playdub(filmname, filename, player_menu, take):
     oldmenu=''
     if video == True:
         if player_menu == 'dubbb':
-            pause = False
             try:
                 if hdmi_mode==False:
-                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
                 else:
-                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd','--win', '0,15,1920,1080','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd','--win', '0,15,1920,1080','--no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
                 time.sleep(0.1)
@@ -5684,15 +5747,16 @@ def playdub(filmname, filename, player_menu, take):
             if sound == False:
                 playerAudio.play()
         elif pressed == 'record':
-            split_list.append([[trimfromstart, trimfromend], takename])
-            vumetermessage('split '+str(len(split_list))+' position set to: '+ str(player.position()))
-            player.pause()
-            if sound == False:
-                playerAudio.pause()
-            time.sleep(0.5)
-            player.play()
-            if sound == False:
-                playerAudio.play()
+            if trimfromstart != 0 and trimfromend != 0 and trimfromstart < trimfromend:
+                split_list.append([[trimfromstart, trimfromend], takename])
+                vumetermessage('split '+str(len(split_list))+' position set to: '+ str(player.position()))
+                player.pause()
+                if sound == False:
+                    playerAudio.pause()
+                time.sleep(0.5)
+                player.play()
+                if sound == False:
+                    playerAudio.play()
         elif pressed == 'retake':
             if player.position() < clipduration:
                 trimfromend = player.position()
@@ -5788,13 +5852,13 @@ def playdub(filmname, filename, player_menu, take):
                 trim = ['beginning', player.position()]
                 player.quit()
                 #playerAudio.quit()
-                return trim
+                return trim, split_list
             elif menu[selected] == 'FROM END':
                 trim = ['end', player.position()]
                 player.quit()
                 if sound == False:
                     playerAudio.quit()
-                return trim
+                return trim, split_list
         time.sleep(0.02)
         if pause == False:
             try:

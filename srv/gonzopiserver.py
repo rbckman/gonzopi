@@ -20,6 +20,7 @@ urls = (
     '/','intro',   
     '/c/?', 'index',
     '/f/(.*)?', 'films',
+    '/t/(.*)?', 'tree',
     '/p/(.*)?', 'player',
     '/api','api'
 )
@@ -93,6 +94,7 @@ network=networks[0]
 
 app = web.application(urls, globals())
 render = web.template.render('templates/', base="base")
+render2 = web.template.render('templates/', base="base2")
 web.config.debug=False
 os.system('rm '+basedir+'/sessions/*')
 store = web.session.DiskStore(basedir + '/sessions/')
@@ -199,6 +201,15 @@ def checkpicture(thumbdir,scene,shot,take):
         return "/"+filmfolder+name+"/scene"+str(scene).zfill(3)+"/shot"+str(shot).zfill(3)+"/picture"+str(take).zfill(3)+".jpeg"
     else:
         return ''
+
+def if_exist(dir):
+    print(basedir+dir)
+    if os.path.isfile(basedir+dir) == False:
+        print('thumb not exist')
+        return False
+    else:
+        print('thumb is')
+        return True
 
 def countsize(filename):
     size = 0
@@ -387,6 +398,32 @@ class films:
             randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
         scenes = countscenes(filmfolder, film)
         return render.filmpage(allfilms, film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash)
+
+class tree:
+    def GET(self, film):
+        shots = 0
+        takes = 0
+        gonzopifilms = getfilms(filmfolder)
+        renderedfilms = []
+        unrenderedfilms = []
+        allfilms = []
+        for f in gonzopifilms:
+            if os.path.isfile(filmfolder + f[0] + '/' + f[0] + '.mp4') == True:
+                renderedfilms.append(f[0])
+                allfilms.append(f[0])
+            else:
+                unrenderedfilms.append(f[0])
+                allfilms.append(f[0])
+        i = web.input(page=None, scene=None, shot=None, take=None, film=None, randhash=None)
+        if i.scene != None:
+            shots = countshots(film, filmfolder, i.scene)
+            takes = counttakes(film, filmfolder, i.scene, i.shot)
+        if i.scene != None and i.shot != None:
+            shots = countshots(film, filmfolder, i.scene)
+        if i.randhash == None:
+            randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+        scenes = countscenes(filmfolder, film)
+        return render2.tree(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist)
 
 class player:
     def GET(self, film):
