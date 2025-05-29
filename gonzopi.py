@@ -552,7 +552,7 @@ def main():
                             overlay = displayimage(camera, imagename, overlay, 3)
                             camera.start_preview()
                         else:
-                            vumetermessage('nothing here! hit rec!')
+                            #vumetermessage('nothing here! hit rec!')
                             playdub(filmname, renderfilename, 'shot',take)
                             take = counttakes(filmname, filmfolder, scene, shot)
                         rendermenu = True
