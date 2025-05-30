@@ -1,71 +1,39 @@
 $def with (films, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, scene, takes, shot, take, checkvideo,randhash, if_exist)
 $ video = ''
-$if take != None:
-    <h1>$film | scene $scene | shot $shot | take $take</h1>
-    $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
-$elif shot != None:
-    <h1>$film | scene $scene | shot $shot</h1>
-    $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(takes).zfill(3) + '.mp4'
-    $ take = takes
-$elif scene != None:
-    <h1>$film | scene $scene</h1>
-    $ video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
-$elif film != '':
-    <h1>$film</h1>
-    $ video = '/'+filmfolder + film + '/' + film + '.mp4'
-$if video != '':
-    <br>
-    <h3><a href="javascript:history.back()">Go Back</a></h3>
-    <br>
-    $ picture = checkvideo(video,filmfolder,film,scene,shot,take)
-    $if picture[1] == 'video':
-        <video width="80%" controls>
-        <source src="$video?$randhash" style="width:80%; max-width:500px;"  type="video/mp4">
-        Your brower is caput
-        </video>
-    $elif picture[0] != '':
-        <img style="width:80%;" src="$picture[0]?$randhash"/>
-    $elif picture[1] == '':
-        <pre>video not rendered</pre>
-        <a href="">render now!</a>
-        <br>
-$else:
-    <br>
-    <a href="/c/">camera control</a>
+<br>
+<a href="/c/">camera control</a>
 
 $ t=0
-
+<br>
 $if film != '':
     $ i = film
     $ scenes=countscenes(filmfolder, i)
     $for s in range(scenes):
-        <div class='scene $str(s+1)' style="padding:10px; vertical-align:top;">
-            <pre style="background-color:#680000;">scene $str(s+1)</pre>
+        <div class='scene $str(s+1)' style="padding:10px; vertical-align:top; display:inline-block;">
+            <pre style="background-color:#680000; position:absolute; margin-top:0px; margin-left:5px;" >scene $str(s+1)</pre>
         $ t = counttakes(i, filmfolder, s+1, 1)
         $ thumbnail_url = '/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot001/take' + str(t).zfill(3) + '.jpeg'
-        <a href="?scene=${str(s+1)}"><img style="vertical-align:middle; width:80%; max-width:100px;" src="$thumbnail_url?$randhash"/></a>
-        $ shots = countshots(i, filmfolder, s+1)        
+        <a href="?scene=${str(s+1)}"><img style="vertical-align:middle; width:80%; max-width:100px; margin-top:22px;" src="$thumbnail_url?$randhash"/></a>
+        $ shots = countshots(i, filmfolder, s+1)
         $for s2 in range(shots):
-            <div class='shot $str(s2+1)' style="padding:10px;">
-            <pre style="background-color:#fffe00; color:#000;">shot $str(s2+1)</pre>
+            <div class='shot $str(s2+1)' style="padding:0px;">
+            <pre style="background-color:#fffe00; color:#000;  position:absolute; margin-top:-1px; margin-left:5px">shot $str(s2+1)</pre>
             $ t2 = countshots(i, filmfolder, s+1)
             $ p2 = counttakes(i, filmfolder, s+1, s2+1)
             $ thumbnail_url = '/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.jpeg'
             $ check=if_exist(thumbnail_url)
             $if check == True:
-                <a href="?scene=${str(s+1)}&shot=${str(s2+1)}"><img style="vertical-align:middle; width:80%; max-width:80px;" src="$thumbnail_url?$randhash"/></a>
+                <a href="?scene=${str(s+1)}&shot=${str(s2+1)}"><img style="vertical-align:middle; width:80%; max-width:80px; margin-top:20px;" src="$thumbnail_url?$randhash"/></a>
             $else:
                 $ thumbnail_url = '/static/empty.jpeg'
-                <a href="?scene=${str(s+1)}&shot=${str(s2+1)}"><img style="vertical-align:middle; width:80%; max-width:80px;" src="$thumbnail_url?$randhash"/></a>
+                <a href="?scene=${str(s+1)}&shot=${str(s2+1)}"><img style="vertical-align:middle; width:80%; max-width:80px; margin-top:20px;" src="$thumbnail_url?$randhash"/></a>
             $if p2 != None:
                 $for t3 in range(p2):
                     $ thumbnail_url = '/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(t3+1).zfill(3) + '.jpeg'
-                    <div class='take $str(t3+1)' style="padding:10px;">
-                    <pre style="background-color:#0e2b00;">take $str(t3+1)</pre>
-                    <a href="?scene=${str(s+1)}&shot=${str(s2+1)}&take=${str(t)}"><img style="vertical-align:middle; width:80%; max-width:50px;"  src="$thumbnail_url?$randhash"/></a>
-                    </br>
+                    <div class='take $str(t3+1)' style="padding:0px;">
+                    <pre style="background-color:#0e2b00; position:absolute; margin-top:-1px; margin-left:5px">take $str(t3+1)</pre>
+                    <a href="?scene=${str(s+1)}&shot=${str(s2+1)}&take=${str(t)}"><img style="vertical-align:middle; width:80%; max-width:70px; margin-top:20px; margin-left:0px"  src="$thumbnail_url?$randhash"/></a>
                     </div>
-            </br>
             </div>
         </br>
         </div>
