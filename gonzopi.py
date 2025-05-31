@@ -248,8 +248,9 @@ def main():
     savesettingsevery = 5
     #TARINA VERSION
     f = open(gonzopifolder + '/VERSION')
-    gonzopiversion = f.readline()
-    gonzopivername = f.readline()
+    gonzopiversion = f.readline().strip()
+    gonzopivername = f.readline().strip()
+    print('Gonzo Pi '+gonzopiversion+ ' '+gonzopivername)
     db=''
     synclist=[]
     muxing=False
@@ -930,10 +931,13 @@ def main():
                 elif pressed == 'insert' and menu[selected] == 'SCENE:':
                     insertscene = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_insert'
                     logger.info("inserting scene")
-                    os.makedirs(insertscene)
+                    try:
+                        insertplaceholder = insertscene+'/.placeholder'
+                        os.makedirs(insertplaceholder)
+                        #run_command('touch ' + insertscene + '/.placeholder')
+                    except:
+                        print('something scetchy!')
                     add_organize(filmfolder, filmname)
-                    take = 1
-                    shot = 1
                     updatethumb = True
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     #vumetermessage('Scene ' + str(scene) + ' inserted')
@@ -2255,12 +2259,17 @@ def main():
                     filename = 'take' + str(take).zfill(3)
                     recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
                     overlay = removeimage(camera, overlay)
+                    if recordable:
+                        vumetermessage('filming with '+camera_model+' ip:'+ network + ' '+camerasconnected)
                     if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
                         p = counttakes(filmname, filmfolder, scene, 1)
                         imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
                         try:
                             videosize=countsize(filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/scene.mp4')
-                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                            if videosize == 0:
+                                vumetermessage('scene not rendered, hit view!')
+                            else:
+                                vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
                             vumetermessage('not rendered')
                     #elif menu[selected] == 'FILM:' and recordable == True:
@@ -2271,7 +2280,10 @@ def main():
                         imagename = filmfolder + filmname + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
                         try:
                             videosize=countsize(filmfolder + filmname + '/' + filmname+'.mp4')
-                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                            if videosize == 0:
+                                vumetermessage('film not rendered, hit view!')
+                            else:
+                                vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
                             vumetermessage('not rendered')
                     imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.jpeg'
@@ -2281,7 +2293,7 @@ def main():
                             vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
                             videosize=countsize(foldername + filename + '.h264')
-                            vumetermessage('not rendered, videosize: '+str(round(videosize/1000,2))+' Mb')
+                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                     overlay = displayimage(camera, imagename, overlay, 3)
                     oldscene = scene
                     oldshot = shot
