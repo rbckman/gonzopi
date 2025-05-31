@@ -927,7 +927,7 @@ def main():
                     updatethumb = True
                     #time.sleep(1)
                 #INSERT SCENE
-                elif pressed == 'insert' and menu[selected] == 'SCENE:' and recordable == False and yanked == '':
+                elif pressed == 'insert' and menu[selected] == 'SCENE:':
                     insertscene = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_insert'
                     logger.info("inserting scene")
                     os.makedirs(insertscene)
