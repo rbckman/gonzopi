@@ -1730,6 +1730,7 @@ def main():
                         print(term.clear)
                         updatethumb = True
                         rendermenu = True
+                        loadfilmsettings = True
                 elif menu[selected] == 'BRIGHT:':
                     camera.brightness = min(camera.brightness + 1, 99)
                 elif menu[selected] == 'CONT:':
