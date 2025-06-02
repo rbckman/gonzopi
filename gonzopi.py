@@ -127,7 +127,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide,smooth, muxing
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, lens, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide,smooth, muxing, film_fps, film_reso, film_fps_options, film_reso_options
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -172,9 +172,15 @@ def main():
     cammode = 'film'
     camera_model=''
     slidemode=False
-    fps = 25
     fps_selected=8
     fps_selection=[]
+    film_reso_options='1920x1080','1920x816'
+    film_fps_options=[24,25,30]
+    film_reso_selected=0
+    film_fps_selected=1
+    film_reso=film_reso_options[film_reso_selected]
+    film_fps=int(film_fps_options[film_fps_selected])
+    fps=int(film_fps)
     if 'Raspberry Pi 4 Model B' in raspberrypiversion:
         quality = 20
         bitrate = 8888888
@@ -220,7 +226,7 @@ def main():
     beeping = False
     backlight = True
     lastbeep = time.time()
-    flip = 'no'
+    flip = 'yes'
     between = 30
     duration = 0.2
     dsk = 0
@@ -277,7 +283,7 @@ def main():
         #Make screen shut off work and run full brightness
         run_command('gpio -g mode 19 pwm ')
         run_command('gpio -g pwm 19 1023')
-    
+
     #STORAGE DRIVES
     storagedrives=[['sd',filmfolder]]
 
@@ -314,7 +320,7 @@ def main():
     oldshot = shot
     oldtake = take
 
-    #TURN ON WIFI AND TARINA SERVER
+   #TURN ON WIFI AND TARINA SERVER
     serverstate = 'on'
     wifistate = 'on'
     if os.path.isdir(gonzopifolder+'/srv/sessions') == False:
@@ -348,6 +354,7 @@ def main():
     searchforcameras='off'
     #NETWORKS
     networks=[]
+    network=''
     adapters = ifaddr.get_adapters()
     for adapter in adapters:
         print("IPs of network adapter " + adapter.nice_name)
@@ -357,7 +364,7 @@ def main():
                 networks=[ip.ip]
     if networks != []:
         network=networks[0]
-        if network not in cameras:
+        if network not in cameras and network != '':
             cameras=[]
             cameras.append(network)
 
@@ -687,7 +694,7 @@ def main():
                     rendermenu = True
                 #LOAD FILM
                 elif pressed == 'middle' and menu[selected] == 'LOAD':
-                    filmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    camera, filmname = loadfilm(filmname, filmfolder, camera, overlay)
                     allfilm = getfilms(filmfolder)
                     for i in allfilm:
                         if i[0] == newfilmname:
@@ -760,6 +767,10 @@ def main():
                         take = 1
                         #selectedaction = 0
                         newfilmname = ''
+                        #film_reso, film_fps = film_settings()
+                        camera.stop_preview()
+                        camera.close()
+                        camera = startcamera(lens,fps)
                     else:
                         print(term.clear)
                         filmname = newfilmname
@@ -1555,7 +1566,10 @@ def main():
                     if onlysound != True:
                         try:
                             #camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
-                            camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            if film_reso == '1920x1080':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            elif film_reso == '1920x816':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
                         except:
                             logger.warning('something wrong with camera jpeg capture')
                     #delayerr = audiotrim(foldername,filename)
@@ -1565,7 +1579,7 @@ def main():
                             buzz(300)
                         else:
                             run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
-                    if round(fps) != 25:
+                    if int(round(fps)) != int(film_fps):
                         compileshot(foldername + filename,filmfolder,filmname)
                     #os.system('cp /dev/shm/' + filename + '.wav ' + foldername + filename + '.wav')
                     if beeps > 0:
@@ -1686,7 +1700,7 @@ def main():
             #UP
             elif pressed == 'up':
                 if menu[selected] == 'FILM:':
-                    newfilmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    camera, newfilmname = loadfilm(filmname, filmfolder, camera, overlay)
                     allfilm = getfilms(filmfolder)
                     filmname_exist=False
                     for i in allfilm:
@@ -1916,7 +1930,7 @@ def main():
             #DOWN
             elif pressed == 'down':
                 if menu[selected] == 'FILM:':
-                    newfilmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    camera, newfilmname = loadfilm(filmname, filmfolder, camera, overlay)
                     allfilm = getfilms(filmfolder)
                     filmname_exist=False
                     for i in allfilm:
@@ -2195,10 +2209,21 @@ def main():
                     move=filmsettings[33]
                     speed=filmsettings[34]
                     slide=filmsettings[35]
+                    film_fps=filmsettings[36]
+                    film_reso=filmsettings[37]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
                 except:
                     logger.warning('could not load film settings')
+                #if rpimode:
+                #    #FIRE UP CAMERA
+                #    if camera != None:
+                #        camera.stop_preview()
+                #        camera.close()
+                #    camera = startcamera(lens,fps)
+                #    #START INTERFACE
+                #else:
+                #    camera=None
                 if flip == "yes":
                     camera.vflip = True
                     camera.hflip = True
@@ -2231,7 +2256,18 @@ def main():
                         except:
                             print('not exist')
                 #organize(filmfolder,'onthefloor')
-                add_organize(filmfolder, filmname)
+                if origin_videos != []:
+                    if origin_videos[0] != '':
+                        reso_w, reso_h = check_reso(origin_videos[0])
+                        reso_check=str(reso_w)+'x'+str(reso_h)
+                        fps_check = check_fps(origin_videos[0])
+                        if reso_check != film_reso:
+                            vumetermessage('wrong film project resolution')
+                            #waitforanykey()
+                        if str(fps_check) != str(film_fps):
+                            vumetermessage('wrong film project framerate')
+                            #waitforanykey()
+                #add_organize(filmfolder, filmname)
                 scenes, shots, takes = countlast(filmname, filmfolder)
                 loadfilmsettings = False
                 rendermenu = True
@@ -2261,13 +2297,14 @@ def main():
                     overlay = removeimage(camera, overlay)
                     if recordable:
                         vumetermessage('filming with '+camera_model+' ip:'+ network + ' '+camerasconnected)
+                        #vumetermessage(str(round(film_fps)) + ' '+ str(round(fps)))
                     if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
                         p = counttakes(filmname, filmfolder, scene, 1)
                         imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
                         try:
                             videosize=countsize(filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/scene.mp4')
                             if videosize == 0:
-                                vumetermessage('scene not rendered, hit view!')
+                                vumetermessage('scene not rendered')
                             else:
                                 vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
@@ -2281,7 +2318,7 @@ def main():
                         try:
                             videosize=countsize(filmfolder + filmname + '/' + filmname+'.mp4')
                             if videosize == 0:
-                                vumetermessage('film not rendered, hit view!')
+                                vumetermessage('film not rendered')
                             else:
                                 vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
@@ -2344,13 +2381,14 @@ def main():
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate, pan, tilt, move, speed, slide]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate, pan, tilt, move, speed, slide, film_fps, film_reso]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
                         pausetime = time.time()
                         #NETWORKS
                         networks=[]
+                        network=''
                         adapters = ifaddr.get_adapters()
                         for adapter in adapters:
                             print("IPs of network adapter " + adapter.nice_name)
@@ -2360,7 +2398,7 @@ def main():
                                     networks=[ip.ip]
                         if networks != []:
                             network=networks[0]
-                            if network not in cameras:
+                            if network not in cameras and network != '':
                                 cameras=[]
                                 cameras.append(network)
                         else:
@@ -2873,7 +2911,57 @@ def vfx_solarize():
         elif pressed == 'middle' and menu[selected] == 'BACK':
             return
         time.sleep(keydelay)
-            
+
+def film_settings():
+    global film_fps_options, film_reso_options, film_fps_selected, film_fps, film_reso, fps
+    oldmenu=''
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    selected = 1
+    film_reso_selected=0
+    film_fps_selected=1
+    header = 'Film settings'
+    menu =  'OK','FPS:','RESOLUTION:'
+    while True:
+        settings = '',str(film_fps_options[film_fps_selected]),film_reso_options[film_reso_selected]
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if pressed == 'right':
+            if selected < (len(settings) - 1):
+                selected = selected + 1
+            else:
+                selected = 0
+            selected == 0
+        elif pressed == 'left':
+            if selected > 0:
+                selected = selected - 1
+            else:
+                selected = len(settings) - 1
+        elif pressed == 'up' and menu[selected] =='FPS:':
+            if film_fps_selected < len(film_fps_options)-1:
+                film_fps_selected += 1
+                film_fps=int(film_fps_options[film_fps_selected])
+            else:
+                film_fps_selected == len(film_fps_options)-1
+        elif pressed == 'down' and menu[selected] =='FPS:':
+            if film_fps_selected > 0:
+                film_fps_selected -= 1
+                film_fps=int(film_fps_options[film_fps_selected])
+        elif pressed == 'up' and menu[selected] =='RESOLUTION:':
+            if film_reso_selected < len(film_reso_options)-1:
+                film_reso_selected += 1
+                film_reso=film_reso_options[film_reso_selected]
+        elif pressed == 'down' and menu[selected] =='RESOLUTION:':
+            if film_reso_selected > 0:
+                film_reso_selected -= 1
+                film_reso=film_reso_options[film_reso_selected]
+        elif pressed == 'middle' and menu[selected]=='OK':
+            return film_reso, film_fps
+        time.sleep(keydelay)
+ 
+
 #------------Run Command-------------
 
 def run_command(command_line):
@@ -3190,6 +3278,7 @@ def cleanupdisk(filmname, filmfolder):
 #-------------Load film---------------
 
 def loadfilm(filmname, filmfolder, camera, overlay):
+    global film_fps_options, film_reso_options, film_fps_selected, film_reso_selected, film_fps, film_reso, lens, fps
     writemessage('Loading films...')
     oldmenu=''
     pressed = ''
@@ -3233,16 +3322,20 @@ def loadfilm(filmname, filmfolder, camera, overlay):
         elif pressed == 'middle' and menu[selected] == 'FILM:':
             overlay = removeimage(camera, overlay)
             filmname = films[selectedfilm][0]
-            return filmname
+            return camera, filmname
         elif pressed == 'middle' and menu[selected] == 'BACK':
             overlay = removeimage(camera, overlay)
             writemessage('Returning')
-            return filmname
+            return camera, filmname
         elif pressed == 'middle' and menu[selected] == 'NEW FILM':
             overlay = removeimage(camera, overlay)
             newfilm=nameyourfilm(filmfolder, filmname, abc, True)
+            #film_reso, film_fps = film_settings()
+            #camera.stop_preview()
+            #camera.close()
+            #camera = startcamera(lens,fps)
             writemessage('Returning')
-            return newfilm
+            return camera, newfilm
         time.sleep(0.02)
 
 def slide_menu(slidecommander):
@@ -3923,7 +4016,10 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             camera.stop_recording()
                         #create thumbnail
                         try:
-                            camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            if film_reso == '1920x1080':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            elif film_reso == '1920x816':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
                         except:
                             logger.warning('something wrong with camera jpeg capture')
                         videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
@@ -4368,9 +4464,9 @@ def organizedubs(foldername):
 #-------------Stretch Audio--------------
 
 def stretchaudio(filename,fps):
+    global film_fps
     fps_rounded=round(fps)
-
-    if int(fps_rounded) != 25:
+    if int(fps_rounded) != int(film_fps):
         #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
         #videolength = pipe.decode().strip()
         videolength=get_video_length(filename+'.mp4')
@@ -4413,6 +4509,34 @@ def has_audio_track(file_path):
         print(f"Error parsing {file_path}: {e}")
         return None
 
+def check_fps(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Video":
+                return track.frame_rate
+        return None
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
+def check_reso(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Video":
+                return track.width, track.height
+        return None
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
 def is_audio_stereo(file_path):
     try:
         # Parse the media file
@@ -4426,7 +4550,6 @@ def is_audio_stereo(file_path):
                 if track.channel_s == 2:
                     return True
         return None
-
     except Exception as e:
         print(f"Error parsing {file_path}: {e}")
         return None
@@ -4460,7 +4583,7 @@ def get_audio_length(filepath):
 #-------------Compile Shot--------------
 
 def compileshot(filename,filmfolder,filmname):
-    global fps, soundrate, channels, bitrate, muxing, db
+    global fps, soundrate, channels, bitrate, muxing, db, film_fps
     videolength=0
     audiolength=0 
     #Check if file already converted
@@ -4480,7 +4603,7 @@ def compileshot(filename,filmfolder,filmname):
         #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
         #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
         #run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
-        ffmpeg_cmd = ['ffmpeg','-i', video_origins+'.h264', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', video_origins+'.mp4', '-loglevel','debug', '-y']
+        ffmpeg_cmd = ['ffmpeg','-i', video_origins+'.h264', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', str(film_fps), '-f', 'mp4', video_origins+'.mp4', '-loglevel','debug', '-y']
         ffmpeg_process = subprocess.Popen(ffmpeg_cmd)
         stdout, stderr = ffmpeg_process.communicate()
         #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
@@ -4506,7 +4629,7 @@ def compileshot(filename,filmfolder,filmname):
         run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
         os.system('rm /dev/shm/temp.wav')
     fps_rounded=round(fps)
-    if int(fps_rounded) != 25:
+    if int(fps) != int(film_fps):
         vumetermessage('stretching audio...')
         stretchaudio(filename,fps)
     if int(audiolength) != int(videolength):
@@ -4541,7 +4664,7 @@ def compileshot(filename,filmfolder,filmname):
         writemessage('Merging audio & video')
         #os.remove(renderfilename + '.mp4') 
         call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
-        call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', filename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
+        call(['MP4Box', '-fps', str(film_fps), '-add', video_origins + '.mp4', '-add', filename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
         os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
         os.remove(video_origins + '_tmp.mp4')
         os.remove(filename + '.mp3')
@@ -4731,7 +4854,7 @@ def scenefiles(filmfolder, filmname):
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
-    global fps, take, rendermenu, updatethumb, bitrate, muxing, db
+    global fps, take, rendermenu, updatethumb, bitrate, muxing, db, film_fps
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     vumetermessage('render shot '+renderfilename)
@@ -4756,7 +4879,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         if faststart == False:
             vumetermessage('found new clip compiling...')
             os.system('mv ' + video_origins + '.mp4 ' + video_origins + '_tmp.mp4')
-            call(['ffmpeg', '-i', video_origins + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-movflags', '+faststart', video_origins+'.mp4', '-y'], shell=False)
+            call(['ffmpeg', '-i', video_origins + '_tmp.mp4', '-r', str(film_fps), '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-movflags', '+faststart', video_origins+'.mp4', '-y'], shell=False)
             run_command('rm '+video_origins+'_tmp.mp4')
             try:
                 db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
@@ -5001,7 +5124,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 writemessage('Merging audio & video')
                 #os.remove(renderfilename + '.mp4') 
                 call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
-                call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
+                call(['MP4Box', '-fps', str(film_fps), '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
                 os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
                 try:
                     os.remove(video_origins + '_tmp.mp4')
@@ -5632,7 +5755,17 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
 #---------------Play & DUB--------------------
 
 def playdub(filmname, filename, player_menu, take):
-    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder, i2cbuttons
+    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder, i2cbuttons, film_fps, film_reso
+    reso_w=film_reso.split('x')[0]
+    reso_h=film_reso.split('x')[1]
+    if film_reso == '1920x1080':
+        screen_reso_w='800'
+        screen_reso_h='475'
+        topspace='15'
+    elif film_reso == '1920x816':
+        screen_reso_w='800'
+        screen_reso_h='415'
+        topspace='75'
     takename = 'take' + str(take).zfill(3)
     if i2cbuttons == False:
         hdmi_mode=True
@@ -5684,9 +5817,9 @@ def playdub(filmname, filename, player_menu, take):
         if player_menu == 'dubbb':
             try:
                 if hdmi_mode==False:
-                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', str(film_fps), '--layer', '3', '--no-osd', '--win', '0,'+topspace+','+screen_reso_w+','+screen_reso_h,' --no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
                 else:
-                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd','--win', '0,15,1920,1080','--no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', str(film_fps), '--layer', '3', '--no-osd','--win', '0,15,'+reso_h+','+reso_w, '--no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
                 time.sleep(0.1)
@@ -5694,9 +5827,9 @@ def playdub(filmname, filename, player_menu, take):
         else:
             try:
                 if hdmi_mode==False:
-                    player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                    player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', str(film_fps), '--layer', '3', '--no-osd', '--win', '0,'+topspace+','+screen_reso_w+','+screen_reso_h, '--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
                 else:
-                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', str(film_fps), '--layer', '3', '--no-osd','--no-keys','--win', '0,15,'+reso_h+','+reso_w, '--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
                 time.sleep(0.1)
@@ -6086,6 +6219,7 @@ def split_list_save(foldername, splitlist):
 #---------------Video Trim--------------------
 
 def videotrim(filmfolder, foldername ,filename, where, s, t, make_new_take_or_shot):
+    global film_reso
     #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
     if make_new_take_or_shot == 'take':
         trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
@@ -6143,7 +6277,10 @@ def videotrim(filmfolder, foldername ,filename, where, s, t, make_new_take_or_sh
             writemessage('trimming original sound')
             audiotrim(trim_filename, 'end', foldername+'dub/original.wav')
     #take last frame 
-    run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
+    if film_reso == '1920x1080':
+        run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
+    elif film_reso == '1920x816':
+        run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:340 ' + trim_filename + '.jpeg')
     return
 
 #---------------Video Trim From start and end--------------------
@@ -6519,14 +6656,15 @@ def stopstream(camera, stream):
     stream = ''
     return stream
 
-def startrecording(camera, takename,bitrate, quality, profilelevel, reclength): 
+def startrecording(camera, takename,bitrate, quality, profilelevel, reclength):
+    global film_fps
     # FFmpeg command to take H.264 input from stdin and output to MP4
     ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
     if reclength > 1 or reclength == 0:
         camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
     else:
-        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
+        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality, )
     return rec_process, camera
 
 def stoprecording(camera, rec_process):
@@ -6873,11 +7011,16 @@ def stopinterface(camera):
     return camera
 
 def startcamera(lens, fps):
-    global camera_model, fps_selection, fps_selected, cammode
+    global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso
     camera = picamera.PiCamera()
     camera.video_stabilization=True
     if cammode == 'film':
-        reso=(1920,1080)
+        if film_reso=='1920x1080':
+            reso=(1920,1080)
+        elif film_reso=='1920x816':
+            reso=(1920,816)
+        elif film_reso=='1280x720':
+            reso=(1280,720)
     elif cammode == 'picture':
         reso=(4056,3040)
     camera.resolution = reso #tested modes 1920x816, 1296x552/578, v2 1640x698, 1640x1232, hqbinned 2028x1080, full 4056x3040
@@ -6920,11 +7063,20 @@ def startcamera(lens, fps):
             fps=fps_selection[fps_selected]
             camera.framerate = fps 
     elif camera_model == 'imx477':
-        #fps_selection=[5,15,24.985,35,49]
-        #if sound is gettin before pic add 0.001
-        fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]
-        fps=fps_selection[fps_selected]
-        camera.framerate = fps 
+        if film_fps == 25:
+            #fps_selection=[5,15,24.985,35,49]
+            #if sound is gettin before pic add 0.001
+            fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
+        elif film_fps == 24:
+            fps_selection=[5,8,10,11,12,13,14,15,23.9894,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
+        elif film_fps == 30:
+            fps_selection=[5,8,10,11,12,13,14,15,29.9868,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
     else:
         camera.framerate = fps
     camera.crop = (0, 0, 1.0, 1.0)
