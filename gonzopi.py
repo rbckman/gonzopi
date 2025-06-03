@@ -4942,7 +4942,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                     #newtakename = 'take' + str(1).zfill(3)
                 elif nr > 1:
                     #then make new shots
-                    newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '_insert/'
+                    newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot-1).zfill(3) + '_insert/'
                     newtakename = 'take' + str(1).zfill(3)
                     try:
                         os.makedirs(newshotdir)
