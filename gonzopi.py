@@ -871,7 +871,7 @@ def main():
                         if moving == True:
                             os.system('rm -r ' + yanked+'/*')
                             #Remove hidden placeholder
-                            #os.system('rm ' + yanked + '/.placeholder')
+                            os.system('rm ' + yanked + '/.placeholder')
                     elif copying == 'film' and menu[selected]=='FILM:':
                         vumetermessage('Pasting film, please wait...')
                         paste = filmfolder+filmname+'_copy'
@@ -945,13 +945,14 @@ def main():
                     try:
                         insertplaceholder = insertscene+'/.placeholder'
                         os.makedirs(insertplaceholder)
-                        #run_command('touch ' + insertscene + '/.placeholder')
+                        run_command('touch ' + insertscene + '/.placeholder')
                     except:
                         print('something scetchy!')
+                    organize(filmfolder, filmname)
                     add_organize(filmfolder, filmname)
                     updatethumb = True
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    #vumetermessage('Scene ' + str(scene) + ' inserted')
+                    vumetermessage('Scene ' + str(scene) + ' inserted')
                     time.sleep(1)
                 #NEW SCENE
                 elif pressed == 'new_scene':
@@ -4161,21 +4162,25 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         return
                 else:
                     if sceneshotortake == 'take':
-                        writemessage('Throwing take on the floor' + str(take))
+                        writemessage('Throwing take in archive' + str(take))
                         #onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/take' + str(otf_take).zfill(3) 
                         onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
                         if os.path.isdir(onthefloor) == False:
                             os.makedirs(onthefloor)
-                        os.system('mv ' + foldername + filename + '.h264 ' + onthefloor + '')
-                        os.system('mv ' + foldername + filename + '.mp4 ' + onthefloor + '')
-                        os.system('mv ' + foldername + filename + '.wav ' + onthefloor + '')
-                        os.system('mv ' + foldername + filename + '.jpeg ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.h264 ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.mp4 ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.wav ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.jpeg ' + onthefloor + '')
+                        os.system('rm ' + foldername + filename + '.h264 ')
+                        os.system('rm ' + foldername + filename + '.mp4 ')
+                        os.system('rm ' + foldername + filename + '.wav ')
+                        os.system('rm ' + foldername + filename + '.jpeg ')
                         os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_archive/settings.p')
                         take = take - 1
                         if take == 0:
                             take = 1
                     elif sceneshotortake == 'shot' and shot > 0:
-                        writemessage('Throwing shot on the floor' + str(shot))
+                        writemessage('Throwing shot in archive' + str(shot))
                         onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3)+'/'
                         os.makedirs(onthefloor,exist_ok=True)
                         os.system('cp -r '+foldername+'* '+onthefloor)
@@ -4185,10 +4190,11 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                     elif sceneshotortake == 'scene':
                         onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3)
                         os.makedirs(onthefloor)
-                        writemessage('Throwing clips on the floor ' + str(scene))
+                        writemessage('Throwing clips in the archive ' + str(scene))
                         foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
-                        os.system('mv ' + foldername + '/* ' + onthefloor+'/' )
+                        os.system('cp ' + foldername + '/* ' + onthefloor+'/' )
                         os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_archive/settings.p')
+                        os.system('rm -r ' + foldername)
                         scene = countscenes(filmfolder, filmname)
                         shot = 1
                         take = 1
@@ -4397,7 +4403,7 @@ def add_organize(filmfolder, filmname):
                 os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '_insert ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
             elif '_insert' in p:
                 os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr - 1).zfill(3) + '_insert ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
-                run_command('touch ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '/.placeholder')
+                #run_command('touch ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '/.placeholder')
             elif 'shot' in p:
                 #print(p)
                 unorganized_nr = int(p[-3:])
@@ -6958,14 +6964,14 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'peak'
         elif event == 'S' or (readbus2 == 244):
             pressed = 'screen'
-        elif event == 'A' or (readbus2 == 245 and readbus == 127):
-            pressed = 'showmenu'
+        elif event == 'P' or (readbus2 == 245 and readbus == 127):
+            pressed = 'insert'
         elif event == 'O' or (readbus2 == 245 and readbus == 239):
             pressed = 'changemode'
         elif event == 'H' or (readbus2 == 245 and readbus == 247):
             pressed = 'showhelp'
-        elif event == 'P' or (readbus2 == 245 and readbus == 253):
-            pressed = 'insert'
+        elif event == 'A' or (readbus2 == 245 and readbus == 253):
+            pressed = 'showmenu'
         elif event == 'C' or (readbus2 == 245 and readbus == 223):
             pressed = 'copy'
         elif event == 'M' or (readbus2 == 245 and readbus == 191):
