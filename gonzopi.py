@@ -242,6 +242,9 @@ def main():
     comp = 0
     yanked = ''
     copying = ''
+    shots_selected=[]
+    scenes_selected=[]
+    films_selected=[]
     moving = False
     stream = ''
     live = 'no'
@@ -602,9 +605,37 @@ def main():
                     folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                     filename = 'take' + str(take).zfill(3)
                     vumetermessage('New crossfade made!')
-                    crossfadesave(folder,crossfade,filename) 
+                    crossfadesave(folder,crossfade,filename)     
+                elif pressed == 'middle' and menu[selected] == 'SHOT:':
+                    folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    if folder in shots_selected:
+                        shots_selected.remove(folder)
+                        shots_sel = ''
+                        vumetermessage(str(len(shots_selected))+' shots selected')
+                    else:
+                        shots_selected.append(folder)
+                        shots_sel = '*'
+                        vumetermessage(str(len(shots_selected))+' shots selected')
+                elif pressed == 'middle' and menu[selected] == 'SCENE:':
+                    folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/'
+                    if folder in scenes_selected:
+                        scenes_selected.remove(folder)
+                        scenes_sel = ''
+                        vumetermessage(str(len(scenes_selected))+' scenes selected')
+                    else:
+                        scenes_selected.append(folder)
+                        scenes_sel = '*'
+                        vumetermessage(str(len(scenes_selected))+' scenes selected')
+                elif pressed == 'middle' and menu[selected] == 'FILM:':
+                    folder = filmfolder + filmname + '/'
+                    if folder in films_selected:
+                        films_selected.remove(folder)
+                        vumetermessage(str(len(films_selected))+' films selected')
+                    else:
+                        films_selected.append(folder)
+                        vumetermessage(str(len(films_selected))+' films selected')
                 #DUB SHOT
-                elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
+                elif pressed == 'dub' and menu[selected] == 'SHOT:' and recordable == False:
                     newdub, yanked = clipsettings(filmfolder, filmname, scene, shot, take, plughw,yanked)
                     take = counttakes(filmname, filmfolder, scene, shot)
                     if newdub:
@@ -635,7 +666,7 @@ def main():
                         vumetermessage('see ya around!')
                     rendermenu = True
                 #DUB SCENE
-                elif pressed == 'middle' and menu[selected] == 'SCENE:':
+                elif pressed == 'dub' and menu[selected] == 'SCENE:':
                     newdub, yanked = clipsettings(filmfolder, filmname, scene, 0, take, plughw,yanked)
                     if newdub:
                         camera.stop_preview()
@@ -657,7 +688,7 @@ def main():
                         vumetermessage('see ya around!')
                     rendermenu = True
                 #DUB FILM
-                elif pressed == 'middle' and menu[selected] == 'FILM:':
+                elif pressed == 'dub' and menu[selected] == 'FILM:':
                     newdub, yanked = clipsettings(filmfolder, filmname, 0, 0, take, plughw,yanked)
                     if newdub:
                         camera.stop_preview()
@@ -791,6 +822,61 @@ def main():
                     else:
                         vumetermessage('')
                     rendermenu = True
+
+                #PASTE MANY SCENES
+                elif pressed == 'copy' and menu[selected] == 'SCENE:' and scenes_selected != [] or pressed == 'move' and menu[selected] == 'SCENE:' and scenes_selected != []:
+                    for yanked in scenes_selected:
+                        vumetermessage('Pasting scene, please wait...')
+                        paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
+                        os.system('cp -r ' + yanked + ' ' + paste)
+                        add_organize(filmfolder, filmname)
+                    if pressed == 'move':
+                        for yanked in scenes_selected:
+                            os.system('rm -r ' + yanked+'/*')
+                            #Remove hidden placeholder
+                            #os.system('rm ' + yanked + '/.placeholder')
+                    scenes_selected = []
+                    organize(filmfolder, filmname)
+                    organize(filmfolder, filmname)
+                    updatethumb = True
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if scene > scenes:
+                        scene = scenes
+                    if shot > shots:
+                        shot = shots
+                    vumetermessage('All scenes pasted!')
+
+                #PASTE MANY SHOTS
+                elif pressed == 'copy' and menu[selected] == 'SHOT:' and shots_selected != []  or pressed == 'move' and menu[selected] == 'SHOT:' and shots_selected != []:
+                    for yanked in shots_selected:
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                        if shot == 0:
+                            shot=1
+                        vumetermessage('Pasting shot, please wait...')
+                        paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
+                        try:
+                            os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3))
+                        except:
+                            pass
+                        os.system('cp -r ' + yanked + ' ' + paste)
+                        add_organize(filmfolder, filmname)
+                        yanked = ''
+                    if pressed == 'move':
+                        for yanked in shots_selected:
+                            os.system('rm -r ' + yanked+'/*')
+                            #Remove hidden placeholder
+                            #os.system('rm ' + yanked + '/.placeholder')
+                    shots_selected = []
+                    organize(filmfolder, filmname)
+                    organize(filmfolder, filmname)
+                    updatethumb = True
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if scene > scenes:
+                        scene = scenes
+                    if shot > shots:
+                        shot = shots
+                    vumetermessage('All shots pasted!')
+
                 #(YANK) COPY FILM
                 elif pressed == 'copy' and menu[selected] == 'FILM:':
                     copying = 'film'
@@ -829,6 +915,7 @@ def main():
                     moving = True
                     yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
                     vumetermessage('Moving scene ' + str(scene) + ' (I)nsert button to place it...')
+
                 #PASTE SHOT and PASTE SCENE
                 elif pressed == 'insert' and yanked:
                     if copying == 'take' and menu[selected] == 'TAKE:':
@@ -2294,6 +2381,19 @@ def main():
                 if recording == False:
                     #logger.info('film:' + filmname + ' scene:' + str(scene) + '/' + str(scenes) + ' shot:' + str(shot) + '/' + str(shots) + ' take:' + str(take) + '/' + str(takes))
                     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    scenename = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/'
+                    if foldername in shots_selected:
+                        shots_sel = '*'
+                    else:
+                        shots_sel = ''
+                    if scenename in scenes_selected:
+                        scenes_sel = '*'
+                    else:
+                        scenes_sel = ''
+                    if filmname in films_selected:
+                        films_sel = '*'
+                    else:
+                        films_sel = ''
                     filename = 'take' + str(take).zfill(3)
                     recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
                     overlay = removeimage(camera, overlay)
@@ -2369,12 +2469,12 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', live, mux, str(slide)
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname+films_sel, str(scene)+scenes_sel+ '/' + str(scenes), str(shot)+shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', live, mux, str(slide)
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + scene_sel+ '/' + str(scenes), str(shot) + shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 oldmenu=writemenu(menu,settings,selected,'',showmenu,oldmenu)
@@ -6966,6 +7066,8 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'screen'
         elif event == 'P' or (readbus2 == 245 and readbus == 127):
             pressed = 'insert'
+        elif event == 'D' or (readbus2 == 245 and readbus == 251):
+            pressed = 'dub'
         elif event == 'O' or (readbus2 == 245 and readbus == 239):
             pressed = 'changemode'
         elif event == 'H' or (readbus2 == 245 and readbus == 247):
