@@ -1,11 +1,12 @@
 body
 {
     margin: 0px auto;
-    text-align: center;
+    text-align: left;
     background-color:#000;
     color: #f4f4f4;
     font-family: monospace;
-    width: 90%;
+    width: 100%;
+    white-space: nowrap
 }
 
 pre

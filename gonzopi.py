@@ -41,6 +41,7 @@ import web
 # Check for slider support
 import serial
 import serial.tools.list_ports
+from pymediainfo import MediaInfo
 # Get a list of all serial ports
 slidecommander = ''
 slideports = serial.tools.list_ports.comports()
@@ -82,6 +83,10 @@ if rpimode:
     #make cpu freq performance
     os.system('sudo cpufreq-set -g performance')
 
+    #set IO
+    os.system('sudo echo 20 | sudo tee /proc/sys/vm/dirty_background_ratio')
+    os.system('sudo echo 40 | sudo tee /proc/sys/vm/dirty_ratio')
+
     #I2CBUTTONS
     probei2c = 0
     while probei2c < 3:
@@ -122,7 +127,7 @@ else:
 
 #MAIN
 def main():
-    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide,smooth
+    global headphoneslevel, miclevel, gonzopifolder, screen, loadfilmsettings, plughw, channels, filmfolder, scene, showmenu, rendermenu, quality, profilelevel, i2cbuttons, menudone, soundrate, soundformat, process, serverstate, que, port, recording, onlysound, camera_model, lens, fps_selection, fps_selected, fps, db, selected, cammode, newfilmname, camera_recording, abc, showhelp, camera, overlay, overlay2, recordwithports, crossfade, blendmodes, blendselect, udp_ip, udp_port, bitrate, pan, tilt, move, speed, slidereader,slide,smooth, muxing, film_fps, film_reso, film_fps_options, film_reso_options
     # Get path of the current dir, then use it as working directory:
     rundir = os.path.dirname(__file__)
     if rundir != '':
@@ -133,13 +138,16 @@ def main():
 
     #MENUS
     if slidecommander:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
     else:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'BACKUP', 'LOAD', 'NEW', 'TITLE', 'LIVE:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'MUX:'
     gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
     menu = standardmenu
+    hide_menu_time=4
+    showmenutime = time.time()+6
+    oldmenu=''
     showgonzopictrl = False
     recordwithports = False
     pressagain = ''
@@ -160,15 +168,25 @@ def main():
     blendselect=0
     blending=False
     fade='in'
-    fadelenght=3
+    fadelength=3
     cammode = 'film'
     camera_model=''
     slidemode=False
-    fps = 25
     fps_selected=8
     fps_selection=[]
-    quality = 20
-    bitrate = 8888888
+    film_reso_options='1920x1080','1920x816'
+    film_fps_options=[24,25,30]
+    film_reso_selected=0
+    film_fps_selected=1
+    film_reso=film_reso_options[film_reso_selected]
+    film_fps=int(film_fps_options[film_fps_selected])
+    fps=int(film_fps)
+    if 'Raspberry Pi 4 Model B' in raspberrypiversion:
+        quality = 20
+        bitrate = 8888888
+    if 'Raspberry Pi 3 Model B' in raspberrypiversion:
+        quality = 20
+        bitrate = 1111111
     profilelevel='4.2'
     headphoneslevel = 40
     miclevel = 50
@@ -182,11 +200,11 @@ def main():
     showmenu = 1
     showmenu_settings = True
     showhelp = False
-    oldchecksync = ''
+    oldchecksync = 0
     overlay = None
     overlay2 = None
     underlay = None
-    reclenght = 0
+    reclength = 0
     t = 0
     rectime = ''
     scene = 1
@@ -208,7 +226,7 @@ def main():
     beeping = False
     backlight = True
     lastbeep = time.time()
-    flip = 'no'
+    flip = 'yes'
     between = 30
     duration = 0.2
     dsk = 0
@@ -224,6 +242,9 @@ def main():
     comp = 0
     yanked = ''
     copying = ''
+    shots_selected=[]
+    scenes_selected=[]
+    films_selected=[]
     moving = False
     stream = ''
     live = 'no'
@@ -236,16 +257,19 @@ def main():
     savesettingsevery = 5
     #TARINA VERSION
     f = open(gonzopifolder + '/VERSION')
-    gonzopiversion = f.readline()
-    gonzopivername = f.readline()
+    gonzopiversion = f.readline().strip()
+    gonzopivername = f.readline().strip()
+    print('Gonzo Pi '+gonzopiversion+ ' '+gonzopivername)
     db=''
     synclist=[]
+    muxing=False
+    mux='no'
 
     if rpimode:
-        #START INTERFACE
-        startinterface()
         #FIRE UP CAMERA
         camera = startcamera(lens,fps)
+        #START INTERFACE
+        startinterface()
     else:
         camera=None
 
@@ -262,7 +286,7 @@ def main():
         #Make screen shut off work and run full brightness
         run_command('gpio -g mode 19 pwm ')
         run_command('gpio -g pwm 19 1023')
-    
+
     #STORAGE DRIVES
     storagedrives=[['sd',filmfolder]]
 
@@ -299,7 +323,7 @@ def main():
     oldshot = shot
     oldtake = take
 
-    #TURN ON WIFI AND TARINA SERVER
+   #TURN ON WIFI AND TARINA SERVER
     serverstate = 'on'
     wifistate = 'on'
     if os.path.isdir(gonzopifolder+'/srv/sessions') == False:
@@ -333,6 +357,7 @@ def main():
     searchforcameras='off'
     #NETWORKS
     networks=[]
+    network=''
     adapters = ifaddr.get_adapters()
     for adapter in adapters:
         print("IPs of network adapter " + adapter.nice_name)
@@ -342,7 +367,7 @@ def main():
                 networks=[ip.ip]
     if networks != []:
         network=networks[0]
-        if network not in cameras:
+        if network not in cameras and network != '':
             cameras=[]
             cameras.append(network)
 
@@ -459,9 +484,10 @@ def main():
                         #Check if rendered video exist
                         camera.stop_preview()
                         #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
-                        renderfilename = renderfilm(filmfolder, filmname, comp, scene, True)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, scene)
+                        #writemessage('Render done!')
                         if renderfilename != '':
-                            remove_shots = playdub(filmname,renderfilename, 'film')
+                            remove_shots = playdub(filmname,renderfilename, 'film',take)
                             #fastedit (maybe deploy sometime)
                             #if remove_shots != []:
                             #    for i in remove_shots:
@@ -486,9 +512,9 @@ def main():
                     if len(filmfiles) > 0:
                         camera.stop_preview()
                         #removeimage(camera, overlay)
-                        renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         if renderfilename != '':
-                            remove_shots = playdub(filmname,renderfilename, 'film')
+                            remove_shots = playdub(filmname,renderfilename, 'film',take)
                         #overlay = displayimage(camera, imagename, overlay, 3)
                         camera.start_preview()
                     else:
@@ -497,64 +523,120 @@ def main():
                     rendermenu = True
                 #VIEW SHOT OR TAKE
                 elif pressed == 'view':
-                    writemessage('Loading clip...')
-                    organize(filmfolder, filmname)
                     takes = counttakes(filmname, filmfolder, scene, shot)
-                    vumetermessage('press middlebutton to cancel')
+                    if take == takes+1:
+                        take = takes
                     if takes > 0:
+                        vumetermessage('press middlebutton to cancel')
+                        writemessage('Loading clip...')
+                        organize(filmfolder, filmname)
                         removeimage(camera, overlay)
                         camera.stop_preview()
                         foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                         filename = 'take' + str(take).zfill(3)
                         #compileshot(foldername + filename,filmfolder,filmname)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
-                        if renderfilename != '':
-                            trim = playdub(filmname,foldername + filename, 'shot')
-                            if trim[0] == 'beginning' or trim[0] == 'end':
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, trim[0], trim[1], filename)
-                            elif trim[0] >= trim[1]:
-                                trim = [trim[0],0]
-                            elif trim[0] != 0 and trim[1] != 0:
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, 'end', trim[1], filename)
-                                videotrimsave(foldername, 'beginning', trim[0], filename)
-                            elif trim[0] == 0 and trim[1] != 0:
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, 'end', trim[1], filename)
-                            if trim[0] != 0 and trim[1] == 0:
-                                writemessage('Cutting clip...')
-                                videotrimsave(foldername, 'beginning', trim[0], filename)
+                        if renderfilename == foldername+filename:
+                            trim, split_list = playdub(filmname,foldername + filename, 'shot',take)
+                            if split_list != []:
+                                print(split_list)
+                                #time.sleep(5)
+                                split_list_save(foldername, split_list)
+                                writemessage('Splits saved! press view to see them.')
+                            else:
+                                if trim[0] == 'beginning' or trim[0] == 'end':
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, trim[0], trim[1], filename)
+                                elif trim[0] >= trim[1]:
+                                    trim = [trim[0],0]
+                                elif trim[0] != 0 and trim[1] != 0:
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, 'end', trim[1], filename)
+                                    videotrimsave(foldername, 'beginning', trim[0], filename)
+                                elif trim[0] == 0 and trim[1] != 0:
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, 'end', trim[1], filename)
+                                if trim[0] != 0 and trim[1] == 0:
+                                    writemessage('Cutting clip...')
+                                    videotrimsave(foldername, 'beginning', trim[0], filename)
                             imagename = foldername + filename + '.jpeg'
                             overlay = displayimage(camera, imagename, overlay, 3)
                             camera.start_preview()
                         else:
-                            vumetermessage('nothing here! hit rec!')
+                            #vumetermessage('nothing here! hit rec!')
+                            playdub(filmname, renderfilename, 'shot',take)
+                            take = counttakes(filmname, filmfolder, scene, shot)
                         rendermenu = True
                         updatethumb=True
+                    else:
+                        shot = shots
+                        takes = counttakes(filmname, filmfolder, scene, shot)
+                        take=takes
+                    rendermenu = True
+                    updatethumb=True
                 #BLEND
-                elif pressed == 'middle' and menu[selected] == 'BLEND:':
-                    videolenght=0
-                    filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
-                    compileshot(filename,filmfolder,filmname)
-                    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-                    videolenght = pipe.decode().strip()
-                    videolenght=(int(videolenght)/1000)-0.2
-                    if videolenght > 1:
-                        selected=3
-                        vumetermessage('select what shot to blend on')
-                        blending=True
-                        reclenght=videolenght
-                        pressed='record_now'
+                elif pressed == 'middle' and menu[selected] == 'BLEND:' and recordable == False:
+                    videolength=0
+                    blenddir = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
+                    filename=yanked
+                    #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
+                    if filename[-7:-3] == 'shot':
+                        takename = gettake(filename)
+                        if '.h264' in takename:
+                            filename=filename+'/'+takename[:-5]
+                        if '.mp4' in takename:
+                            filename=filename+'/'+takename[:-4]
+                        compileshot(filename,filmfolder,filmname)
+                    elif filename[-8:-3] == 'scene':
+                        filename=filename+'/scene'
+                    else:
+                        filename=filename+'/'+filmname
+                    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+                    #videolength = pipe.decode().strip()
+                    videolength=get_video_length(filename+'.mp4')
+                    videolength=(int(videolength)/1000)
+                    os.makedirs(blenddir,exist_ok=True)
+                    #videotrim(blenddir,filename,'end', videolength)
+                    os.system('cp '+filename+'.mp4 '+blenddir+blendmodes[blendselect]+'.mp4')
+                    rendermenu = True
+                    vumetermessage('blend done.')
                 #CROSSFADE
                 elif pressed == 'middle' and menu[selected] == 'CROSSFADE:':
                     folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                     filename = 'take' + str(take).zfill(3)
                     vumetermessage('New crossfade made!')
-                    crossfadesave(folder,crossfade,filename) 
+                    crossfadesave(folder,crossfade,filename)     
+                elif pressed == 'middle' and menu[selected] == 'SHOT:':
+                    folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    if folder in shots_selected:
+                        shots_selected.remove(folder)
+                        shots_sel = ''
+                        vumetermessage(str(len(shots_selected))+' shots selected')
+                    else:
+                        shots_selected.append(folder)
+                        shots_sel = '*'
+                        vumetermessage(str(len(shots_selected))+' shots selected')
+                elif pressed == 'middle' and menu[selected] == 'SCENE:':
+                    folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/'
+                    if folder in scenes_selected:
+                        scenes_selected.remove(folder)
+                        scenes_sel = ''
+                        vumetermessage(str(len(scenes_selected))+' scenes selected')
+                    else:
+                        scenes_selected.append(folder)
+                        scenes_sel = '*'
+                        vumetermessage(str(len(scenes_selected))+' scenes selected')
+                elif pressed == 'middle' and menu[selected] == 'FILM:':
+                    folder = filmfolder + filmname + '/'
+                    if folder in films_selected:
+                        films_selected.remove(folder)
+                        vumetermessage(str(len(films_selected))+' films selected')
+                    else:
+                        films_selected.append(folder)
+                        vumetermessage(str(len(films_selected))+' films selected')
                 #DUB SHOT
-                elif pressed == 'middle' and menu[selected] == 'SHOT:' and recordable == False:
-                    newdub = clipsettings(filmfolder, filmname, scene, shot, take, plughw)
+                elif pressed == 'dub' and menu[selected] == 'SHOT:' and recordable == False:
+                    newdub, yanked = clipsettings(filmfolder, filmname, scene, shot, take, plughw,yanked)
                     take = counttakes(filmname, filmfolder, scene, shot)
                     if newdub:
                         camera.stop_preview()
@@ -569,12 +651,12 @@ def main():
                             os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
                             time.sleep(0.2)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
-                        playdub(filmname,renderfilename, 'dub')
+                        playdub(filmname,renderfilename, 'dub',take)
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
                         #add audio/video start delay sync
                         run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
                         run_command('mv /dev/shm/temp.wav '+ newdub)
-                        audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
+                        audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
                         vumetermessage('new shot dubbing made!')
                         #rerender audio
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
@@ -584,17 +666,19 @@ def main():
                         vumetermessage('see ya around!')
                     rendermenu = True
                 #DUB SCENE
-                elif pressed == 'middle' and menu[selected] == 'SCENE:':
-                    newdub = clipsettings(filmfolder, filmname, scene, 0, take, plughw)
+                elif pressed == 'dub' and menu[selected] == 'SCENE:':
+                    newdub, yanked = clipsettings(filmfolder, filmname, scene, 0, take, plughw,yanked)
                     if newdub:
                         camera.stop_preview()
                         renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
-                        playdub(filmname,renderfilename, 'dub')
+                        playdub(filmname,renderfilename, 'dub',take)
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
-                        #add audio/video start delay sync
-                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
-                        run_command('mv /dev/shm/temp.wav '+ newdub)
-                        audiosync, videolenght, audiolenght = audiotrim(renderfilename, 'end', newdub)
+                        #add audio/video start delay sync 
+                        dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/dub/'
+                        os.makedirs(dubfolder,exist_ok=True)
+                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 '+newdub+' trim 0.013')
+                        run_command('rm /dev/shm/dub.wav')
+                        audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
                         vumetermessage('new scene dubbing made!')
                         #rerender audio
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
@@ -604,13 +688,13 @@ def main():
                         vumetermessage('see ya around!')
                     rendermenu = True
                 #DUB FILM
-                elif pressed == 'middle' and menu[selected] == 'FILM:':
-                    newdub = clipsettings(filmfolder, filmname, 0, 0, take, plughw)
+                elif pressed == 'dub' and menu[selected] == 'FILM:':
+                    newdub, yanked = clipsettings(filmfolder, filmname, 0, 0, take, plughw,yanked)
                     if newdub:
                         camera.stop_preview()
-                        renderfilename = renderfilm(filmfolder, filmname, comp, 0, False)
-                        playdub(filmname,renderfilename, 'dub')
-                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
+                        renderfilename = renderfilm(filmfolder, filmname, comp, 0)
+                        playdub(filmname,renderfilename, 'dub',take)
+                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub+' trim 0.013')
                         vumetermessage('new film dubbing made!')
                         camera.start_preview()
                         time.sleep(1)
@@ -626,7 +710,7 @@ def main():
                     if webz_on() == True:
                         filmfiles = viewfilm(filmfolder, filmname)
                         if len(filmfiles) > 0:
-                            renderfilename = renderfilm(filmfolder, filmname, comp, 0, True)
+                            renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                             cmd = uploadfilm(renderfilename, filmname)
                             if cmd != None:
                                 stopinterface(camera)
@@ -641,8 +725,36 @@ def main():
                     rendermenu = True
                 #LOAD FILM
                 elif pressed == 'middle' and menu[selected] == 'LOAD':
-                    filmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    camera, filmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    allfilm = getfilms(filmfolder)
+                    for i in allfilm:
+                        if i[0] == newfilmname:
+                            filmname_exist=True
+                    if filmname != newfilmname and filmname_exist==False:
+                        filmname = newfilmname
+                        os.makedirs(filmfolder + filmname)
+                        vumetermessage('Good luck with your film ' + filmname + '!')
+                        #make a filmhash
+                        print('making filmhash...')
+                        filmhash = shortuuid.uuid()
+                        with open(filmfolder + filmname + '/.filmhash', 'w') as f:
+                            f.write(filmhash)
+                        updatethumb = True
+                        rendermenu = True
+                        scene = 1
+                        shot = 1
+                        take = 1
+                        #selectedaction = 0
+                        newfilmname = ''
+                    else:
+                        filmname = newfilmname
+                        newfilmname = ''
+                        vumetermessage('film already exist!')
+                        logger.info('film already exist!')
+                        print(term.clear)
+                    updatethumb = True
                     loadfilmsettings = True
+                    rendermenu = True
                 #UPDATE
                 elif pressed == 'middle' and menu[selected] == 'UPDATE':
                     if webz_on() == True:
@@ -686,6 +798,10 @@ def main():
                         take = 1
                         #selectedaction = 0
                         newfilmname = ''
+                        #film_reso, film_fps = film_settings()
+                        camera.stop_preview()
+                        camera.close()
+                        camera = startcamera(lens,fps)
                     else:
                         print(term.clear)
                         filmname = newfilmname
@@ -706,8 +822,63 @@ def main():
                     else:
                         vumetermessage('')
                     rendermenu = True
+
+                #PASTE MANY SCENES
+                elif pressed == 'copy' and menu[selected] == 'SCENE:' and scenes_selected != [] or pressed == 'move' and menu[selected] == 'SCENE:' and scenes_selected != []:
+                    for yanked in scenes_selected:
+                        vumetermessage('Pasting scene, please wait...')
+                        paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
+                        os.system('cp -r ' + yanked + ' ' + paste)
+                        add_organize(filmfolder, filmname)
+                    if pressed == 'move':
+                        for yanked in scenes_selected:
+                            os.system('rm -r ' + yanked+'/*')
+                            #Remove hidden placeholder
+                            #os.system('rm ' + yanked + '/.placeholder')
+                    scenes_selected = []
+                    organize(filmfolder, filmname)
+                    organize(filmfolder, filmname)
+                    updatethumb = True
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if scene > scenes:
+                        scene = scenes
+                    if shot > shots:
+                        shot = shots
+                    vumetermessage('All scenes pasted!')
+
+                #PASTE MANY SHOTS
+                elif pressed == 'copy' and menu[selected] == 'SHOT:' and shots_selected != []  or pressed == 'move' and menu[selected] == 'SHOT:' and shots_selected != []:
+                    for yanked in shots_selected:
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                        if shot == 0:
+                            shot=1
+                        vumetermessage('Pasting shot, please wait...')
+                        paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
+                        try:
+                            os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3))
+                        except:
+                            pass
+                        os.system('cp -r ' + yanked + ' ' + paste)
+                        add_organize(filmfolder, filmname)
+                        yanked = ''
+                    if pressed == 'move':
+                        for yanked in shots_selected:
+                            os.system('rm -r ' + yanked+'/*')
+                            #Remove hidden placeholder
+                            #os.system('rm ' + yanked + '/.placeholder')
+                    shots_selected = []
+                    organize(filmfolder, filmname)
+                    organize(filmfolder, filmname)
+                    updatethumb = True
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if scene > scenes:
+                        scene = scenes
+                    if shot > shots:
+                        shot = shots
+                    vumetermessage('All shots pasted!')
+
                 #(YANK) COPY FILM
-                elif pressed == 'copy' and menu[selected] == 'FILM:' and recordable == False:
+                elif pressed == 'copy' and menu[selected] == 'FILM:':
                     copying = 'film'
                     yanked = filmfolder + filmname
                     vumetermessage('Film ' + filmname + ' copied! (I)nsert button to place it...')
@@ -744,17 +915,20 @@ def main():
                     moving = True
                     yanked = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
                     vumetermessage('Moving scene ' + str(scene) + ' (I)nsert button to place it...')
+
                 #PASTE SHOT and PASTE SCENE
                 elif pressed == 'insert' and yanked:
-                    if copying == 'take':
+                    if copying == 'take' and menu[selected] == 'TAKE:':
                         take = counttakes(filmname, filmfolder, scene, shot)
+                        if shot == 0:
+                            shot=1
                         take=take+1
                         vumetermessage('Pasting take, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3)
-                        #try:
-                        #    os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot'+ str(shot).zfill(3))
-                        #except:
-                        #    pass
+                        try:
+                            os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot'+ str(shot).zfill(3))
+                        except:
+                            pass
                         os.system('cp ' + yanked + '.mp4 ' + paste + '.mp4')
                         os.system('cp ' + yanked + '.jpeg ' + paste + '.jpeg')
                         os.system('cp ' + yanked + '.h264 ' + paste + '.h264')
@@ -762,7 +936,10 @@ def main():
                         paste = ''
                         if moving == True:
                             os.system('rm -r ' + yanked + '*')
-                    elif copying == 'shot':
+                    elif copying == 'shot' and menu[selected] == 'SHOT:':
+                        take = counttakes(filmname, filmfolder, scene, shot)
+                        if shot == 0:
+                            shot=1
                         vumetermessage('Pasting shot, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
                         try:
@@ -774,15 +951,15 @@ def main():
                             os.system('rm -r ' + yanked+'/*')
                             #Remove hidden placeholder
                             #os.system('rm ' + yanked + '/.placeholder')
-                    elif copying == 'scene':
+                    elif copying == 'scene' and menu[selected]=='SCENE:':
                         vumetermessage('Pasting scene, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
                         os.system('cp -r ' + yanked + ' ' + paste)
                         if moving == True:
                             os.system('rm -r ' + yanked+'/*')
                             #Remove hidden placeholder
-                            #os.system('rm ' + yanked + '/.placeholder')
-                    elif copying == 'film':
+                            os.system('rm ' + yanked + '/.placeholder')
+                    elif copying == 'film' and menu[selected]=='FILM:':
                         vumetermessage('Pasting film, please wait...')
                         paste = filmfolder+filmname+'_copy'
                         os.system('cp -r ' + yanked + ' ' + paste)
@@ -807,7 +984,7 @@ def main():
                     copying = ''
                     moving = False
                     vumetermessage('Pasted!')
-                    #time.sleep(3)
+                    time.sleep(1)
                 #INSERT SHOT
                 elif pressed == 'insert' and menu[selected] != 'SCENE:' and yanked == '':
                     insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
@@ -849,16 +1026,20 @@ def main():
                     updatethumb = True
                     #time.sleep(1)
                 #INSERT SCENE
-                elif pressed == 'insert' and menu[selected] == 'SCENE:' and recordable == False and yanked == '':
+                elif pressed == 'insert' and menu[selected] == 'SCENE:':
                     insertscene = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_insert'
                     logger.info("inserting scene")
-                    os.makedirs(insertscene)
+                    try:
+                        insertplaceholder = insertscene+'/.placeholder'
+                        os.makedirs(insertplaceholder)
+                        run_command('touch ' + insertscene + '/.placeholder')
+                    except:
+                        print('something scetchy!')
+                    organize(filmfolder, filmname)
                     add_organize(filmfolder, filmname)
-                    take = 1
-                    shot = 1
                     updatethumb = True
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    #vumetermessage('Scene ' + str(scene) + ' inserted')
+                    vumetermessage('Scene ' + str(scene) + ' inserted')
                     time.sleep(1)
                 #NEW SCENE
                 elif pressed == 'new_scene':
@@ -912,7 +1093,7 @@ def main():
                             dsk=2
                             loadfilmsettings = True
                     else:
-                        camera_model, camera_revision , filmfolder = getconfig(camera)
+                        #camera_model, camera_revision, filmfolder = getconfig(camera)
                         if os.path.isdir(filmfolder) == False:
                             os.makedirs(filmfolder)
                     #COUNT DISKSPACE
@@ -1091,7 +1272,7 @@ def main():
                             rendermenu = True
                             vumetermessage('SYNC DONE!')
                 elif 'RETAKE' in pressed:
-                    pressed="retake_now"
+                    pressed="retake"
                 elif 'RETAKE:' in pressed:
                     shot=pressed.split(':')[1]
                     shot=int(shot)
@@ -1342,7 +1523,6 @@ def main():
                     else:
                         vumetermessage('filming with '+camera_model +' ip:'+ network)
 
-
             #RECORD AND PAUSE
             if beepcountdown > 1:
                 if time.time() - lastbeep  > 1:
@@ -1371,30 +1551,39 @@ def main():
                 newselected_maybe=int(pressed.split(':')[1])
                 if len(cameras) > newselected_maybe:
                     newselected=newselected_maybe
-            if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclenght != 0 and t > reclenght:
+            if pressed == 'record' and recordwithports==False or pressed == 'record_now' or pressed == 'retake_now' or pressed == 'retake' and recordwithports==False or reclength != 0 and t > reclength:
                 overlay = removeimage(camera, overlay)
+                foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                filename = 'take' + str(take).zfill(3)
+                recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
                 if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
                     #camera_recording=0 
-                    if blending == False:
-                        scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
-                        if pressed == "record":
-                            #shot = shots+1
-                            take = takes+1
-                        elif pressed == "retake":
-                            take = takes+1
-                        elif pressed == 'record_now':
-                            shot=shots+1
-                            take=1
-                        elif pressed == 'retake_now':
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
+                    if pressed == "record":
+                        shot = shots+1
+                        take = 1
+                        takes=1
+                        shots=shots+1
+                    elif pressed == "retake" and takes > 0:
+                        if shot == shots+1 and takes == 0:
+                            shot = shots
                             takes = counttakes(filmname, filmfolder, scene, shot)
-                            take = takes + 1
-                        foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
-                        filename = 'take' + str(take).zfill(3)
-                    else:
-                        foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/blend/'
-                        filename = blendmodes[blendselect]
-                        blending=False
-                        reclenght=0
+                        take = takes+1
+                        takes=take
+                    elif pressed == "retake" and takes == 0:
+                        take=1
+                        takes=1
+                    elif pressed == 'record_now':
+                        shot=shots+1
+                        take=1
+                        takes=1
+                        shots=shots+1
+                    elif pressed == 'retake_now':
+                        takes = counttakes(filmname, filmfolder, scene, shot)
+                        take = takes + 1
+                        takes=take
+                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    filename = 'take' + str(take).zfill(3)
                     if beeps > 0 and beeping == False:
                         beeping = True
                         beepcountdown = beeps
@@ -1408,14 +1597,19 @@ def main():
                                 send_serial_port(slidecommander,';'+str(slide))
                             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
                             tot = int(videos_totalt.videos)
-                            video_origins=datetime.datetime.now().strftime('%Y%d%m')+str(tot).zfill(5)+'_'+os.urandom(8).hex()
-                            db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolenght=0, videolenght=0)
+                            video_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+                            try:
+                                db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
+                            except:
+                                db=correct_database(filmname,filmfolder,db)
+                                db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
                             os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
                             sound_start = time.time()
                             if onlysound != True:
-                                camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality)
+                                #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
+                                rec_process, camera=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4',bitrate, quality, profilelevel, reclength)
                                 starttime = time.time()
-                            os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.h264 '+foldername+filename+'.h264')
+                            os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+foldername+filename+'.mp4')
                             recording = True
                             showmenu = 0
                         if cammode == 'picture':
@@ -1444,10 +1638,15 @@ def main():
                     if showmenu_settings == True:
                         showmenu = 1
                     if onlysound != True:
-                        camera.stop_recording()
+                        #camera.stop_recording()
+                        recprocess, camera = stoprecording(camera, rec_process)
                     os.system('pkill arecord')
                     soundlag=starttime-sound_start
-                    db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag)
+                    try:
+                        db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, faststart=False)
+                    except:
+                        db = correct_database(filmname,filmfolder,db)
+                        db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, faststart=False)
                     #time.sleep(0.005) #get audio at least 0.1 longer
                     #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
                     #if slidecommander:
@@ -1455,18 +1654,20 @@ def main():
                     if onlysound != True:
                         try:
                             #camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
-                            camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            if film_reso == '1920x1080':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            elif film_reso == '1920x816':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
                         except:
                             logger.warning('something wrong with camera jpeg capture')
                     #delayerr = audiotrim(foldername,filename)
                     onlysound = False
-                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     if beeps > 0:
                         if bus:
                             buzz(300)
                         else:
                             run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
-                    if round(fps) != 25:
+                    if int(round(fps)) != int(film_fps):
                         compileshot(foldername + filename,filmfolder,filmname)
                     #os.system('cp /dev/shm/' + filename + '.wav ' + foldername + filename + '.wav')
                     if beeps > 0:
@@ -1476,21 +1677,29 @@ def main():
                             run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                     t = 0
                     rectime = ''
-                    vumetermessage('Gonzopi ' + gonzopiversion[:-1] + ' ' + gonzopivername[:-1])
-                    updatethumb = True
-                    #camera_recording=0
+                    vumetermessage('Gonzo Pi v.' + gonzopiversion[:-1] + ' ' + gonzopivername[:-1])
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
+                    if shot == shots and pressed == 'record':
+                        shot=shots+1
+                        take=1
+                        takes=0
+                    elif pressed == 'retake':
+                        take=takes+1
+                        #updatethumb = True
+                        #camera_recording=0
                 #if not in last shot or take then go to it
                 if pressed == 'record' and recordable == False:
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     shot=shots+1
                     take=1
+                    takes=0
                     #take = takes
                     #takes = counttakes(filmname, filmfolder, scene, shot)
                 if pressed == 'retake' and recordable == False:
                     #scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
-                    takes = counttakes(filmname, filmfolder, scene, shot)
                     #take = takes
                     #takes = counttakes(filmname, filmfolder, scene, shot)
+                    scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take)
                     take = takes + 1
             #ENTER (auto shutter, iso, awb on/off)
             elif pressed == 'middle' and menu[selected] == 'SHUTTER:':
@@ -1518,7 +1727,7 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'BEEP:':
                 beeps = 0
             elif pressed == 'middle' and menu[selected] == 'LENGTH:':
-                reclenght = 0
+                reclength = 0
             elif pressed == 'middle' and menu[selected] == 'LIVE:':
                 if stream == '':
                     if udp_ip == '':
@@ -1538,7 +1747,21 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'BRIGHT:':
                 camera.brightness = 50
             elif pressed == 'middle' and menu[selected] == 'CONT:':
-                camera.contrast = 0
+                if yanked == '':
+                    camera.contrast = 0
+                else:
+                    videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+                    tot = int(videos_totalt.videos)
+                    video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+                    newtake = nexttakefilename(filmname, filmfolder, scene, shot)
+                    #why didnt i do this earlier cuz copy paste & that works too
+                    vumetermessage('applying effect...')
+                    run_command('ffmpeg -i '+yanked+'.mp4 -vf "eq=contrast='+str(1.0+(int(camera.contrast)/100))+'" -c:v copy -c:a copy -y '+encoder()+video_origins+'.mp4')
+                    os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+newtake+'.mp4')
+                    vumetermessage('done!')
+                    yanked=''
+                    scenes, shots, takes = countlast(filmname, filmfolder)
+                    take=takes
             elif pressed == 'middle' and menu[selected] == 'SAT:':
                 camera.saturation = 0
             elif pressed == 'middle' and menu[selected] == 'MIC:':
@@ -1565,9 +1788,38 @@ def main():
             #UP
             elif pressed == 'up':
                 if menu[selected] == 'FILM:':
-                    filmname = loadfilm(filmname, filmfolder, camera, overlay)
-                    loadfilmsettings = True
-                if menu[selected] == 'BRIGHT:':
+                    camera, newfilmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    allfilm = getfilms(filmfolder)
+                    filmname_exist=False
+                    for i in allfilm:
+                        if i[0] == newfilmname:
+                            filmname_exist=True
+                    if filmname != newfilmname and filmname_exist==False:
+                        filmname = newfilmname
+                        os.makedirs(filmfolder + filmname)
+                        vumetermessage('Good luck with your film ' + filmname + '!')
+                        #make a filmhash
+                        print('making filmhash...')
+                        filmhash = shortuuid.uuid()
+                        with open(filmfolder + filmname + '/.filmhash', 'w') as f:
+                            f.write(filmhash)
+                        updatethumb = True
+                        rendermenu = True
+                        scene = 1
+                        shot = 1
+                        take = 1
+                        #selectedaction = 0
+                        newfilmname = ''
+                    else:
+                        filmname = newfilmname
+                        newfilmname = ''
+                        vumetermessage('film already exist!')
+                        logger.info('film already exist!')
+                        print(term.clear)
+                        updatethumb = True
+                        rendermenu = True
+                        loadfilmsettings = True
+                elif menu[selected] == 'BRIGHT:':
                     camera.brightness = min(camera.brightness + 1, 99)
                 elif menu[selected] == 'CONT:':
                     camera.contrast = min(camera.contrast + 1, 99)
@@ -1608,10 +1860,10 @@ def main():
                         flip = 'yes'
                         time.sleep(0.2)
                 elif menu[selected] == 'LENGTH:':
-                    if reclenght < 1:
-                        reclenght = reclenght + 0.2
+                    if reclength < 1:
+                        reclength = reclength + 0.2
                     else:
-                        reclenght = int(reclenght + 1)
+                        reclength = int(reclength + 1)
                     time.sleep(0.1)
                 elif menu[selected] == 'MIC:':
                     if miclevel < 100:
@@ -1626,18 +1878,24 @@ def main():
                         scene += 1
                         #shot = countshots(filmname, filmfolder, scene)
                         shot = 1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        scene = 1
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shots, takes = browse2(filmname, filmfolder, scene, shot, take, 0, 1)
                     #shot = 1
                 elif menu[selected] == 'SHOT:' and recording == False:
                     if shot <= shots:
                         shot += 1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        shot=1
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, 1)
                     #takes = take
                 elif menu[selected] == 'TAKE:' and recording == False:
                     if take <= takes:
                         take += 1
+                    else:
+                        take=0
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, 1)
                 elif menu[selected] == 'RED:':
                     camera.awb_mode = 'off'
@@ -1742,6 +2000,13 @@ def main():
                         if serverstate == 'on':
                             gonzopiserver(False)
                             gonzopiserver(True)
+                elif menu[selected] == 'MUX:':
+                    if muxing == False:
+                        muxing=True
+                        mux='yes'
+                    else:
+                        muxing=False
+                        mux='no'
 
             #LEFT
             elif pressed == 'left':
@@ -1754,8 +2019,37 @@ def main():
             #DOWN
             elif pressed == 'down':
                 if menu[selected] == 'FILM:':
-                    filmname = loadfilm(filmname, filmfolder, camera, overlay)
-                    loadfilmsettings = True
+                    camera, newfilmname = loadfilm(filmname, filmfolder, camera, overlay)
+                    allfilm = getfilms(filmfolder)
+                    filmname_exist=False
+                    for i in allfilm:
+                        if i[0] == newfilmname:
+                            filmname_exist=True
+                    if filmname != newfilmname and filmname_exist==False:
+                        filmname = newfilmname
+                        os.makedirs(filmfolder + filmname)
+                        vumetermessage('Good luck with your film ' + filmname + '!')
+                        #make a filmhash
+                        print('making filmhash...')
+                        filmhash = shortuuid.uuid()
+                        with open(filmfolder + filmname + '/.filmhash', 'w') as f:
+                            f.write(filmhash)
+                        updatethumb = True
+                        rendermenu = True
+                        scene = 1
+                        shot = 1
+                        take = 1
+                        #selectedaction = 0
+                        newfilmname = ''
+                    else:
+                        filmname = newfilmname
+                        newfilmname = ''
+                        vumetermessage('film already exist!')
+                        logger.info('film already exist!')
+                        print(term.clear)
+                        updatethumb = True
+                        rendermenu = True
+                        loadfilmsettings = True
                 elif menu[selected] == 'BRIGHT:':
                     camera.brightness = max(camera.brightness - 1, 0)
                 elif menu[selected] == 'CONT:':
@@ -1798,14 +2092,14 @@ def main():
                         flip = 'yes'
                         time.sleep(0.2)
                 elif menu[selected] == 'LENGTH:':
-                    if reclenght > 1:
-                        reclenght = int(reclenght - 1)
+                    if reclength > 1:
+                        reclength = int(reclength - 1)
                         time.sleep(0.1)
-                    elif reclenght > 0.3:
-                        reclenght = reclenght - 0.2
+                    elif reclength > 0.3:
+                        reclength = reclength - 0.2
                         time.sleep(0.1)
                     else:
-                        reclenght = 0
+                        reclength = 0
                 elif menu[selected] == 'MIC:':
                     if miclevel > 0:
                         miclevel = miclevel - 2
@@ -1818,20 +2112,26 @@ def main():
                     if scene > 1:
                         scene -= 1
                         #shot = countshots(filmname, filmfolder, scene)
-                        shot=1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        scene = countscenes(filmfolder, filmname)
+                    shot=1
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shots, take = browse2(filmname, filmfolder, scene, shot, take, 0, -1)
                     #takes = take
                     #shot = 1
                 elif menu[selected] == 'SHOT:' and recording == False:
                     if shot > 1:
                         shot -= 1
-                        take = counttakes(filmname, filmfolder, scene, shot)
+                    else:
+                        shot = countshots(filmname, filmfolder, scene)
+                    take = counttakes(filmname, filmfolder, scene, shot)
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 1, -1)
                     #takes = take
                 elif menu[selected] == 'TAKE:' and recording == False:
                     if take > 1:
                         take -= 1
+                    else:
+                        take = counttakes(filmname,filmfolder,scene,shot)
                     #scene, shot, take = browse2(filmname, filmfolder, scene, shot, take, 2, -1)
                 elif menu[selected] == 'RED:':
                     camera.awb_mode = 'off'
@@ -1939,6 +2239,14 @@ def main():
                         if serverstate == 'on':
                             gonzopiserver(False)
                             gonzopiserver(True)
+                elif menu[selected] == 'MUX:':
+                    if muxing == False:
+                        muxing=True
+                        mux='yes'
+                    else:
+                        muxing=False
+                        mux='no'
+
             #RIGHT
             elif pressed == 'right':
                 if selected < len(menu) - 1:
@@ -1990,15 +2298,31 @@ def main():
                     move=filmsettings[33]
                     speed=filmsettings[34]
                     slide=filmsettings[35]
+                    film_fps=filmsettings[36]
+                    film_reso=filmsettings[37]
                     logger.info('film settings loaded & applied')
                     time.sleep(0.2)
                 except:
                     logger.warning('could not load film settings')
+                #if rpimode:
+                #    #FIRE UP CAMERA
+                #    if camera != None:
+                #        camera.stop_preview()
+                #        camera.close()
+                #    camera = startcamera(lens,fps)
+                #    #START INTERFACE
+                #else:
+                #    camera=None
                 if flip == "yes":
                     camera.vflip = True
                     camera.hflip = True
                 run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
                 run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+                #check if audiocard there other default to 0
+                if int(plughw) > len(getaudiocards()):
+                    plughw = 0
+                    channels = 1
+                    vumetermessage(getaudiocards()[plughw])
                 print(filmfolder)
                 print(filmname)
                 origin_videos=organize(filmfolder, filmname)
@@ -2021,6 +2345,18 @@ def main():
                         except:
                             print('not exist')
                 #organize(filmfolder,'onthefloor')
+                if origin_videos != []:
+                    if origin_videos[0] != '':
+                        reso_w, reso_h = check_reso(origin_videos[0])
+                        reso_check=str(reso_w)+'x'+str(reso_h)
+                        fps_check = check_fps(origin_videos[0])
+                        if reso_check != film_reso:
+                            vumetermessage('wrong film project resolution')
+                            #waitforanykey()
+                        if str(fps_check) != str(film_fps):
+                            vumetermessage('wrong film project framerate')
+                            #waitforanykey()
+                #add_organize(filmfolder, filmname)
                 scenes, shots, takes = countlast(filmname, filmfolder)
                 loadfilmsettings = False
                 rendermenu = True
@@ -2045,15 +2381,34 @@ def main():
                 if recording == False:
                     #logger.info('film:' + filmname + ' scene:' + str(scene) + '/' + str(scenes) + ' shot:' + str(shot) + '/' + str(shots) + ' take:' + str(take) + '/' + str(takes))
                     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
+                    scenename = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/'
+                    if foldername in shots_selected:
+                        shots_sel = '*'
+                    else:
+                        shots_sel = ''
+                    if scenename in scenes_selected:
+                        scenes_sel = '*'
+                    else:
+                        scenes_sel = ''
+                    if filmname in films_selected:
+                        films_sel = '*'
+                    else:
+                        films_sel = ''
                     filename = 'take' + str(take).zfill(3)
                     recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
                     overlay = removeimage(camera, overlay)
+                    if recordable:
+                        vumetermessage('filming with '+camera_model+' ip:'+ network + ' '+camerasconnected)
+                        #vumetermessage(str(round(film_fps)) + ' '+ str(round(fps)))
                     if menu[selected] == 'SCENE:' and recordable == False: # display first shot of scene if browsing scenes
                         p = counttakes(filmname, filmfolder, scene, 1)
                         imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
                         try:
                             videosize=countsize(filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/scene.mp4')
-                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                            if videosize == 0:
+                                vumetermessage('scene not rendered')
+                            else:
+                                vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
                             vumetermessage('not rendered')
                     #elif menu[selected] == 'FILM:' and recordable == True:
@@ -2064,7 +2419,10 @@ def main():
                         imagename = filmfolder + filmname + '/scene' + str(1).zfill(3) + '/shot' + str(1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
                         try:
                             videosize=countsize(filmfolder + filmname + '/' + filmname+'.mp4')
-                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                            if videosize == 0:
+                                vumetermessage('film not rendered')
+                            else:
+                                vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
                             vumetermessage('not rendered')
                     imagename = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.jpeg'
@@ -2074,7 +2432,7 @@ def main():
                             vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                         except:
                             videosize=countsize(foldername + filename + '.h264')
-                            vumetermessage('not rendered, videosize: '+str(round(videosize/1000,2))+' Mb')
+                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
                     overlay = displayimage(camera, imagename, overlay, 3)
                     oldscene = scene
                     oldshot = shot
@@ -2098,33 +2456,41 @@ def main():
             else:
                 camerared = str(float(camera.awb_gains[0]))[:4]
                 camerablue = str(float(camera.awb_gains[1]))[:4]
-
+            if time.time() - showmenutime > hide_menu_time: 
+                #showmenutime = time.time()
+                showmenu=0
+                showmenu_settings = False
+                rendermenu=True
             #Check if menu is changed and save settings / sec
             if buttonpressed == True or recording == True or rendermenu == True:
+                if buttonpressed == True and recording == False and not pressed == 'record' and not pressed == 'retake':
+                    showmenu=1
+                    showmenutime = time.time()
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclenght,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', '', live, str(slide)
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname+films_sel, str(scene)+scenes_sel+ '/' + str(scenes), str(shot)+shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', live, mux, str(slide)
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + '/' + str(scenes), str(shot) + '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclenght), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + scene_sel+ '/' + str(scenes), str(shot) + shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
-                writemenu(menu,settings,selected,'',showmenu)
+                oldmenu=writemenu(menu,settings,selected,'',showmenu,oldmenu)
                 rendermenu = False
                 #save settings if menu has been updated and x seconds passed
                 if recording == False:
                     #if time.time() - pausetime > savesettingsevery: 
                     if oldsettings != settings:
-                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate, pan, tilt, move, speed, slide]
+                        settings_to_save = [filmfolder, filmname, camera.brightness, camera.contrast, camera.saturation, camera.shutter_speed, camera.iso, camera.awb_mode, camera.awb_gains, awb_lock, miclevel, headphoneslevel, beeps, flip, comp, between, duration, showmenu_settings, quality,wifistate,serverstate,plughw,channels,cammode,scene,shot,take,cameras,udp_ip,udp_port,bitrate, pan, tilt, move, speed, slide, film_fps, film_reso]
                         #print('saving settings')
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
                         pausetime = time.time()
                         #NETWORKS
                         networks=[]
+                        network=''
                         adapters = ifaddr.get_adapters()
                         for adapter in adapters:
                             print("IPs of network adapter " + adapter.nice_name)
@@ -2134,7 +2500,7 @@ def main():
                                     networks=[ip.ip]
                         if networks != []:
                             network=networks[0]
-                            if network not in cameras:
+                            if network not in cameras and network != '':
                                 cameras=[]
                                 cameras.append(network)
                         else:
@@ -2155,12 +2521,12 @@ def main():
                                 vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
                         disk = os.statvfs(filmfolder)
                         diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
-                        checksync = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )) + 'Mb'
-                        if checksync == oldchecksync:
-                            rectime = ''
-                        else:
-                            rectime = 'SYNCING.. '
-                            oldchecksync = checksync
+                        #checksync = int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )
+                        #if checksync == oldchecksync:
+                        #    rectime = str(checksync)+'Mb/s'
+                        #elif checksync - oldchecksync > 1000:
+                        #    rectime = 'SYNCING.. '
+                        #oldchecksync = checksync
                         #print(term.yellow+'filming with '+camera_model +' ip:'+ network
                         print(camselected,camera_recording,cameras)
                 #writemessage(pressed)
@@ -2204,7 +2570,19 @@ def get_film_files(filmname,filmfolder,db):
         videodb=db.select('videos')
         return db
     except:
-        db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolenght FLOAT, videolenght FLOAT,soundlag FLOAT, audiosync FLOAT);")
+        db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolength FLOAT, videolength FLOAT,soundlag FLOAT, audiosync FLOAT, faststart BOOL);")
+    videodb=db.select('videos')
+    return db
+
+#---------remove and get correct database------
+
+def correct_database(filmname,filmfolder,db):
+    if not os.path.isdir(filmfolder+'.videos/'):
+        os.makedirs(filmfolder+'.videos/')
+    filmdb = filmfolder+'.videos/gonzopi.db'
+    run_command('rm '+filmdb)
+    db = web.database(dbn='sqlite', db=filmdb)
+    db.query("CREATE TABLE videos (id integer PRIMARY KEY, tid DATETIME, filename TEXT, foldername TEXT, filmname TEXT, scene INT, shot INT, take INT, audiolength FLOAT, videolength FLOAT,soundlag FLOAT, audiosync FLOAT, faststart BOOL);")
     videodb=db.select('videos')
     return db
 
@@ -2314,9 +2692,7 @@ def listenforclients(host, port, q):
 
 #--------------Write the menu layer to dispmanx--------------
 
-def writemenu(menu,settings,selected,header,showmenu):
-    global menudone, rendermenu
-    oldmenu=menudone
+def writemenu(menu,settings,selected,header,showmenu,oldmenu):
     menudone = ''
     menudoneprint = ''
     menudone += str(selected) + '\n'
@@ -2332,7 +2708,7 @@ def writemenu(menu,settings,selected,header,showmenu):
         n += 1
     spaces = len(menudone) - 500
     menudone += spaces * ' '
-    if oldmenu != menudone or rendermenu == True:
+    if oldmenu != menudone and len(menudone) > 4:
         print(term.clear+term.home)
         if showmenu == 0:
             print(term.red+menudoneprint)
@@ -2342,7 +2718,7 @@ def writemenu(menu,settings,selected,header,showmenu):
         f = open('/dev/shm/interface', 'w')
         f.write(menudone)
         f.close()
-        return menudone
+        return oldmenu
 
 #------------Write to screen----------------
 
@@ -2382,7 +2758,10 @@ def countvideosize(filename):
 def countsize(filename):
     size = 0
     if type(filename) is str:
-        size = os.stat(filename).st_size
+        try:
+            size = os.stat(filename).st_size
+        except:
+            return 0
     else:
         return 0
     return size/1024
@@ -2481,6 +2860,57 @@ def counttakes2(folder):
                 doubles = a
     return takes
 
+def gettake(folder):
+    takes = 0
+    doubles = ''
+    try:
+        allfiles = os.listdir(folder)
+    except:
+        allfiles = []
+        return takes
+    for a in allfiles:
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                    filename=a
+                doubles = a
+    return filename
+
+#------------Count last take name --------
+
+def nexttakefilename(filmname, filmfolder, scene, shot):
+    takes = 0
+    doubles = ''
+    try:
+        allfiles = os.listdir(filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3))
+    except:
+        allfiles = []
+        return takes
+    for a in allfiles:
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                doubles = a
+    return filmfolder+filmname+'/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3)+'/take'+str(takes+1).zfill(3)
+
+def counttakes2(folder):
+    takes = 0
+    doubles = ''
+    try:
+        allfiles = os.listdir(folder)
+    except:
+        allfiles = []
+        return takes
+    for a in allfiles:
+        if 'take' in a:
+            if '.mp4' in a or '.h264' in a:
+                if not doubles.replace('.h264', '.mp4') == a:
+                    takes = takes + 1
+                doubles = a
+    return takes
+
 #-----------Count videos on floor-----
 
 def countonfloor(filmname, filmfolder):
@@ -2490,6 +2920,7 @@ def countonfloor(filmname, filmfolder):
 
 def vfx_colorpoint():
     global camera
+    oldmenu=''
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -2499,7 +2930,7 @@ def vfx_colorpoint():
     menu =  'BACK','GREEN','RED/YELLOW','BLUE','PURPLE'
     while True:
         settings = '','','','',''
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(settings) - 1):
@@ -2526,6 +2957,7 @@ def vfx_colorpoint():
 
 def vfx_solarize():
     global camera
+    oldmenu=''
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -2539,7 +2971,7 @@ def vfx_solarize():
     menu =  'BACK','STRENGHT:','R:','G:','B:'
     while True:
         settings = '',str(strenght),str(r),str(g),str(b)
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(settings) - 1):
@@ -2581,7 +3013,57 @@ def vfx_solarize():
         elif pressed == 'middle' and menu[selected] == 'BACK':
             return
         time.sleep(keydelay)
-            
+
+def film_settings():
+    global film_fps_options, film_reso_options, film_fps_selected, film_fps, film_reso, fps
+    oldmenu=''
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    selected = 1
+    film_reso_selected=0
+    film_fps_selected=1
+    header = 'Film settings'
+    menu =  'OK','FPS:','RESOLUTION:'
+    while True:
+        settings = '',str(film_fps_options[film_fps_selected]),film_reso_options[film_reso_selected]
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+        if pressed == 'right':
+            if selected < (len(settings) - 1):
+                selected = selected + 1
+            else:
+                selected = 0
+            selected == 0
+        elif pressed == 'left':
+            if selected > 0:
+                selected = selected - 1
+            else:
+                selected = len(settings) - 1
+        elif pressed == 'up' and menu[selected] =='FPS:':
+            if film_fps_selected < len(film_fps_options)-1:
+                film_fps_selected += 1
+                film_fps=int(film_fps_options[film_fps_selected])
+            else:
+                film_fps_selected == len(film_fps_options)-1
+        elif pressed == 'down' and menu[selected] =='FPS:':
+            if film_fps_selected > 0:
+                film_fps_selected -= 1
+                film_fps=int(film_fps_options[film_fps_selected])
+        elif pressed == 'up' and menu[selected] =='RESOLUTION:':
+            if film_reso_selected < len(film_reso_options)-1:
+                film_reso_selected += 1
+                film_reso=film_reso_options[film_reso_selected]
+        elif pressed == 'down' and menu[selected] =='RESOLUTION:':
+            if film_reso_selected > 0:
+                film_reso_selected -= 1
+                film_reso=film_reso_options[film_reso_selected]
+        elif pressed == 'middle' and menu[selected]=='OK':
+            return film_reso, film_fps
+        time.sleep(keydelay)
+ 
+
 #------------Run Command-------------
 
 def run_command(command_line):
@@ -2770,6 +3252,7 @@ def getfilms(filmfolder):
 #-------------Load gonzopi config---------------
 
 def getconfig(camera):
+    oldmenu=''
     filmfolder=''
     if camera != None:
         version = camera.revision
@@ -2829,7 +3312,7 @@ def getconfig(camera):
         menu = 'rev.C', 'rev.D', 'hq-camera'
         while True:
             settings = '', '', ''
-            writemenu(menu,settings,selected,header,showmenu)
+            oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
             pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
             if pressed == 'right':
                 if selected < (len(settings) - 1):
@@ -2897,6 +3380,9 @@ def cleanupdisk(filmname, filmfolder):
 #-------------Load film---------------
 
 def loadfilm(filmname, filmfolder, camera, overlay):
+    global film_fps_options, film_reso_options, film_fps_selected, film_reso_selected, film_fps, film_reso, lens, fps
+    writemessage('Loading films...')
+    oldmenu=''
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -2909,10 +3395,10 @@ def loadfilm(filmname, filmfolder, camera, overlay):
     selectedfilm = 0
     selected = 0
     header = 'Up and down to select and load film'
-    menu = 'FILM:', 'BACK'
+    menu = 'FILM:', 'BACK', 'NEW FILM'
     while True:
-        settings = films[selectedfilm][0], ''
-        writemenu(menu,settings,selected,header,showmenu)
+        settings = films[selectedfilm][0], '', ''
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         vumetermessage('filmsize: '+filmsize[selectedfilm]+' date: '+time.strftime('%Y-%m-%d %H:%M:%S',time.gmtime(films[selectedfilm][1])))
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down':
@@ -2938,11 +3424,20 @@ def loadfilm(filmname, filmfolder, camera, overlay):
         elif pressed == 'middle' and menu[selected] == 'FILM:':
             overlay = removeimage(camera, overlay)
             filmname = films[selectedfilm][0]
-            return filmname
+            return camera, filmname
         elif pressed == 'middle' and menu[selected] == 'BACK':
             overlay = removeimage(camera, overlay)
             writemessage('Returning')
-            return filmname
+            return camera, filmname
+        elif pressed == 'middle' and menu[selected] == 'NEW FILM':
+            overlay = removeimage(camera, overlay)
+            newfilm=nameyourfilm(filmfolder, filmname, abc, True)
+            #film_reso, film_fps = film_settings()
+            #camera.stop_preview()
+            #camera.close()
+            #camera = startcamera(lens,fps)
+            writemessage('Returning')
+            return camera, newfilm
         time.sleep(0.02)
 
 def slide_menu(slidecommander):
@@ -2959,9 +3454,10 @@ def slide_menu(slidecommander):
     selected = 0
     header = 'Future Tech Slide Commander'
     menu =  'BACK','SPEED:', 'SMOOTH:', 'PAN:', 'TILT:', 'MOVE:', 'ADD', '<', '>', 'SAVE', 'RESET', 'STATUS'
+    oldmenu=''
     while True:
         settings = '',str(speed), str(smooth), str(pan), str(tilt), str(move), '', '', '' , '', '', ''
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'down' and menu[selected] == 'SPEED:':
             if speed > 10:
@@ -2978,7 +3474,7 @@ def slide_menu(slidecommander):
             speed += 100
         elif pressed == 'retake' and menu[selected] =='SPEED:':
             speed -= 100
-        if pressed == 'down' and menu[selected] == 'SMOOTH:':
+        elif pressed == 'down' and menu[selected] == 'SMOOTH:':
             if smooth > 10:
                 smooth -= 10
         elif pressed == 'remove' and menu[selected] =='SMOOTH:':
@@ -3048,7 +3544,8 @@ def slide_menu(slidecommander):
             send_serial_port(slidecommander,'x'+str(move))
         elif pressed == 'middle' and menu[selected] == 'ADD':
             send_serial_port(slidecommander,'#')
-
+        elif pressed == 'record' and menu[selected] == 'ADD':
+            return
         elif pressed == 'middle' and menu[selected] == '<':
             send_serial_port(slidecommander,'<')
         elif pressed == 'middle' and menu[selected] == '>':
@@ -3238,12 +3735,14 @@ def nameyourfilm(filmfolder, filmname, abc, newfilm):
                     elif filmname in getfilms(filmfolder)[0]:
                         helpmessage = 'this filmname is already taken! make a sequel!'
                         filmname = filmname+'2'
+                    elif '_archive' in filmname:
+                        helpmessage = 'the filmname cant be named as an archive.'
                     elif filmname not in getfilms(filmfolder)[0]:
                         logger.info("New film " + filmname)
-                        return(filmname)
+                        return filmname
                 except:
                     logger.info("New film " + filmname)
-                    return(filmname)
+                    return filmname
         elif pressed == 'retake':
             return oldfilmname
         elif event in abc:
@@ -3523,6 +4022,7 @@ def newcamera_ip(abc, network):
 #------------Timelapse--------------------------
 
 def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlight):
+    global fps, soundrate, channels, bitrate, muxing, db, quality
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
@@ -3531,9 +4031,10 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
     selected = 0
     header = 'Adjust delay in seconds between videos'
     menu = 'DELAY:', 'DURATION:', 'SOUND:', 'START', 'BACK'
+    oldmenu=''
     while True:
         settings = str(round(between,2)), str(round(duration,2)), str(sound), '', ''
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         seconds = (3600 / between) * duration
         vumetermessage('1 h timelapse filming equals ' + str(round(seconds,2)) + ' second clip   ')
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
@@ -3576,7 +4077,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                 while True:
                     t = time.time() - starttime
                     pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
-                    vumetermessage('Timelapse lenght is now ' + str(round(n * duration,2)) + ' second clip   ')
+                    vumetermessage('Timelapse length is now ' + str(round(n * duration,2)) + ' second clip   ')
                     if recording == False and t > between:
                         if beeps > 0:
                             if bus:
@@ -3584,7 +4085,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             else:
                                 run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
-                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', bitrate=bitrate, level=profilelevel, quality=quality)
+                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=quality, level=profilelevel, intra_period=5)
                         if sound == True:
                             os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
@@ -3617,46 +4118,76 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             camera.stop_recording()
                         #create thumbnail
                         try:
-                            camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            if film_reso == '1920x1080':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,450), use_video_port=True)
+                            elif film_reso == '1920x816':
+                                camera.capture(foldername + filename + '.jpeg', resize=(800,340), use_video_port=True)
                         except:
                             logger.warning('something wrong with camera jpeg capture')
+                        videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+                        tot = int(videos_totalt.videos)
+                        video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
                         writemessage('Compiling timelapse')
                         logger.info('Hold on, rendering ' + str(len(files)) + ' scenes')
                         #RENDER VIDEO
-                        renderfilename = foldername + filename
+                        print('Rendering videofiles')
+                        writemessage('Hold on, rendering timelapse with ' + str(len(files)) + ' files')
+                        videosize = 0
+                        rendersize = 0
+                        scenedir=foldername
+                        filename = foldername + filename
                         n = 1
-                        videomerge = ['MP4Box']
-                        videomerge.append('-force-cat')
-                        for f in files:
-                            if sound == True:
-                                compileshot(f,filmfolder,filmname)
-                                #audiotrim(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3), 'end', '')
-                                videomerge.append('-cat')
-                                videomerge.append(f + '.mp4#video')
-                            else:
-                                videomerge.append('-cat')
-                                videomerge.append(f + '.h264')
-                            n = n + 1                            
-                        videomerge.append('-new')
-                        videomerge.append(renderfilename + '.mp4')
-                        call(videomerge, shell=False) #how to insert somekind of estimated time while it does this?
+                        videomerge = ['ffmpeg']
+                        videomerge.append('-f')
+                        videomerge.append('concat')
+                        videomerge.append('-safe')
+                        videomerge.append('0')
+                        run_command('rm '+scenedir+'.renderlist')
+                        for f in files[:-1]:
+                            compileshot(f+'.h264',filmfolder,filmname)
+                            videosize = videosize + countsize(f + '.mp4')
+                            #videomerge.append(f + '.mp4')
+                            with open(scenedir + '.renderlist', 'a') as l:
+                                l.write("file '"+str(f)+".mp4'\n")
+                        videomerge.append('-i')
+                        videomerge.append(scenedir+'.renderlist')
+                        videomerge.append('-c:v')
+                        videomerge.append('copy')
+                        videomerge.append('-movflags')
+                        videomerge.append('+faststart')
+                        videomerge.append(video_origins + '.mp4')
+                        videomerge.append('-y')
+                        #videomerge.append(filename + '.h264')
+                        #videomerge.append(filename + '.h264')
+                        #call(videomerge, shell=True) #how to insert somekind of estimated time while it does this?
+                        p = Popen(videomerge)
+                        #show progress
+                        while p.poll() is None:
+                            time.sleep(0.1)
+                            try:
+                                rendersize = countsize(filename + '.mp4')
+                            except:
+                                continue
+                            writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done')
+                        run_command('rm '+scenedir+'.renderlist')
+                        print('Video rendered!')
+                        os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
                         ##RENDER AUDIO
-                        if sound == True:
-                            writemessage('Rendering sound')
-                            audiomerge = ['sox']
-                            #if render > 2:
-                            #    audiomerge.append(filename + '.wav')
-                            for f in files:
-                                audiomerge.append(f + '.wav')
-                            audiomerge.append(renderfilename + '.wav')
-                            call(audiomerge, shell=False)
+                        writemessage('Rendering sound')
+                        audiomerge = ['sox']
+                        #if render > 2:
+                        #    audiomerge.append(filename + '.wav')
+                        for f in files[:-1]:
+                            audiomerge.append(f + '.wav')
+                        audiomerge.append(filename + '.wav')
+                        call(audiomerge, shell=False)
                         ##MAKE AUDIO SILENCE
-                        if sound == False:
-                            audiosilence(foldername,filename)
+                        #if sound == False:
+                        #    audiosilence(foldername+filename)
                         #cleanup
                         #os.system('rm -r ' + foldername + 'timelapse')
                         vumetermessage('timelapse done! ;)')
-                        return renderfilename, between, duration
+                        return filename, between, duration
                     time.sleep(keydelay)
             if menu[selected] == 'BACK':
                 vumetermessage('ok!')
@@ -3666,6 +4197,7 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
 #------------Remove-----------------------
 
 def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
+    flushbutton()
     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
     filename = 'take' + str(take).zfill(3)
     pressed = ''
@@ -3677,14 +4209,16 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
     menu = '', ''
     settings = 'NO', 'YES'
     selected = 0
-    otf_scene = countscenes(filmfolder, filmname)
+    otf_scene = countscenes(filmfolder, filmname+'_archive')
     otf_scene += 1
-    otf_shot = countshots(filmname, filmfolder, otf_scene)
+    otf_shot = countshots(filmname+'_archive' , filmfolder, otf_scene)
     otf_shot += 1
-    otf_take = counttakes(filmname, filmfolder, otf_scene, otf_shot)
+    otf_take = counttakes(filmname+'_archive', filmfolder, otf_scene, otf_shot)
     otf_take += 1
+    oldmenu=''
+    starttime=time.time()
     while True:
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(settings) - 1):
@@ -3692,9 +4226,11 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
         elif pressed == 'left':
             if selected > 0:
                 selected = selected - 1
+        elif pressed == 'remove' and time.time()-starttime > 1:
+            return
         elif pressed == 'middle':
             if selected == 1:
-                if '_onthefloor' in filmname:
+                if '_archive' in filmname:
                     if sceneshotortake == 'take':
                         os.system('rm ' + foldername + filename + '.h264')
                         os.system('rm ' + foldername + filename + '.mp4')
@@ -3726,34 +4262,39 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         return
                 else:
                     if sceneshotortake == 'take':
-                        writemessage('Throwing take on the floor' + str(take))
-                        #onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/take' + str(otf_take).zfill(3) 
-                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
+                        writemessage('Throwing take in archive' + str(take))
+                        #onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/take' + str(otf_take).zfill(3) 
+                        onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3) + '/'
                         if os.path.isdir(onthefloor) == False:
                             os.makedirs(onthefloor)
-                        os.system('mv ' + foldername + filename + '.h264 ' + onthefloor + '.h264')
-                        os.system('mv ' + foldername + filename + '.mp4 ' + onthefloor + '.mp4')
-                        os.system('mv ' + foldername + filename + '.wav ' + onthefloor + '.wav')
-                        os.system('mv ' + foldername + filename + '.jpeg ' + onthefloor + '.jpeg')
-                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
+                        os.system('cp ' + foldername + filename + '.h264 ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.mp4 ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.wav ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.jpeg ' + onthefloor + '')
+                        os.system('rm ' + foldername + filename + '.h264 ')
+                        os.system('rm ' + foldername + filename + '.mp4 ')
+                        os.system('rm ' + foldername + filename + '.wav ')
+                        os.system('rm ' + foldername + filename + '.jpeg ')
+                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_archive/settings.p')
                         take = take - 1
                         if take == 0:
                             take = 1
                     elif sceneshotortake == 'shot' and shot > 0:
-                        writemessage('Throwing shot on the floor' + str(shot))
-                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3)+'/'
-                        os.makedirs(onthefloor)
+                        writemessage('Throwing shot in archive' + str(shot))
+                        onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3) + '/shot' + str(otf_shot).zfill(3)+'/'
+                        os.makedirs(onthefloor,exist_ok=True)
                         os.system('cp -r '+foldername+'* '+onthefloor)
-                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
+                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_archive/settings.p')
                         os.system('rm -r '+foldername)
                         take = counttakes(filmname, filmfolder, scene, shot)
                     elif sceneshotortake == 'scene':
-                        onthefloor = filmfolder + filmname + '_onthefloor/' + 'scene' + str(otf_scene).zfill(3)
+                        onthefloor = filmfolder + filmname + '_archive/' + 'scene' + str(otf_scene).zfill(3)
                         os.makedirs(onthefloor)
-                        writemessage('Throwing clips on the floor ' + str(scene))
+                        writemessage('Throwing clips in the archive ' + str(scene))
                         foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
-                        os.system('mv ' + foldername + '/* ' + onthefloor+'/' )
-                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_onthefloor/settings.p')
+                        os.system('cp ' + foldername + '/* ' + onthefloor+'/' )
+                        os.system('cp -r '+filmfolder + filmname + "/settings.p "+filmfolder + filmname + '_archive/settings.p')
+                        os.system('rm -r ' + foldername)
                         scene = countscenes(filmfolder, filmname)
                         shot = 1
                         take = 1
@@ -3773,7 +4314,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         foldername = filmfolder + filmname
                         os.system('rm -r ' + foldername)
                         return
-                    organize(filmfolder, filmname + '_onthefloor')
+                    organize(filmfolder, filmname + '_archive')
                 return
             elif selected == 0:
                 return
@@ -3834,8 +4375,15 @@ def organize(filmfolder, filmname):
     for i in sorted(scenes):
         origin_scene_files=[]
         shots = next(os.walk(filmfolder + filmname + '/' + i))[1]
+        for p in shots:
+            if 'shot' not in p:
+                shots.remove(p)
         for p in sorted(shots):
-            takes = next(os.walk(filmfolder + filmname + '/' + i + '/' + p))[2]
+            takes=[]
+            takefiles = next(os.walk(filmfolder + filmname + '/' + i + '/' + p))[2]
+            for t in takefiles:
+                if 'take' in t:
+                    takes.append(t)
             if len(takes) == 0:
                 logger.info('no takes in this shot, removing shot if no placeholder')
                 if not os.path.isfile(filmfolder + filmname + '/' + i + '/' + p + '/.placeholder'):
@@ -3950,9 +4498,12 @@ def add_organize(filmfolder, filmname):
             if 'yanked' in p:
                 #print(p)
                 os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr - 1).zfill(3) + '_yanked ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
-            elif 'insert' in p:
+            #if _insert in last shot
+            elif organized_nr==len(shots) and '_insert' in p:
+                os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '_insert ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
+            elif '_insert' in p:
                 os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr - 1).zfill(3) + '_insert ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
-                run_command('touch ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '/.placeholder')
+                #run_command('touch ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '/.placeholder')
             elif 'shot' in p:
                 #print(p)
                 unorganized_nr = int(p[-3:])
@@ -3970,7 +4521,9 @@ def add_organize(filmfolder, filmname):
         #print(i)
         if 'yanked' in i:
             os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr - 1).zfill(3) + '_yanked ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
-        elif 'insert' in i:
+        elif organized_nr==len(scenes) and '_insert' in i:
+            os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3) + '_insert ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
+        elif '_insert' in i:
             #print(p)
             os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr - 1).zfill(3) + '_insert ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
             run_command('touch ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3) + '/.placeholder')
@@ -3986,25 +4539,54 @@ def add_organize(filmfolder, filmname):
         organized_nr -= 1
     return
 
+#------------Organize and move dubs----------------
+
+def organizedubs(foldername):
+    dubs = next(os.walk(foldername))[2]
+    print(dubs)
+    time.sleep(3)
+    for c in dubs:
+        if 'dub' not in c:
+            dubs.remove(c)
+    organized_nr = len(dubs)
+    for p in sorted(dubs, reverse=True):
+        print(p)
+        time.sleep(3)
+        if '_insert' in p:
+            os.system('mv -n ' + foldername + 'dub' + str(organized_nr).zfill(3) + '_insert.wav ' + foldername + 'dub' + str(organized_nr).zfill(3)+'.wav')
+        elif 'dub' in p:
+            print(p)
+            time.sleep(3)
+            unorganized_nr = int(p[5:-4])
+            if organized_nr == unorganized_nr:
+                print('correct')
+                time.sleep(3)
+                pass
+            if organized_nr != unorganized_nr:
+                print('false, correcting from ' + str(unorganized_nr) + ' to ' + str(organized_nr))
+                time.sleep(3)
+                os.system('mv -n ' + foldername + 'dub' + str(unorganized_nr).zfill(3) + '.wav ' + foldername + 'dub' + str(organized_nr).zfill(3)+'.wav') 
+        organized_nr -= 1
 
 #-------------Stretch Audio--------------
 
 def stretchaudio(filename,fps):
+    global film_fps
     fps_rounded=round(fps)
-    if int(fps_rounded) != 25:
-        pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-        videolenght = pipe.decode().strip()
+    if int(fps_rounded) != int(film_fps):
+        #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+        #videolength = pipe.decode().strip()
+        videolength=get_video_length(filename+'.mp4')
         try:
-            pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
-            audiolenght = pipe.decode().strip()
+            #pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+            #audiolength = pipe.decode().strip()
+            audiolength = get_audio_length(filename+'.wav')
         except:
-            audiosilence('',filename)
-            audiolenght=videolenght
-        #if there is no audio lenght
-        logger.info('audio is:' + audiolenght)
-        if not audiolenght.strip():
-            audiolenght = 0
-        ratio = int(audiolenght)/int(videolenght)
+            audiosilence(filename)
+            audiolength=videolength
+        #if there is no audio length
+        logger.info('audio is:' + str(audiolength))
+        ratio = int(audiolength)/int(videolength)
         print(str(ratio))
         run_command('cp '+filename+'.wav '+filename+'_temp.wav')
         run_command('ffmpeg -y -i ' + filename + '_temp.wav -filter:a atempo="'+str(ratio) + '" ' + filename + '.wav')
@@ -4012,12 +4594,105 @@ def stretchaudio(filename,fps):
     #time.sleep(5)
     return
 
+#---------#ffmpeg settings------------
+
+def encoder():
+    global bitrate
+    return '-c:v h264_omx -profile:v high -level:v 4.2 -preset slow -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' -c:a copy '
+    #return '-c:v copy -c:a copy '
+
+def has_audio_track(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Audio":
+                return True
+        return False
+
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
+def check_fps(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Video":
+                return track.frame_rate
+        return None
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
+def check_reso(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Video":
+                return track.width, track.height
+        return None
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
+def is_audio_stereo(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Audio":
+                if track.channel_s == 1:
+                    return False
+                if track.channel_s == 2:
+                    return True
+        return None
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
+
+def get_video_length(filepath):
+    # Parse the file
+    media_info = MediaInfo.parse(filepath)
+    # Find the video track (usually the first video track)
+    for track in media_info.tracks:
+        if track.track_type == "Video":
+            # Duration is in milliseconds, convert to seconds
+            duration_ms = track.duration
+            if duration_ms is None:
+                return None  # No duration found
+            return int(duration_ms)
+    return None  # No video track found
+
+def get_audio_length(filepath):
+    # Parse the file
+    media_info = MediaInfo.parse(filepath)
+    # Find the video track (usually the first video track)
+    for track in media_info.tracks:
+        if track.track_type == "Audio":
+            # Duration is in milliseconds, convert to seconds
+            duration_ms = track.duration
+            if duration_ms is None:
+                return None  # No duration found
+            return int(duration_ms)
+    return None  # No video track found
+
 #-------------Compile Shot--------------
 
 def compileshot(filename,filmfolder,filmname):
-    global fps, soundrate, channels
-    videolenght=0
-    audiolenght=0
+    global fps, soundrate, channels, bitrate, muxing, db, film_fps
+    videolength=0
+    audiolength=0 
     #Check if file already converted
     if '.h264' in filename:
         filename=filename.replace('.h264','')
@@ -4031,46 +4706,83 @@ def compileshot(filename,filmfolder,filmname):
         os.system('rm ' + filename + '.mp4')
         os.system('rm ' + video_origins + '.mp4')
         print(filename+'.mp4 removed!')
-        run_command('MP4Box -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
-        os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
-        if not os.path.isfile(filename + '.wav'):
-            audiosilence('',filename)
-        #add audio/video start delay sync
-        run_command('sox -V0 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
+        #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
+        #run_command('ffmpeg -fps 25 -add ' + video_origins + '.h264 ' + video_origins + '.mp4')
+        #run_command('ffmpeg -i ' + video_origins + '.h264 -c:v h264_omx -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v '+str(bitrate)+' '+ video_origins + '.mp4')
+        #run_command('ffmpeg -fflags +genpts -r 25 -i ' + video_origins + '.h264 '+encoder()+ video_origins + '.mp4')
+        ffmpeg_cmd = ['ffmpeg','-i', video_origins+'.h264', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', str(film_fps), '-f', 'mp4', video_origins+'.mp4', '-loglevel','debug', '-y']
+        ffmpeg_process = subprocess.Popen(ffmpeg_cmd)
+        stdout, stderr = ffmpeg_process.communicate()
+        #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+        print(filename+'.h264 converted to mp4')
+    video_origins = (os.path.realpath(filename+'.mp4'))[:-4]
+    if not os.path.isfile(filename + '.wav'):
+        vumetermessage('creating audio track...')
+        audiosilence(filename)
+    #add audio/video start delay sync
+    vumetermessage('checking video audio length...')
+    videolength = get_video_length(filename+'.mp4')
+    print('videolength:'+str(videolength))
+    try:
+        audiolength = get_audio_length(filename+'.wav')
+    except:
+        audiolength=videolength
+    #if there is no audio length
+
+    print('trimming audio')
+    if int(audiolength) > int(videolength+int(0.013*1000)):
+        vumetermessage('trimming audio...')
+        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
         run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
-        stretchaudio(filename,fps)
-        audiosync, videolenght, audiolenght = audiotrim(filename, 'end','')
-        muxing = True
-        if muxing == True:
-            #muxing mp3 layer to mp4 file
-            #count estimated audio filesize with a bitrate of 320 kb/s
-            audiosize = countsize(filename + '.wav') * 0.453
-            p = Popen(['ffmpeg', '-y', '-i', filename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', filename + '.mp3'])
-            while p.poll() is None:
-                time.sleep(0.2)
-                try:
-                    rendersize = countsize(filename + '.mp3')
-                except:
-                    continue
-                writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-            ##MERGE AUDIO & VIDEO
-            writemessage('Merging audio & video')
-            #os.remove(renderfilename + '.mp4') 
-            call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
-            call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', filename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
-            os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
-            os.remove(video_origins + '_tmp.mp4')
-            os.remove(filename + '.mp3')
-        origin=os.path.realpath(filename+'.mp4')
-        db.update('videos', where='filename="'+origin+'"', videolenght=videolenght/1000, audiolenght=audiolenght/1000, audiosync=audiosync)
-        os.system('rm ' + video_origins + '.h264')
-        os.system('rm ' + filename + '.h264')
         os.system('rm /dev/shm/temp.wav')
-        os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
-        logger.info('compile done!')
-        #run_command('omxplayer --layer 3 ' + filmfolder + '/.rendered/' + filename + '.mp4 &')
-        #time.sleep(0.8)
-        #run_command('aplay ' + foldername + filename + '.wav')
+    fps_rounded=round(fps)
+    if int(fps) != int(film_fps):
+        vumetermessage('stretching audio...')
+        stretchaudio(filename,fps)
+    if int(audiolength) != int(videolength):
+        vumetermessage('trimming audio to video...')
+        audiosync, videolength, audiolength = audiotrim(filename, 'end','')
+        try:
+            db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
+        except:
+            db = correct_database(filmname,filmfolder,db)
+            db.update('videos', where='filename="'+video_origins+'"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
+    mux=False
+    #one more if stereo check!
+    stereo = is_audio_stereo(filename+'.wav')
+    if stereo == False:
+        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 /dev/shm/temp.wav')
+        run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
+        os.system('rm /dev/shm/temp.wav')
+    logger.info('audio is:' + str(audiolength))
+    if mux == True:
+        #muxing mp3 layer to mp4 file
+        #count estimated audio filesize with a bitrate of 320 kb/s
+        audiosize = countsize(filename + '.wav') * 0.453
+        p = Popen(['ffmpeg', '-y', '-i', filename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', filename + '.mp3'])
+        while p.poll() is None:
+            time.sleep(0.2)
+            try:
+                rendersize = countsize(filename + '.mp3')
+            except:
+                continue
+            writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+        ##MERGE AUDIO & VIDEO
+        writemessage('Merging audio & video')
+        #os.remove(renderfilename + '.mp4') 
+        call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
+        call(['MP4Box', '-fps', str(film_fps), '-add', video_origins + '.mp4', '-add', filename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
+        os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
+        os.remove(video_origins + '_tmp.mp4')
+        os.remove(filename + '.mp3')
+    #origin=os.path.realpath(filename+'.mp4')
+    os.system('rm ' + video_origins + '.h264')
+    #os.system('rm ' + filename + '.h264')
+    #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+    logger.info('compile done!')
+    #run_command('omxplayer --layer 3 ' + filmfolder + '/.rendered/' + filename + '.mp4 &')
+    #time.sleep(0.8)
+    #run_command('aplay ' + foldername + filename + '.wav')
     return
 
 #-------------Get shot files--------------
@@ -4096,7 +4808,13 @@ def shotfiles(filmfolder, filmname, scene):
 
 #---------------Render Video------------------
 
-def rendervideo(filmfiles, filename, renderinfo):
+def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
+    videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+    tot = int(videos_totalt.videos)
+    #video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+    scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
+    if scene == 0:
+        scenedir = filmfolder + filmname + '/'
     if len(filmfiles) < 1:
         writemessage('Nothing here!')
         time.sleep(2)
@@ -4105,14 +4823,34 @@ def rendervideo(filmfiles, filename, renderinfo):
     writemessage('Hold on, rendering ' + renderinfo + ' with ' + str(len(filmfiles)) + ' files')
     videosize = 0
     rendersize = 0
-    videomerge = ['MP4Box']
-    videomerge.append('-force-cat')
+    #videomerge = ['MP4Box']
+    #videomerge.append('-force-cat')
+    #for f in filmfiles[:]:
+    #    videosize = videosize + countsize(f + '.mp4')
+    #    videomerge.append('-cat')
+    #    videomerge.append(f + '.mp4#video')
+    #videomerge.append('-new')
+    #videomerge.append(filename + '.mp4')
+    videomerge = ['ffmpeg']
+    videomerge.append('-f')
+    videomerge.append('concat')
+    videomerge.append('-safe')
+    videomerge.append('0')
+    run_command('rm '+scenedir+'.renderlist')
     for f in filmfiles[:]:
         videosize = videosize + countsize(f + '.mp4')
-        videomerge.append('-cat')
-        videomerge.append(f + '.mp4#video')
-    videomerge.append('-new')
-    videomerge.append(filename + '.mp4')
+        #videomerge.append(f + '.mp4')
+        with open(scenedir + '.renderlist', 'a') as l:
+            l.write("file '"+str(f)+".mp4'\n")
+    videomerge.append('-i')
+    videomerge.append(scenedir+'.renderlist')
+    videomerge.append('-c:v')
+    videomerge.append('copy')
+    videomerge.append('-movflags')
+    videomerge.append('+faststart')
+    videomerge.append(filename+'.mp4')
+    videomerge.append('-y')
+    #videomerge.append(filename + '.h264')
     #videomerge.append(filename + '.h264')
     #call(videomerge, shell=True) #how to insert somekind of estimated time while it does this?
     p = Popen(videomerge)
@@ -4120,11 +4858,13 @@ def rendervideo(filmfiles, filename, renderinfo):
     while p.poll() is None:
         time.sleep(0.1)
         try:
-            rendersize = countsize(filename + '.mp4')
+            rendersize = countsize(filename+'.mp4')
         except:
             continue
         writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done')
     print('Video rendered!')
+    #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+    run_command('rm '+scenedir+'.renderlist')
     return
 
 #---------------Render Audio----------------
@@ -4151,25 +4891,32 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
             os.system('cp '+audiofiles[0]+'.wav '+filename+'.wav')
     #DUBBING
     p = 1
-    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-    videolenght = pipe.decode().strip()
-    audiolenght=videolenght
+    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+    #videolength = pipe.decode().strip()
+    videolength = get_video_length(filename+'.mp4')
+    audiolength = get_audio_length(filename+'.wav')
+    if audiolength > videolength:
+        audiotrim(filename, 'end','')
     for i, d in zip(dubmix, dubfiles):
         writemessage('Dub ' + str(p) + ' audio found lets mix...')
         #first trimit!
         audiotrim(filename, 'end', d)
         try:
-            pipe = subprocess.check_output('soxi -D ' + d, shell=True)
-            dubaudiolenght = pipe.decode()
-            if dubaudiolengt != videolenght:
-                print('dub wrong lenght!')
+            #pipe = subprocess.check_output('soxi -D ' + d, shell=True)
+            #dubaudiolength = pipe.decode()
+            dubaudiolength=get_audio_lenght(d)
+            if dubaudiolength != videolength:
+                print('dub wrong length!')
                 time.sleep(5)
         except:
             pass
+        #print(d)
+        #print(filename)
+        #time.sleep(3)
         os.system('cp ' + filename + '.wav ' + filename + '_tmp.wav')
         #Fade and make stereo
-        run_command('sox -V0 -G ' + d + ' /dev/shm/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
-        run_command('sox -V0 -G -m -v ' + str(round(i[0],1)) + ' /dev/shm/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav ' + filename + '.wav trim 0 ' + audiolenght)
+        run_command('sox -V0 -b 16 -G ' + d + ' -c 2 /dev/shm/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
+        run_command('sox -V0 -b 16 -G -m -v ' + str(round(i[0],1)) + ' /dev/shm/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav -c 2 ' + filename + '.wav trim 0 ' + str(audiolength))
         try:
             os.remove(filename + '_tmp.wav')
             os.remove('/dev/shm/fade.wav')
@@ -4182,18 +4929,18 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
 #-------------Fast Edit-----------------
 def fastedit(filmfolder, filmname, filmfiles, scene):
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
-    totlenght = 0
+    totlength = 0
     try:
         os.remove(scenedir + '.fastedit')
     except:
         print('no fastedit file')
     #for f in filmfiles:
         #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + f + '.mp4', shell=True)
-        #videolenght = pipe.decode().strip()
-        #totlenght = int(videolenght) + totlenght
-        #print('writing shot lenghts for fastedit mode')
+        #videolength = pipe.decode().strip()
+        #totlength = int(videolength) + totlength
+        #print('writing shot lengths for fastedit mode')
         #with open(scenedir + '.fastedit', 'a') as f:
-        #    f.write(str(totlenght)+'\n')
+        #    f.write(str(totlength)+'\n')
     
 
 #-------------Get scene files--------------
@@ -4211,36 +4958,52 @@ def scenefiles(filmfolder, filmname):
     #time.sleep(2)
     return files
 
-
-
-
-
-
 #-------------Render Shot-------------
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
-    global fps
+    global fps, take, rendermenu, updatethumb, bitrate, muxing, db, film_fps
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
+    vumetermessage('render shot '+renderfilename)
+    video_origins = (os.path.realpath(renderfilename+'.mp4'))[:-4]
     def render(q, filmfolder, filmname, renderfilename, scene, shot):
+        global fps, take, rendermenu, updatethumb, bitrate, muxing, db
+        video_origins = (os.path.realpath(renderfilename+'.mp4'))[:-4]
         videohash = ''
         oldvideohash = ''
         scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
         #return if no file
         # Video Hash
-        if os.path.isfile(renderfilename + '.h264') == True:
+        #if os.path.isfile(renderfilename + '.h264') == True:
+        video_db=db.select('videos', where='filename="'+video_origins+'.mp4"')
+        faststart=True
+        try:
+            if video_db[0].faststart == 0:
+                faststart=False
+        except:
+            faststart = True
+            pass
+        if faststart == False:
+            vumetermessage('found new clip compiling...')
+            os.system('mv ' + video_origins + '.mp4 ' + video_origins + '_tmp.mp4')
+            call(['ffmpeg', '-i', video_origins + '_tmp.mp4', '-r', str(film_fps), '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-movflags', '+faststart', video_origins+'.mp4', '-y'], shell=False)
+            run_command('rm '+video_origins+'_tmp.mp4')
+            try:
+                db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
+            except:
+                db = correct_database(filmname,filmfolder,db)
+                db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
             compileshot(renderfilename,filmfolder,filmname)
             audiohash = str(int(countsize(renderfilename + '.wav')))
             with open(scenedir + '.audiohash', 'w') as f:
                 f.write(audiohash)
-        #if something shutdown in middle of process
-        elif os.path.isfile(renderfilename + '_tmp.mp4') == True:
-            os.system('cp ' + renderfilename + '_tmp.mp4 ' + renderfilename + '.mp4')
-        elif os.path.isfile(renderfilename + '.mp4') == True:
+        if os.path.isfile(renderfilename + '.mp4') == True:
             videohash = videohash + str(int(countsize(renderfilename + '.mp4')))
-            video_origins = (os.path.realpath(renderfilename+'.mp4'))[:-4]
             print('Videohash of shot is: ' + videohash)
             #time.sleep(3)
+            #if something shutdown in middle of process
+            #elif os.path.isfile(renderfilename + '_tmp.mp4') == True:
+            #    os.system('cp ' + renderfilename + '_tmp.mp4 ' + renderfilename + '.mp4')
         else:
             vumetermessage('Nothing here to play hit record')
             status='',''
@@ -4249,15 +5012,19 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         #    os.system('rm ' + renderfilename + '.h264 ')
         # Check if video corrupt
         renderfix = False
+        if not os.path.isfile(renderfilename + '.wav'):
+            vumetermessage('creating audio track...')
+            audiosilence(renderfilename)
+            renderfix = True
         if os.path.isfile(renderfilename + '.jpeg') == False: 
             run_command('ffmpeg -sseof -1 -i ' + renderfilename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + renderfilename + '.jpeg')
         #try:
         #    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-        #    videolenght = pipe.decode().strip()
+        #    videolength = pipe.decode().strip()
         #except:
-        #    videolenght = ''
-        #print('Shot lenght ' + videolenght)
-        #if videolenght == '':
+        #    videolength = ''
+        #print('Shot length ' + videolength)
+        #if videolength == '':
         #    print('Okey, shot file not found or is corrupted')
         #    # For backwards compatibility remove old rendered scene files
         #    # run_command('rm ' + renderfilename + '*')
@@ -4265,59 +5032,133 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         #    q.put(status)
 
         #EDITS AND FX
-        if os.path.isfile(scenedir+'.beginning') == True:
+        trimfile = ''
+        if os.path.isfile(scenedir+'.split') == True:
+            settings = pickle.load(open(scenedir + ".split", "rb"))
+            split_list = settings
+            logger.info("settings loaded")
+            nr=1
+            for i in split_list:
+                if nr == 1:
+                    #make first split as a new take in the original shot
+                    newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/'
+                    newtakename = 'take' + str(counttakes2(newshotdir)).zfill(3)
+                    if i[0][0] < i[0][1]:
+                        videotrim(filmfolder,scenedir,i[1],'both', i[0][0],i[0][1],'take')
+                    #newtakename = 'take' + str(1).zfill(3)
+                elif nr > 1:
+                    #then make new shots
+                    newshotdir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot-1).zfill(3) + '_insert/'
+                    newtakename = 'take' + str(1).zfill(3)
+                    try:
+                        os.makedirs(newshotdir)
+                    except:
+                        print('is there already prob')
+                    if i[0][0] < i[0][1]:
+                        videotrim(filmfolder,scenedir,i[1],'both', i[0][0],i[0][1],newshotdir+newtakename)
+                    add_organize(filmfolder, filmname)
+                organize(filmfolder, filmname)
+                organize(filmfolder, filmname)
+                scenes, shots, takes = browse(filmname,filmfolder,scene,shot,1)
+                #vumetermessage('Shot ' + str(shot) + ' inserted')
+                updatethumb = True
+                time.sleep(1)
+                nr=nr+1
+                shot=shot+1
+            os.remove(scenedir+'.split')
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
+            newaudiomix = True
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
+        elif os.path.isfile(scenedir+'.beginning') == True and os.path.isfile(scenedir+'.end') == True:
             settings = pickle.load(open(scenedir + ".beginning", "rb"))
             s, trimfile = settings
             logger.info("settings loaded")
-            videotrim(scenedir,trimfile,'beginning', s)
+            trimfile = 'take' + str(counttakes2(scenedir)).zfill(3)
+            renderfilename=scenedir+trimfile
+            settings = pickle.load(open(scenedir + ".end", "rb"))
+            t, trimfile = settings
+            logger.info("settings loaded")
+            videotrim(filmfolder,scenedir,trimfile,'both', s,t,'take')
             os.remove(scenedir+'.beginning')
-            #readcutinout
-            #cutvideo()
+            os.remove(scenedir+'.end')
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
             newaudiomix = True
-        if os.path.isfile(scenedir+'.end') == True:
-            try:
-                settings = pickle.load(open(scenedir + ".end", "rb"))
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
+        elif os.path.isfile(scenedir+'.beginning') == True:
+            settings = pickle.load(open(scenedir + ".beginning", "rb"))
+            s, trimfile = settings
+            logger.info("settings loaded")
+            videotrim(filmfolder,scenedir,trimfile,'beginning', s, 0,'take')
+            os.remove(scenedir+'.beginning')
+            newaudiomix = True
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
+            trimfile = 'take' + str(counttakes2(scenedir)).zfill(3)
+            renderfilename=scenedir+trimfile
+        elif os.path.isfile(scenedir+'.end') == True:
+            settings = pickle.load(open(scenedir + ".end", "rb"))
+            if trimfile == '':
                 s, trimfile = settings
-                logger.info("settings loaded")
-                videotrim(scenedir,trimfile,'end', s)
-                os.remove(scenedir+'.end')
-            except:
-                logger.info("couldnt load settings")
-            #readcutinout
-            #cutvideo()
+            else:
+                p, trimfileoriginal = settings
+                s=p-s
+            logger.info("settings loaded")
+            videotrim(filmfolder,scenedir,trimfile,'end', s, 0,'take')
+            os.remove(scenedir+'.end')
+            take=counttakes2(scenedir)
+            updatethumb=True
+            rendermenu = True
             newaudiomix = True
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
         ###---------BLEND----------
-        if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.h264') == True:
-            compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
-            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 -filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
+        if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.mp4') == True:
+            videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+            tot = int(videos_totalt.videos)
+            video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+            #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
+            call(['MP4Box', '-rem', '2', scenedir+'blend/'+blendmodes[blendselect] + '.mp4'], shell=False)
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 '+encoder()+'-filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
-            run_command('cp /dev/shm/blend.mp4 '+screen_filename+'.mp4')
+            #make a new sublink
+            run_command('cp /dev/shm/blend.mp4 '+video_origins+'.mp4')
+            os.system('ln -sfr '+video_origins+'.mp4 '+screen_filename+'.mp4')
             run_command('rm /dev/shm/blend.mp4')
+            run_command('rm '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4')
             run_command('ffmpeg -y -sseof -1 -i ' + screen_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + screen_filename + '.jpeg')
             #ffmpeg -i blendtest.mp4 -i blendtest3.mp4 -filter_complex "blend=screen" output2.mp4
+            newaudiomix = True
+            take=counttakes2(scenedir)
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
+            updatethumb=True
+            rendermenu = True
             newaudiomix = True
         ###---------CROSSFADE--------
         if os.path.isfile(scenedir+'.crossfade') == True:
             settings = pickle.load(open(scenedir + ".crossfade", "rb"))
             s, trimfile = settings
             logger.info("settings loaded")
-            videolenght=0
+            videolength=0
             foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
             crossfade_folder = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot+1).zfill(3) + '/'
             crossfade_filename = 'take' + str(counttakes2(crossfade_folder)).zfill(3)
             filename = trimfile
             compileshot(crossfade_folder+crossfade_filename,crossfade_folder,filmname)
             pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + foldername+filename + '.mp4', shell=True)
-            videolenght = pipe.decode().strip()
-            videolenght=(int(videolenght)/1000)-0.2
+            videolength = pipe.decode().strip()
+            videolength=(int(videolength)/1000)-0.2
             pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + crossfade_folder+ crossfade_filename + '.mp4', shell=True)
-            videolenght2 = pipe.decode().strip()
-            videolenght2=(int(videolenght2)/1000)-0.2
-            if videolenght > int(s)/2:
-                if videolenght2 > int(s)/2:           
+            videolength2 = pipe.decode().strip()
+            videolength2=(int(videolength2)/1000)-0.2
+            if videolength > int(s)/2:
+                if videolength2 > int(s)/2:           
                     #crossfade(scenedir,trimfile,'end', s)
-                    crossfade_start = int(videolenght)-crossfade
+                    crossfade_start = int(videolength)-crossfade
                     output = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
                     run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+crossfade_folder+crossfade_filename+'.mp4 -filter_complex "xfade=offset='+str(crossfade_start)+':duration='+str(crossfade)+'" '+output+'.mp4')
                     run_command('ffmpeg -y -i '+renderfilename+'.wav -i '+crossfade_folder+crossfade_filename+'.wav -filter_complex "acrossfade=d='+str(crossfade)+'" '+output+'.wav')
@@ -4370,37 +5211,37 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                     os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
                 print('Audio rendered!')
                 newaudiomix = True
-                muxing = True
-                if muxing == True:
-                    #muxing mp3 layer to mp4 file
-                    #count estimated audio filesize with a bitrate of 320 kb/s
-                    audiosize = countsize(renderfilename + '.wav') * 0.453
-                    p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-                    while p.poll() is None:
-                        time.sleep(0.2)
-                        try:
-                            rendersize = countsize(renderfilename + '.mp3')
-                        except:
-                            continue
-                        writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-                    ##MERGE AUDIO & VIDEO
-                    writemessage('Merging audio & video')
-                    #os.remove(renderfilename + '.mp4') 
-                    call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
-                    call(['MP4Box', '-fps', '25', '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
-                    os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
-                    try:
-                        os.remove(video_origins + '_tmp.mp4')
-                        os.remove(renderfilename + '.mp3')
-                    except:
-                        print('nothing to remove')
-                #origin=os.path.realpath(renderfilename+'.mp4')
-                #os.system('rm ' + filename + '.h264')
-                #os.system('rm /dev/shm/temp.wav')
-                #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
                 logger.info('compile done!')
             else:
                 print('Already rendered!')
+            muxings=False
+            if muxings == True:
+                #muxing mp3 layer to mp4 file
+                #count estimated audio filesize with a bitrate of 320 kb/s
+                audiosize = countsize(renderfilename + '.wav') * 0.453
+                p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+                while p.poll() is None:
+                    time.sleep(0.2)
+                    try:
+                        rendersize = countsize(renderfilename + '.mp3')
+                    except:
+                        continue
+                    writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+                ##MERGE AUDIO & VIDEO
+                writemessage('Merging audio & video')
+                #os.remove(renderfilename + '.mp4') 
+                call(['MP4Box', '-rem', '2',  video_origins + '.mp4'], shell=False)
+                call(['MP4Box', '-fps', str(film_fps), '-add', video_origins + '.mp4', '-add', renderfilename + '.mp3', '-new', video_origins + '_tmp.mp4'], shell=False)
+                os.system('cp -f ' + video_origins + '_tmp.mp4 ' + video_origins + '.mp4')
+                try:
+                    os.remove(video_origins + '_tmp.mp4')
+                    os.remove(renderfilename + '.mp3')
+                except:
+                    print('nothing to remove')
+            #origin=os.path.realpath(renderfilename+'.mp4')
+            #os.system('rm ' + filename + '.h264')
+            #os.system('rm /dev/shm/temp.wav')
+            #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
         status=renderfilename,newaudiomix
         q.put(status)
     q = mp.Queue()
@@ -4434,7 +5275,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
 #-------------Render Scene-------------
 
 def renderscene(filmfolder, filmname, scene):
-    global fps
+    global fps, muxing
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     videohash = ''
@@ -4444,14 +5285,15 @@ def renderscene(filmfolder, filmname, scene):
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
     # Check if video corrupt
     renderfixscene = False
+    renderfix=False
     #try:
     #    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
-    #    videolenght = pipe.decode().strip()
+    #    videolength = pipe.decode().strip()
     #except:
-    #    videolenght = ''
+    #    videolength = ''
     #    renderfixscene = True
-    #print('Scene lenght ' + videolenght)
-    #if videolenght == '':
+    #print('Scene length ' + videolength)
+    #if videolength == '':
     #    print('Okey, hold your horses, rendering!')
     #    # For backwards compatibility remove old rendered scene files
     #    #run_command('rm ' + renderfilename + '.mp4')
@@ -4474,6 +5316,18 @@ def renderscene(filmfolder, filmname, scene):
                 videohash = videohash + str(int(countsize(p + '.mp4')))
             except:
                 print('no file? ')
+    filmfiles = shotfiles(filmfolder, filmname, scene)
+    for p in filmfiles:
+        scene = int(p.rsplit('scene',1)[1][:3])
+        shot = int(p.rsplit('shot',1)[1][:3])
+        rendershotname, renderfix = rendershot(filmfolder, filmname, p, scene, shot)
+        if renderfix == True:
+            renderfixscene = True
+        if rendershotname:
+            try: 
+                videohash = videohash + str(int(countsize(p + '.mp4')))
+            except:
+                print('no file? ')
     print('Videohash of scene is: ' + videohash)
     try:
         with open(scenedir + '.videohash', 'r') as f:
@@ -4483,12 +5337,18 @@ def renderscene(filmfolder, filmname, scene):
         print('no videohash found, making one...')
         with open(scenedir + '.videohash', 'w') as f:
             f.write(videohash)
-
     print('renderfix is:'+str(renderfixscene))
     # Render if needed
     if videohash != oldvideohash or renderfixscene == True:
-        rendervideo(filmfiles, renderfilename, 'scene ' + str(scene))
-        fastedit(filmfolder, filmname, filmfiles, scene)
+        rendervideo(filmfolder,filmname,scene,filmfiles, renderfilename, 'scene ' + str(scene))
+        #fastedit(filmfolder, filmname, filmfiles, scene)
+        #run_command('cp '+renderfilename+ '.mp4 '+renderfilename+'_tmp.mp4')
+        #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-vsync', '1', '-c:v', 'copy', '-fflags', '+genpts+igndts', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
+        #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-c:v', 'copy', '-movflags', '+faststart', renderfilename+'.mp4', '-y'], shell=False)
+        try:
+            os.remove(renderfilename + '_tmp.mp4')
+        except:
+            pass
         print('updating videohash...')
         with open(scenedir + '.videohash', 'w') as f:
             f.write(videohash)
@@ -4505,6 +5365,7 @@ def renderscene(filmfolder, filmname, scene):
             audiohash=0
             renderfix=True
     dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, 0)
+    print(dubfiles)
     for p in dubfiles:
         try:
             audiohash += str(int(countsize(p)))
@@ -4532,42 +5393,47 @@ def renderscene(filmfolder, filmname, scene):
             os.system('cp ' + scenedir + '/dub/.settings' + str(i + 1).zfill(3) + ' ' + scenedir + '/dub/.rendered' + str(i + 1).zfill(3))
         print('Audio rendered!')
         newaudiomix = True
-        muxing = True
-        if muxing == True:
-            #muxing mp3 layer to mp4 file
-            #count estimated audio filesize with a bitrate of 320 kb/s
-            try:
-                audiosize = countsize(renderfilename + '.wav') * 0.453
-            except:
-                print('noothing here')
-            os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-            if debianversion == 'stretch':
-                p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-            else:
-                p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-            while p.poll() is None:
-                time.sleep(0.02)
-                try:
-                    rendersize = countsize(renderfilename + '.mp3')
-                except:
-                    continue
-                writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-            ##MERGE AUDIO & VIDEO
-            writemessage('Merging audio & video')
-            #os.remove(renderfilename + '.mp4') 
-            call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
-            call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
-            os.remove(renderfilename + '_tmp.mp4')
-            os.remove(renderfilename + '.mp3')
+        #os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
     else:
         print('Already rendered!')
+    #dont mux scenes for now
+    mux = False
+    if mux == True:
+        #muxing mp3 layer to mp4 file
+        #count estimated audio filesize with a bitrate of 320 kb/s
+        try:
+            audiosize = countsize(renderfilename + '.wav') * 0.453
+        except:
+            print('noothing here')
+        os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+        if debianversion == 'stretch':
+            p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+        else:
+            p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+        while p.poll() is None:
+            time.sleep(0.02)
+            try:
+                rendersize = countsize(renderfilename + '.mp3')
+            except:
+                continue
+            writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+        ##MERGE AUDIO & VIDEO
+        writemessage('Merging audio & video')
+        #os.remove(renderfilename + '.mp4') 
+        call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
+        #call(['MP4Box', '-inter', '40', '-v', renderfilename + '.mp4'], shell=False)
+        call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
+        #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-r', '25', '-fflags', '+genpts+igndts', '-vsync', '1', '-c:v', 'copy', '-c:a', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+        os.remove(renderfilename + '_tmp.mp4')
+        os.remove(renderfilename + '.mp3')
     return renderfilename, newaudiomix
 
 #-------------Render film------------
 
-def renderfilm(filmfolder, filmname, comp, scene, muxing):
-    global fps
-    def render(q, filmfolder, filmname, comp, scene, muxing):
+def renderfilm(filmfolder, filmname, comp, scene):
+    global fps, muxing
+    def render(q, filmfolder, filmname, comp, scene):
+        global fps, muxing
         newaudiomix = False
         #if comp == 1:
         #    newaudiomix = True
@@ -4578,6 +5444,11 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
             return
         scenes = countscenes(filmfolder, filmname)
         for i in range(scenes):
+            scenefilename, audiomix = renderscene(filmfolder, filmname, i + 1)
+            #Check if a scene has a new audiomix
+            print('audiomix of scene ' + str(i + 1) + ' is ' + str(audiomix))
+            if audiomix == True:
+                newaudiomix = True
             scenefilename, audiomix = renderscene(filmfolder, filmname, i + 1)
             #Check if a scene has a new audiomix
             print('audiomix of scene ' + str(i + 1) + ' is ' + str(audiomix))
@@ -4604,7 +5475,7 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
             with open(filmdir + '.videohash', 'w') as f:
                 f.write(videohash)
         if videohash != oldvideohash:
-            rendervideo(filmfiles, renderfilename, filmname)
+            rendervideo(filmfolder,filmname,scene,filmfiles, renderfilename, filmname)
             print('updating video hash')
             with open(filmdir + '.videohash', 'w') as f:
                 f.write(videohash)
@@ -4644,35 +5515,37 @@ def renderfilm(filmfolder, filmname, comp, scene, muxing):
                 #run_command('sox ' + renderfilename + '_tmp.wav ' + renderfilename + '.wav compand 0.3,1 6:-70,-60,-20 -5 -90 0.2')
                 run_command('sox ' + renderfilename + '_tmp.wav ' + renderfilename + '.wav compand 0.0,1 6:-70,-43,-20 -6 -90 0.1')
                 os.remove(renderfilename + '_tmp.wav')
-            if muxing == True:
-                #muxing mp3 layer to mp4 file
-                #count estimated audio filesize with a bitrate of 320 kb/s
-                audiosize = countsize(renderfilename + '.wav') * 0.453
-                os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
-                if debianversion == 'stretch':
-                    p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-                else:
-                    p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
-                while p.poll() is None:
-                    time.sleep(0.02)
-                    try:
-                        rendersize = countsize(renderfilename + '.mp3')
-                    except:
-                        continue
-                    writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
-                ##MERGE AUDIO & VIDEO
-                writemessage('Merging audio & video')
-                #os.remove(renderfilename + '.mp4') 
-                call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
-                call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
-                #call(['MP4Box', '-inter', '500', renderfilename + '.mp4'], shell=False)
-                os.remove(renderfilename + '_tmp.mp4')
-                os.remove(renderfilename + '.mp3')
         else:
             print('Already rendered!')
+        #muxing = True
+        if muxing == True:
+            #muxing mp3 layer to mp4 file
+            #count estimated audio filesize with a bitrate of 320 kb/s
+            audiosize = countsize(renderfilename + '.wav') * 0.453
+            os.system('mv ' + renderfilename + '.mp4 ' + renderfilename + '_tmp.mp4')
+            if debianversion == 'stretch':
+                p = Popen(['avconv', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+            else:
+                p = Popen(['ffmpeg', '-y', '-i', renderfilename + '.wav', '-acodec', 'libmp3lame', '-ac', '2', '-b:a', '320k', renderfilename + '.mp3'])
+            while p.poll() is None:
+                time.sleep(0.02)
+                try:
+                    rendersize = countsize(renderfilename + '.mp3')
+                except:
+                    continue
+                writemessage('audio rendering ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+            ##MERGE AUDIO & VIDEO
+            writemessage('Merging audio & video')
+            #os.remove(renderfilename + '.mp4') 
+            call(['MP4Box', '-rem', '2',  renderfilename + '_tmp.mp4'], shell=False)
+            #call(['MP4Box', '-inter', '40', '-v', renderfilename + '_tmp.mp4'], shell=False)
+            #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-c', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
+            call(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
+            os.remove(renderfilename + '_tmp.mp4')
+            os.remove(renderfilename + '.mp3')
         q.put(renderfilename)
     q = mp.Queue()
-    proc = mp.Process(target=render, args=(q,filmfolder,filmname,comp,scene,muxing))
+    proc = mp.Process(target=render, args=(q,filmfolder,filmname,comp,scene))
     proc.start()
     procdone = False
     status = ''
@@ -4723,6 +5596,7 @@ def getdubs(filmfolder, filmname, scene, shot):
         if 'dub' in a:
             print('Dub audio found! ' + filefolder + a)
             dubfiles.append(filefolder + a)
+            dubfiles.sort()
     #check if dub mix has changed
     dubnr = 1
     for i in dubfiles:
@@ -4767,8 +5641,9 @@ def removedub(dubfolder, dubnr):
     header = 'Are you sure you want to remove dub ' + str(dubnr) + '?'
     menu = 'NO', 'YES'
     settings = '', ''
+    oldmenu=''
     while True:
-        writemenu(menu,settings,selected,header,showmenu)
+        writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(menu) - 1):
@@ -4812,7 +5687,7 @@ def removedub(dubfolder, dubnr):
 
 #-------------Clip settings---------------
 
-def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
+def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
     vumetermessage('press record, view or retake to be dubbing')
     pressed = ''
     buttonpressed = ''
@@ -4837,6 +5712,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
     newdub = [1.0, 1.0, 0.1, 0.1]
     dubselected = len(dubfiles) - 1
     dubrecord = ''
+    oldmenu=''
     while True:
         nmix = round(newdub[0],1)
         ndub = round(newdub[1],1)
@@ -4848,11 +5724,11 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
             fadein = round(dubmix[dubselected][2],1)
             fadeout = round(dubmix[dubselected][3],1)
             menu = 'BACK', 'ADD:', '', '', 'DUB' + str(dubselected + 1) + ':', '', '', ''
-            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout), '', 'd:' + str(mix) + '/o' + str(dub), 'in:' + str(fadein), 'out:' + str(fadeout)
+            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout), '', 'd:' + str(mix) + '/o' + str(dub), 'in:' + str(fadein), 'out:' + str(fadeout), ''
         else:
             menu = 'BACK', 'ADD:', '', ''
-            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout)
-        writemenu(menu,settings,selected,header,showmenu)
+            settings = '', 'd:' + str(nmix) + '/o:' + str(ndub), 'in:' + str(nfadein), 'out:' + str(nfadeout), ''
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
 
         #NEW DUB SETTINGS
@@ -4876,6 +5752,15 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
         elif pressed == 'down' and selected == 3:
             if newdub[3] > 0.01:
                 newdub[3] -= 0.1
+        elif pressed == 'insert' and yanked != '':
+            os.makedirs(filefolder, exist_ok=True)
+            dubmix.append(newdub)
+            dubrecord = filefolder + 'dub' + str(len(dubfiles)+1).zfill(3) + '.wav'
+            os.system('cp '+yanked+'.wav '+dubrecord)
+            dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
+            dubselected = len(dubfiles) - 1
+            dubrecord=''
+            yanked = ''
         elif pressed == 'record' or pressed == 'middle' and selected == 1:
             dubmix.append(newdub)
             dubrecord = filefolder + 'dub' + str(len(dubfiles)+1).zfill(3) + '.wav'
@@ -4890,6 +5775,15 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
         elif pressed == 'down' and selected == 4:
             if dubselected > 0:
                 dubselected = dubselected - 1
+        elif pressed == 'move' and selected == 4:
+            vumetermessage('press insert button to move dub')
+            movedub = filefolder + 'dub' + str(dubselected + 1).zfill(3) + '.wav'
+        elif pressed == 'insert' and selected == 4:
+            vumetermessage('moving dub please hold on')
+            pastedub = filefolder + 'dub' + str(dubselected + 1).zfill(3) + '_insert.wav'
+            os.system('mv -n ' + movedub + ' ' + pastedub)
+            organizedubs(filefolder)
+            pastedub=''
         elif pressed == 'remove' and selected == 4:
             removedub(filefolder, dubselected + 1)
             dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
@@ -4923,25 +5817,33 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
         elif pressed == 'down' and selected == 7:
             if dubmix[dubselected][3] > 0.01:
                 dubmix[dubselected][3] -= 0.1
-        elif pressed == 'right':
-            if selected < (len(settings) - 1):
+        if pressed == 'right':
+            if selected < (len(settings)-2):
                 selected = selected + 1
+            else:
+                selected = 0
+            selected == 0
         elif pressed == 'left':
             if selected > 0:
                 selected = selected - 1
-
+            else:
+                selected = len(settings) - 2
         elif pressed == 'middle' and menu[selected] == 'BACK':
             os.system('pkill aplay')
             break
-        elif pressed == 'view': # mix dub and listen
+        elif pressed == 'views': # mix dub and listen
             run_command('pkill aplay')
             dubfiles, dubmix, rerender = getdubs(filmfolder, filmname, scene, shot)
             if scene:
                 filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/scene'
+                renderfilename = renderfilm(filmfolder, filmname, 0, scene)
+                playdub(filmname,renderfilename, 'scene',take)
+            elif shot and scene:
+                filename = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(scene).zfill(3)+'/shot'
+                renderfilename = renderfilm(filmfolder, filmname, 0, scene)
+                playdub(filmname,renderfilename, 'shot',take)
             else:
                 filename = filmfolder + filmname + '/' + filmname
-            renderfilename = renderfilm(filmfolder, filmname, 0, scene, False)
-            playdub(filmname,renderfilename, 'scene')
         time.sleep(0.05)
     #Save dubmix before returning
     if dubmix != dubmix_old:
@@ -4955,12 +5857,27 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw):
                     print(str(round(p,1)))
             c += 1
         dubmix_old = dubmix
-    return dubrecord
+    return dubrecord, yanked
 
 #---------------Play & DUB--------------------
 
-def playdub(filmname, filename, player_menu):
-    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder
+def playdub(filmname, filename, player_menu, take):
+    global headphoneslevel, miclevel, plughw, channels, filmfolder, scene, soundrate, soundformat, showhelp, camera, overlay, overlay2, gonzopifolder, i2cbuttons, film_fps, film_reso
+    reso_w=film_reso.split('x')[0]
+    reso_h=film_reso.split('x')[1]
+    if film_reso == '1920x1080':
+        screen_reso_w='800'
+        screen_reso_h='475'
+        topspace='15'
+    elif film_reso == '1920x816':
+        screen_reso_w='800'
+        screen_reso_h='415'
+        topspace='75'
+    takename = 'take' + str(take).zfill(3)
+    if i2cbuttons == False:
+        hdmi_mode=True
+    else:
+        hdmi_mode=False
     if showhelp == True:
         overlay2 = removeimage(camera, overlay2)
         overlay2 = displayimage(camera, gonzopifolder+'/extras/view-buttons.png', overlay, 4)
@@ -4988,50 +5905,59 @@ def playdub(filmname, filename, player_menu):
             video = False
         else:
             return
+    sound = has_audio_track(filename + '.mp4')
     t = 0
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
     holdbutton = ''
-    playing = False
+    #playing = False
     pause = False
     trim = False
     videolag = 0
     trimfromstart=0
     trimfromend=0
     remove_shots = []
+    split_list=[]
+    oldmenu=''
     if video == True:
         if player_menu == 'dubbb':
             try:
-                player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                if hdmi_mode==False:
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', str(film_fps), '--layer', '3', '--no-osd', '--win', '0,'+topspace+','+screen_reso_w+','+screen_reso_h,' --no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                else:
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', str(film_fps), '--layer', '3', '--no-osd','--win', '0,15,'+reso_h+','+reso_w, '--no-keys',  '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
-                time.sleep(0.5)
+                time.sleep(0.1)
                 return
         else:
             try:
-                player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', '25', '--layer', '3', '--no-osd', '--win', '0,15,800,475','--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                if hdmi_mode==False:
+                    player = OMXPlayer(filename + '.mp4', args=['--adev', 'alsa:hw:'+str(plughw), '--fps', str(film_fps), '--layer', '3', '--no-osd', '--win', '0,'+topspace+','+screen_reso_w+','+screen_reso_h, '--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
+                else:
+                    player = OMXPlayer(filename + '.mp4', args=['-n', '-1', '--fps', str(film_fps), '--layer', '3', '--no-osd','--no-keys','--win', '0,15,'+reso_h+','+reso_w, '--no-keys', '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
             except:
                 writemessage('Something wrong with omxplayer')
-                time.sleep(0.5)
+                time.sleep(0.1)
                 return
             #player = OMXPlayer(filename + '.mp4', args=['--fps', '25', '--layer', '3', '--win', '0,70,800,410', '--no-osd', '--no-keys'], dbus_name='org.mpris.MediaPlayer2.omxplayer1', pause=True)
         writemessage('Loading..')
         clipduration = player.duration()
         #vumetermessage('up [fast-forward], down [rewind], help button for more')
-    #sound
-    #if player_menu != 'film':
-    #    try:
-    #        playerAudio = OMXPlayer(filename + '.wav', args=['--adev','alsa:hw:'+str(plughw)], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
-    #        time.sleep(0.2)
-    #    except:
-    #        writemessage('something wrong with audio player')
-    #        time.sleep(2)
-    #        return
-        #omxplayer hack to play really short videos.
+    if sound == False:
+        try:
+            playerAudio = OMXPlayer(filename + '.wav', args=['--adev','alsa:hw:'+str(plughw), '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
+        except:
+            writemessage('something wrong with audio player')
+            time.sleep(0.1)
+            return
+    #omxplayer hack to play really short videos.
     if clipduration < 4:
         logger.info("clip duration shorter than 4 sec")
         player.previous()
+        if sound == False:
+            playerAudio.previous()
     if dub == True:
         p = 0
         while p < 3:
@@ -5040,6 +5966,12 @@ def playdub(filmname, filename, player_menu):
             p+=1
     if video == True:
         player.play()
+        #player.pause()
+        player.set_position(0)
+        if sound == False:
+            playerAudio.play()
+            #playerAudio.pause()
+            playerAudio.set_position(0)
         #run_command('aplay -D plughw:0 ' + filename + '.wav &')
         #run_command('mplayer ' + filename + '.wav &')
     if player_menu == 'dub':
@@ -5085,12 +6017,15 @@ def playdub(filmname, filename, player_menu):
             header = 'Dubbing ' + str(round(t,1))
         else:
             header = 'Playing ' + str(datetime.timedelta(seconds=round(t))) + ' of ' + str(datetime.timedelta(seconds=round(clipduration))) + ' s'
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if buttonpressed == True:
             flushbutton()
         if pressed == 'remove':
-            vumetermessage('add direct remove here')
+            vumetermessage('video cuts removed!')
+            trimfromstart=0
+            trimfromend=0
+            split_list=[]
         #SHOWHELP
         elif pressed == 'showhelp':
             vumetermessage('Button layout')
@@ -5118,12 +6053,30 @@ def playdub(filmname, filename, player_menu):
                     miclevel = miclevel + 2
                     run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
             else:
-                try:
-                    player.set_position(t+2)
-                    time.sleep(0.2)
-                    #playerAudio.set_position(player.position())
-                except:
-                    print('couldnt set position of player')
+                if pause == False:
+                    try:
+                        player.set_position(t+2)
+                        if sound == False:
+                            playerAudio.set_position(t+2)
+                        time.sleep(0.2)
+                        #playerAudio.set_position(player.position())
+                    except:
+                        print('couldnt set position of player')
+                else:
+                    try:
+                        player.play()
+                        if sound == False:
+                            playerAudio.play()
+                        time.sleep(0.3)
+                        t=t+0.1 
+                        player.set_position(t)
+                        player.pause()
+                        if sound == False:
+                            playerAudio.set_position(t)
+                            playerAudio.pause()
+                        #playerAudio.set_position(player.position())
+                    except:
+                        print('couldnt set position of player')
         elif pressed == 'down':
             if menu[selected] == 'PHONES:':
                 if headphoneslevel > 0:
@@ -5134,10 +6087,28 @@ def playdub(filmname, filename, player_menu):
                     miclevel = miclevel - 2
                     run_command('amixer -c 0 sset Mic ' + str(miclevel) + '% unmute')
             else:
-                if t > 1:
+                if pause == False:
+                    if t > 1:
+                        try:
+                            player.set_position(t-2)
+                            if sound == False:
+                                playerAudio.set_position(t-2)
+                            time.sleep(0.25)
+                            #playerAudio.set_position(player.position())
+                        except:
+                            print('couldnt set position of player')
+                else:
                     try:
-                        player.set_position(t-2)
-                        time.sleep(0.25)
+                        player.play()
+                        if sound == False:
+                            playerAudio.play()
+                        time.sleep(0.3)
+                        t=t-0.1
+                        player.set_position(t)
+                        player.pause()
+                        if sound == False:
+                            playerAudio.set_position(t)
+                            playerAudio.pause()
                         #playerAudio.set_position(player.position())
                     except:
                         print('couldnt set position of player')
@@ -5145,15 +6116,35 @@ def playdub(filmname, filename, player_menu):
             trimfromstart = player.position()
             vumetermessage('shot start position set to: '+ str(trimfromstart))
             player.pause()
+            if sound == False:
+                playerAudio.pause()
             time.sleep(0.5)
             player.play()
+            if sound == False:
+                playerAudio.play()
+        elif pressed == 'record':
+            if trimfromstart != 0 and trimfromend != 0 and trimfromstart < trimfromend:
+                split_list.append([[trimfromstart, trimfromend], takename])
+                vumetermessage('split '+str(len(split_list))+' position set to: '+ str(player.position()))
+                player.pause()
+                if sound == False:
+                    playerAudio.pause()
+                time.sleep(0.5)
+                player.play()
+                if sound == False:
+                    playerAudio.play()
         elif pressed == 'retake':
-            trimfromend = player.position()
-            vumetermessage('shot end position set to: '+ str(trimfromend))
-            player.pause()
-            time.sleep(0.5)
-            player.play()
-        elif pressed == 'middle' or pressed == 'record':
+            if player.position() < clipduration:
+                trimfromend = player.position()
+                vumetermessage('shot end position set to: '+ str(trimfromend))
+                player.pause()
+                if sound == False:
+                    playerAudio.pause()
+                time.sleep(0.5)
+                player.play()
+                if sound == False:
+                    playerAudio.play()
+        elif pressed == 'middle':
             time.sleep(0.2)
             if menu[selected] == 'BACK' or player.playback_status() == "Stopped" or pressed == 'record':
                 try:
@@ -5161,7 +6152,8 @@ def playdub(filmname, filename, player_menu):
                         #player.stop()
                         #playerAudio.stop()
                         player.quit()
-                        #playerAudio.quit()
+                        if sound == False:
+                            playerAudio.quit()
                     #os.system('pkill -9 aplay') 
                 except:
                     #kill it if it dont stop
@@ -5171,7 +6163,7 @@ def playdub(filmname, filename, player_menu):
                     time.sleep(0.2)
                 os.system('pkill -9 omxplayer')
                 #os.system('pkill -9 dbus-daemon')
-                return [trimfromstart, trimfromend]
+                return [trimfromstart, trimfromend], split_list
             elif menu[selected] == 'REPLAY' or menu[selected] == 'REDUB':
                 pause = False
                 try:
@@ -5181,9 +6173,9 @@ def playdub(filmname, filename, player_menu):
                     if video == True:
                         player.pause()
                         player.set_position(0)
-                        #if player_menu != 'film':
-                            #playerAudio.pause()
-                            #playerAudio.set_position(0)
+                        if sound == False:
+                            playerAudio.pause()
+                            playerAudio.set_position(0)
                     if dub == True:
                         p = 0
                         while p < 3:
@@ -5191,6 +6183,8 @@ def playdub(filmname, filename, player_menu):
                             time.sleep(1)
                             p+=1
                     player.play()
+                    if sound == False:
+                        playerAudio.play()
                     #if player_menu != 'film':
                     #    playerAudio.play()
                     #run_command('aplay -D plughw:0 ' + filename + '.wav &')
@@ -5203,6 +6197,8 @@ def playdub(filmname, filename, player_menu):
             elif menu[selected] == 'PAUSE':
                 try:
                     player.pause()
+                    if sound == False:
+                        playerAudio.pause()
                     pause = True
                 except:
                     pass
@@ -5213,6 +6209,8 @@ def playdub(filmname, filename, player_menu):
             elif menu[selected] == 'PLAY':
                 try:
                     player.play()
+                    if sound == False:
+                        playerAudio.play()
                     pause = False
                 except:
                     pass
@@ -5230,12 +6228,13 @@ def playdub(filmname, filename, player_menu):
                 trim = ['beginning', player.position()]
                 player.quit()
                 #playerAudio.quit()
-                return trim
+                return trim, split_list
             elif menu[selected] == 'FROM END':
                 trim = ['end', player.position()]
                 player.quit()
-                #playerAudio.quit()
-                return trim
+                if sound == False:
+                    playerAudio.quit()
+                return trim, split_list
         time.sleep(0.02)
         if pause == False:
             try:
@@ -5244,17 +6243,26 @@ def playdub(filmname, filename, player_menu):
                 os.system('pkill aplay') 
                 if dub == True:
                     os.system('pkill arecord')
-                return [trimfromstart, trimfromend]
+                player.quit()
+                if sound == False:
+                    playerAudio.quit()
+                return [trimfromstart, trimfromend], split_list
                 #return remove_shots
         if t > (clipduration - 0.3):
             os.system('pkill aplay') 
             if dub == True:
                 os.system('pkill arecord')
-            return [trimfromstart, trimfromend]
+            player.quit()
+            if sound == False:
+                playerAudio.quit()
+            return [trimfromstart, trimfromend], split_list
     try:
         player.quit()
+        if sound == False:
+            playerAudio.quit()
     except:
         pass
+    return [trimfromstart, trimfromend], split_list
     #playerAudio.quit()
     #os.system('pkill dbus-daemon')
 
@@ -5300,16 +6308,56 @@ def videotrimsave(filmfolder, where, s, trimfile):
         #logger.warning(e)
     return
 
+#--------------Save split settings-----------------
+
+def split_list_save(foldername, splitlist):
+    #db.insert('videos', tid=datetime.datetime.now())
+    settings=splitlist
+    try:
+        with open(foldername + ".split", "wb") as f:
+            pickle.dump(settings, f)
+            logger.info("split settings saved")
+    except:
+        logger.warning("could not save settings")
+        #logger.warning(e)
+    return
+
+
 #---------------Video Trim--------------------
 
-def videotrim(foldername ,filename, where, s):
+def videotrim(filmfolder, foldername ,filename, where, s, t, make_new_take_or_shot):
+    global film_reso
     #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
-    trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
+    if make_new_take_or_shot == 'take':
+        trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
+    else:
+        trim_filename = make_new_take_or_shot
     filename=foldername+filename
-    if where == 'beginning':
+    if where == 'both':
+        s=round(s, 3)
+        t=round(t, 3)
+        video_edit_len=round(float(t)-float(s),3)
+        videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+        tot = int(videos_totalt.videos)
+        video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+        run_command('ffmpeg -i '+filename+'.mp4 -ss '+str(s)+' -t '+str(video_edit_len)+' -c:v copy -c:a copy -y '+video_origins+'.mp4')
+        os.system('ln -sfr '+video_origins+'.mp4 '+trim_filename+'.mp4')
+        run_command('ffmpeg -i '+filename+'.wav -ss '+str(s)+' -t '+str(video_edit_len)+' -c:a copy -y '+trim_filename+'.wav')
+        #run_command('ecasound -i:'+filename+'.wav -o:'+trim_filename+'.wav -ss:'+str(s)+' -t:'+str(video_edit_len))
+        #if os.path.exists(foldername+'dub') == True:
+        #    dubfiles, dubmix, rerender = getdubs(foldername+'dub/', None, None, None)
+        #    for d in dubfiles:
+        #        writemessage('trimming dubs from beginning and end')
+        #        vumetermessage(d)
+        #        #audiotrim(trim_filename, 'beginning', d)
+        #        run_command('ecasound -i:'+d+' -o:'+d+'_temp -ss '+str(s)+' -t '+str(t))
+        #    writemessage('trimming original sound')
+    elif where == 'beginning':
         logger.info('trimming clip from beginning')
         #run_command('ffmpeg -ss ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
-        run_command('MP4Box ' + filename + '.mp4 -splitx ' + str(s) + ':end -out ' + trim_filename +  '.mp4')
+        #ffmpeg -fflags +genpts -r 25 -i take009.mp4 -c:v h264_omx -crf 20 -profile:v high -level:v 4.2 -preset slower -bsf:v h264_metadata=level=4.2 -g 1 -b:v 8888888 take010.mp4
+        #run_command('MP4Box ' + filename + '.mp4 -splitx ' + str(s) + ':end -out ' + trim_filename +  '.mp4')
+        run_command('ffmpeg -i '+filename+'.mp4 -ss '+str(s)+' -c:v copy -c:a copy -y '+trim_filename+'.mp4')
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'beginning','')
         if os.path.exists(foldername+'dub') == True:
@@ -5320,10 +6368,11 @@ def videotrim(foldername ,filename, where, s):
                 audiotrim(trim_filename, 'beginning', d)
             writemessage('trimming original sound')
             audiotrim(trim_filename, 'beginning', foldername+'dub/original.wav')
-    if where == 'end':
+    elif where == 'end':
         logger.info('trimming clip from end')
         #run_command('ffmpeg -to ' + str(s) + ' -i ' + filename + '.mp4 -c copy ' + trim_filename + '.mp4')
-        run_command('MP4Box ' + filename + '.mp4 -splitx 0:' + str(s) + ' -out ' + trim_filename + '.mp4')
+        #run_command('MP4Box ' + filename + '.mp4 -splitx 0:' + str(s) + ' -out ' + trim_filename + '.mp4')
+        run_command('ffmpeg -i '+filename+'.mp4 -t '+str(s)+' -c:v copy -c:a copy -y '+trim_filename+'.mp4')
         run_command('cp ' + filename + '.wav ' + trim_filename + '.wav')
         audiotrim(trim_filename, 'end','')
         if os.path.exists(foldername+'dub') == True:
@@ -5335,7 +6384,10 @@ def videotrim(foldername ,filename, where, s):
             writemessage('trimming original sound')
             audiotrim(trim_filename, 'end', foldername+'dub/original.wav')
     #take last frame 
-    run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
+    if film_reso == '1920x1080':
+        run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
+    elif film_reso == '1920x816':
+        run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:340 ' + trim_filename + '.jpeg')
     return
 
 #---------------Video Trim From start and end--------------------
@@ -5363,64 +6415,65 @@ def getaudiocards():
     return audiocards
 
 #--------------Fast Audio Trim--------------------
-# make audio file same lenght as video file
+# make audio file same length as video file
 def fastaudiotrim(filename, beginning, end):
     run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim ' + beginning + ' ' + end)
     run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
 
 #--------------Audio Trim--------------------
-# make audio file same lenght as video file
+# make audio file same length as video file
 def audiotrim(filename, where, dub):
     global channels, fps
     videofile=filename
     audiosync=0
     print("chaaaaaaaaaaaaaaaanel8: " +str(channels))
     writemessage('Audio syncing..')
-    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
-    videolenght = pipe.decode().strip()
-    print('videolenght:'+str(videolenght))
+    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
+    #videolength = pipe.decode().strip()
+    videolength = get_video_length(filename+'.mp4')
+    print('videolength:'+str(videolength))
     if dub:
-        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
-        audiolenght = pipe.decode().strip()
+        #pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
+        #audiolength = pipe.decode().strip()
+        audiolength = get_audio_length(dub[:-4] + '.wav')
     else:
         try:
-            pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
-            audiolenght = pipe.decode().strip()
+            #pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+            #audiolength = pipe.decode().strip()
+            audiolength = get_audio_length(filename+'.wav')
         except:
-            audiosilence('',filename)
-            audiolenght=videolenght
-        #if there is no audio lenght
-    logger.info('audio is:' + audiolenght)
-    if not audiolenght.strip():
-        audiolenght = 0
+            audiosilence(filename)
+            audiolength=videolength
+        #if there is no audio length
+    logger.info('audio is:' + str(audiolength))
     #separate seconds and milliseconds
-    #videoms = int(videolenght) % 1000
-    #audioms = int(audiolenght) % 1000
-    #videos = int(videolenght) / 1000
-    #audios = int(audiolenght) / 1000
-    elif int(audiolenght) > int(videolenght):
+    #videoms = int(videolength) % 1000
+    #audioms = int(audiolength) % 1000
+    #videos = int(videolength) / 1000
+    #audios = int(audiolength) / 1000
+    if int(audiolength) > int(videolength):
         #calculate difference
-        audiosync = int(audiolenght) - int(videolenght)
-        newaudiolenght = int(audiolenght) - audiosync
+        audiosync = int(audiolength) - int(videolength)
+        newaudiolength = int(audiolength) - audiosync
         logger.info('Audiofile is: ' + str(audiosync) + 'ms longer')
         #trim from end or beginning and put a 0.01 in- and outfade
         if where == 'end':
             if dub:
-                run_command('sox -V0 ' + dub[:-4] + '.wav ' + dub[:-4] + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + dub[:-4] + '.wav -c 2 ' + dub[:-4] + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
             else:
-                run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + filename + '.wav -c 2 ' + filename + '_temp.wav trim 0 -' + str(int(audiosync)/1000))
         if where == 'beginning':
             if dub:
                 logger.info('trimming from beginning at: '+str(int(audiosync)/1000))
-                run_command('sox -V0 ' + dub[:-4] + '.wav ' + dub[:-4] + '_temp.wav trim ' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + dub[:-4] + '.wav -c 2 ' + dub[:-4] + '_temp.wav trim ' + str(int(audiosync)/1000))
             else:
                 logger.info('trimming from beginning at: '+str(int(audiosync)/1000))
-                run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim ' + str(int(audiosync)/1000))
+                run_command('sox -V0 -b 16 ' + filename + '.wav -c 2 ' + filename + '_temp.wav trim ' + str(int(audiosync)/1000))
         if dub:
-            run_command('sox -V0 -G ' + dub[:-4] + '_temp.wav ' + dub[:-4] + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -G ' + dub[:-4] + '_temp.wav -c 2 ' + dub[:-4] + '.wav fade 0.01 0 0.01')
             os.remove(dub[:-4] + '_temp.wav')
         else:
-            run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -G ' + filename + '_temp.wav -c 2 ' + filename + '.wav fade 0.01 0 0.01')
             os.remove(filename + '_temp.wav')
         #if int(audiosync) > 400:
         #    writemessage('WARNING!!! VIDEO FRAMES DROPPED!')
@@ -5428,8 +6481,8 @@ def audiotrim(filename, where, dub):
         #    time.sleep(10)
         delayerr = 'A' + str(audiosync)
         print(delayerr)
-    elif int(audiolenght) < int(videolenght):
-        audiosync = int(videolenght) - int(audiolenght)
+    elif int(audiolength) < int(videolength):
+        audiosync = int(videolength) - int(audiolength)
         #calculate difference
         #audiosyncs = videos - audios
         #audiosyncms = videoms - audioms
@@ -5444,11 +6497,11 @@ def audiotrim(filename, where, dub):
         #make delay file
         print(str(int(audiosync)/1000))
         if dub:
-            run_command('sox -V0 -r '+soundrate+' -c 2 '+dub[:-4]+'.wav '+dub[:-4]+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
-            run_command('sox -V0 -G ' + dub[:-4] + '_temp.wav ' + dub[:-4] + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -r '+soundrate+' '+dub[:-4]+'.wav -c 2 '+dub[:-4]+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
+            run_command('sox -V0 -b 16 -G ' + dub[:-4] + '_temp.wav -c 2 ' + dub[:-4] + '.wav fade 0.01 0 0.01')
         else:
-            run_command('sox -V0 -r '+soundrate+' -c 2 '+filename+'.wav '+filename+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
-            run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -r '+soundrate+' '+filename+'.wav -c 2 '+filename+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
+            run_command('sox -V0 -b 16 -G ' + filename + '_temp.wav -c 2 ' + filename + '.wav fade 0.01 0 0.01')
         #add silence to end
         #run_command('sox -V0 /dev/shm/silence.wav ' + filename + '_temp.wav')
         #run_command('cp '+filename+'.wav '+filename+'_temp.wav')
@@ -5460,55 +6513,58 @@ def audiotrim(filename, where, dub):
         #os.remove('/dev/shm/silence.wav')
         delayerr = 'V' + str(audiosync)
         print(delayerr)
-    print('the results:')
-    if dub:
-        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
-        audiolenght = pipe.decode().strip()
-    else:
-        pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
-        audiolenght = pipe.decode().strip()
-    print('aftersyncvideo: '+str(videolenght) + ' audio:'+str(audiolenght))
-    if int(audiolenght) != int(videolenght):
-        vumetermessage('SYNCING FAILED!')
-        time.sleep(10)
+    #print('the results:')
+    #if dub:
+    #    pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + dub[:-4] + '.wav', shell=True)
+    #    audiolength = pipe.decode().strip()
+    #else:
+    #    pipe = subprocess.check_output('mediainfo --Inform="Audio;%Duration%" ' + filename + '.wav', shell=True)
+    #    audiolength = pipe.decode().strip()
+    #print('aftersyncvideo: '+str(videolength) + ' audio:'+str(audiolength))
+    #if int(audiolength) != int(videolength):
+    #    vumetermessage('SYNCING FAILED!')
+    #    time.sleep(10)
     #os.remove('/dev/shm/' + filename + '.wav')
-    return float(audiosync)/1000, int(videolenght), int(audiolenght)
+    return float(audiosync)/1000, int(videolength), int(audiolength)
     #os.system('mv audiosynced.wav ' + filename + '.wav')
     #os.system('rm silence.wav')
 
 #--------------Audiosilence--------------------
 # make an empty audio file as long as a video file
 
-def audiosilence(foldername,filename):
-    global channels
+def audiosilence(renderfilename):
+    global channels, soundrate
     writemessage('Creating audiosilence..')
-    pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + foldername + filename + '.mp4', shell=True)
-    videolenght = pipe.decode()
-    logger.info('Video lenght is ' + videolenght)
+    #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
+    #videolength = pipe.decode()
+    logger.info('checking video length')
+    videolength = get_video_length(renderfilename+'.mp4')
+    logger.info('Video length is ' + str(videolength))
     #separate seconds and milliseconds
-    videoms = int(videolenght) % 1000
-    videos = int(videolenght) / 1000
+    videoms = int(videolength) % 1000
+    videos = int(videolength) / 1000
     logger.info('Videofile is: ' + str(videos) + 's ' + str(videoms))
-    run_command('sox -V0 -n -r '+soundrate+' -c 2 /dev/shm/silence.wav trim 0.0 ' + str(videos))
-    os.system('cp /dev/shm/silence.wav ' + foldername + filename + '.wav')
+    run_command('sox -V0 -n -b 16 -r '+soundrate+' -c 2 /dev/shm/silence.wav trim 0.0 ' + str(videos))
+    os.system('cp /dev/shm/silence.wav ' + renderfilename + '.wav')
     os.system('rm /dev/shm/silence.wav')
 
 #--------------USB filmfolder-------------------
 
 def usbfilmfolder(dsk):
+    if dsk == 1:
+        usbmount = 1
+    else:
+        usbmount = 0
     pressed = ''
     buttonpressed = ''
     buttontime = time.time()
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
     if os.path.exists('/dev/sda1') == True:
-        os.system('sudo mount /dev/sda1 /media/usb0')
+        os.system('sudo mount -o  noatime,nodiratime,async /dev/sda1 /media/usb0')
         os.system('sudo chown pi /media/usb0')
+        os.system('sudo echo none | sudo tee /sys/block/sda/queue/scheduler')
         #os.system('sudo umount -l /media/usb0')
-    if dsk == 1:
-        usbmount = 1
-    else:
-        usbmount = 0
     waiting = time.time() 
     while True:
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
@@ -5530,6 +6586,7 @@ def usbfilmfolder(dsk):
                 writemessage('Oh-no! dont know your filesystem')
                 waitforanykey()
             filmfolder = '/media/usb'+str(usbmount)+'/gonzopifilms/'
+            os.system('sudo chmod 755 /media/usb'+str(usbmount))
             os.system('sudo chmod 755 '+filmfolder)
             #run_command('pumount /media/usb'+str(usbmount))
             writemessage('Filming to USB'+str(usbmount))
@@ -5655,9 +6712,10 @@ def uploadfilm(filename, filmname):
         settings.append('')
     menu = mods
     selected = 0
+    oldmenu=''
     while True:
         header = 'Where do you want to upload?'
-        writemenu(menu,settings,selected,header,showmenu)
+        oldmenu=writemenu(menu,settings,selected,header,showmenu,oldmenu)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if pressed == 'right':
             if selected < (len(menu) - 1):
@@ -5705,6 +6763,26 @@ def stopstream(camera, stream):
     stream = ''
     return stream
 
+def startrecording(camera, takename,bitrate, quality, profilelevel, reclength):
+    global film_fps
+    # FFmpeg command to take H.264 input from stdin and output to MP4
+    ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
+    rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
+    if reclength > 1 or reclength == 0:
+        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+    else:
+        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality, )
+    return rec_process, camera
+
+def stoprecording(camera, rec_process):
+    camera.stop_recording() 
+    # Close the FFmpeg process
+    time.sleep(0.5)
+    rec_process.stdin.close()
+    #rec_process.wait()
+    print("Recording complete!")
+    return rec_process, camera
+
 #-------------Beeps-------------------
 
 def beep(bus):
@@ -5737,9 +6815,9 @@ def longbeep(bus):
         run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep_long.wav')
     return
 
-def buzz(buzzerlenght):
+def buzz(buzzerlength):
     buzzerdelay = 0.0001
-    for _ in range(buzzerlenght):
+    for _ in range(buzzerlength):
         for value in [0xC, 0x4]:
             #GPIO.output(1, value)
             bus.write_byte_data(DEVICE,OLATA,value)
@@ -5902,9 +6980,9 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
                 pressed=nextstatus
             elif "RETAKE" in nextstatus:
                 if recordwithports == True:
-                    pressed="retake"
-                else:
                     pressed="retake_now"
+                else:
+                    pressed="retake"
             elif "RETAKE:" in nextstatus:
                 pressed=nextstatus
             elif "SCENE:" in nextstatus:
@@ -5976,27 +7054,29 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'record'
         elif event == 'KEY_PGDOWN' or (readbus == 253 and readbus2 == 247):
             pressed = 'retake'
-        elif event == 'KEY_TAB' or readbus2 == 246:
+        elif event == 'KEY_TAB' or (readbus == 223 and readbus2 == 247): 
             pressed = 'view'
-        elif event == 'KEY_DELETE' or (readbus == 223 and readbus2 == 247):
+        elif event == 'KEY_DELETE' or readbus2 == 246:
             pressed = 'remove'
         elif event == 'KEY_BACKSPACE':
             pressed = 'remove'
-        elif event == 'N' or (readbus2 == 245 and readbus == 191):
+        elif event == 'N' or (readbus2 == 245 and readbus == 254):
             pressed = 'peak'
-        elif event == 'S' or (readbus2 == 245 and readbus == 223):
+        elif event == 'S' or (readbus2 == 244):
             pressed = 'screen'
-        elif event == 'A' or (readbus2 == 245 and readbus == 127):
-            pressed = 'showmenu'
+        elif event == 'P' or (readbus2 == 245 and readbus == 127):
+            pressed = 'insert'
+        elif event == 'D' or (readbus2 == 245 and readbus == 251):
+            pressed = 'dub'
         elif event == 'O' or (readbus2 == 245 and readbus == 239):
             pressed = 'changemode'
         elif event == 'H' or (readbus2 == 245 and readbus == 247):
             pressed = 'showhelp'
-        elif event == 'P' or (readbus2 == 245 and readbus == 253):
-            pressed = 'insert'
-        elif event == 'C' or (readbus2 == 244):
+        elif event == 'A' or (readbus2 == 245 and readbus == 253):
+            pressed = 'showmenu'
+        elif event == 'C' or (readbus2 == 245 and readbus == 223):
             pressed = 'copy'
-        elif event == 'M' or (readbus2 == 245 and readbus == 254):
+        elif event == 'M' or (readbus2 == 245 and readbus == 191):
             pressed = 'move'
         elif event == '|' or (readbus2 == 245 and readbus == 251):
             pressed = 'split'
@@ -6014,17 +7094,17 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = holdbutton
             keydelay = 0.1
     if time.time() - buttontime > 2 and buttonpressed == True:
-        keydelay = 0.1
+        keydelay = 0.08
     if time.time() - buttontime > 6 and buttonpressed == True:
         keydelay = 0.05
     if time.time() - buttontime > 8 and buttonpressed == True:
-        keydelay = 0.08
+        keydelay = 0.01
     if time.time() - buttontime > 10 and buttonpressed == True:
         keydelay = 0.01
     return pressed, buttonpressed, buttontime, holdbutton, event, keydelay
 
 def startinterface():
-    call(['./startinterface.sh &'], shell = True)
+    call([gonzopifolder+'/startinterface.sh &'], shell = True)
 
 def stopinterface(camera):
     try:
@@ -6040,10 +7120,16 @@ def stopinterface(camera):
     return camera
 
 def startcamera(lens, fps):
-    global camera_model, fps_selection, fps_selected, cammode
+    global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso
     camera = picamera.PiCamera()
+    camera.video_stabilization=True
     if cammode == 'film':
-        reso=(1920,1080)
+        if film_reso=='1920x1080':
+            reso=(1920,1080)
+        elif film_reso=='1920x816':
+            reso=(1920,816)
+        elif film_reso=='1280x720':
+            reso=(1280,720)
     elif cammode == 'picture':
         reso=(4056,3040)
     camera.resolution = reso #tested modes 1920x816, 1296x552/578, v2 1640x698, 1640x1232, hqbinned 2028x1080, full 4056x3040
@@ -6086,11 +7172,20 @@ def startcamera(lens, fps):
             fps=fps_selection[fps_selected]
             camera.framerate = fps 
     elif camera_model == 'imx477':
-        #fps_selection=[5,15,24.985,35,49]
-        #if sound is gettin before pic add 0.001
-        fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]
-        fps=fps_selection[fps_selected]
-        camera.framerate = fps 
+        if film_fps == 25:
+            #fps_selection=[5,15,24.985,35,49]
+            #if sound is gettin before pic add 0.001
+            fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
+        elif film_fps == 24:
+            fps_selection=[5,8,10,11,12,13,14,15,23.9894,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
+        elif film_fps == 30:
+            fps_selection=[5,8,10,11,12,13,14,15,29.9868,35,49]
+            fps=fps_selection[fps_selected]
+            camera.framerate = fps 
     else:
         camera.framerate = fps
     camera.crop = (0, 0, 1.0, 1.0)

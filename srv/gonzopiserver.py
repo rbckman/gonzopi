@@ -9,6 +9,7 @@ import time
 import random
 import hashlib
 import configparser
+from pymediainfo import MediaInfo
 
 # Get path of the current dir, then use it as working directory:
 rundir = os.path.dirname(__file__)
@@ -19,6 +20,8 @@ urls = (
     '/','intro',   
     '/c/?', 'index',
     '/f/(.*)?', 'films',
+    '/t/(.*)?', 'tree',
+    '/p/(.*)?', 'player',
     '/api','api'
 )
 
@@ -56,12 +59,14 @@ vumeterold = ''
 #if config.read(configfile):
 #    filmfolder = config['USER']['filmfolder']+'/'
 filmfolder = '/home/pi/gonzopifilms/'
+real_filmfolder=filmfolder
 
 os.system("unlink static/*")
 #CHECK IF FILMING TO USB STORAGE
 filmfolderusb=usbfilmfolder()
 if filmfolderusb:
     filmfolder=filmfolderusb
+    real_filmfolder=filmfolder
     # Link video directory to static dir
     os.system("ln -s -t static/ " + filmfolder)
     filmfolder='static/gonzopifilms/'
@@ -89,6 +94,7 @@ network=networks[0]
 
 app = web.application(urls, globals())
 render = web.template.render('templates/', base="base")
+render2 = web.template.render('templates/', base="base2")
 web.config.debug=False
 os.system('rm '+basedir+'/sessions/*')
 store = web.session.DiskStore(basedir + '/sessions/')
@@ -196,6 +202,15 @@ def checkpicture(thumbdir,scene,shot,take):
     else:
         return ''
 
+def if_exist(dir):
+    print(basedir+dir)
+    if os.path.isfile(basedir+dir) == False:
+        print('thumb not exist')
+        return False
+    else:
+        print('thumb is')
+        return True
+
 def countsize(filename):
     size = 0
     if type(filename) is str:
@@ -222,6 +237,21 @@ def checkvideo(video,filmfolder,film,scene,shot,take):
     if os.path.isfile(basedir+p) == True:
         return p, v
     return '', v
+
+def has_audio_track(file_path):
+    try:
+        # Parse the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check for audio tracks
+        for track in media_info.tracks:
+            if track.track_type == "Audio":
+                return True
+        return False
+
+    except Exception as e:
+        print(f"Error parsing {file_path}: {e}")
+        return None
 
 class intro:
     def GET(self):
@@ -326,7 +356,8 @@ class index:
         if i.func == 'retake': 
             print(i.func)
             if recording == False:
-                sendtocamera(ip,port,'RETAKE:'+shot)
+                #sendtocamera(ip,port,'RETAKE:'+shot)
+                sendtocamera(ip,port,'RETAKE')
                 recording = True
             else:
                 sendtocamera(ip,port,'STOPRETAKE')
@@ -368,6 +399,37 @@ class films:
         scenes = countscenes(filmfolder, film)
         return render.filmpage(allfilms, film, scenes, str, filmfolder, counttakes, countshots, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash)
 
+class tree:
+    def GET(self, film):
+        shots = 0
+        takes = 0
+        gonzopifilms = getfilms(filmfolder)
+        renderedfilms = []
+        unrenderedfilms = []
+        allfilms = []
+        for f in gonzopifilms:
+            if os.path.isfile(filmfolder + f[0] + '/' + f[0] + '.mp4') == True:
+                renderedfilms.append(f[0])
+                allfilms.append(f[0])
+            else:
+                unrenderedfilms.append(f[0])
+                allfilms.append(f[0])
+        i = web.input(page=None, scene=None, shot=None, take=None, film=None, randhash=None)
+        if i.scene != None:
+            shots = countshots(film, filmfolder, i.scene)
+            takes = counttakes(film, filmfolder, i.scene, i.shot)
+        if i.scene != None and i.shot != None:
+            shots = countshots(film, filmfolder, i.scene)
+        if i.randhash == None:
+            randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+        scenes = countscenes(filmfolder, film)
+        return render2.tree(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist)
+
+class player:
+    def GET(self, film):
+        i=web.input(scene=None,shot=None,take=None)
+        randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+        return render.player(real_filmfolder,filmfolder,film,i.scene,i.shot,i.take,str,randhash,has_audio_track)
 
 class api:
     def GET(self):
@@ -487,22 +549,23 @@ class api:
             video = ''
             if film != None:
                 if selected == 0:
-                    video = '/'+filmfolder + film +'/'+ film+'.mp4'
+                    video = '/p/'+film
                     menudone+=menudone+'video'
                 if selected == 4:
-                    video = '/'+filmfolder + film +'/'+ film+'.mp4'
+                    video = '/p/'+film
                 elif selected == 5:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/scene.mp4'
+                    video = '/p/'+film+'?scene=' + str(scene)
                 elif selected == 6:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                    video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
                 elif selected == 7:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                    video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
                 else:
-                    video = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take' + str(take).zfill(3) + '.mp4'
+                    video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
                 thumb = '/'+filmfolder + film + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg" 
             if os.path.isfile(basedir+thumb) == True:
                 randhashimg = '?'+hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
                 writemenu=menudone+'<br><br>'+vumetermessage+'<br><a href="'+video+'"><img src="'+thumb+randhashimg+'"></a>'
+                #writemenu=menudone+render.player(filmfolder,film,scene,shot,take,str)
             else:
                 writemenu=menudone+'<br><br>'+vumetermessage+'<br>'
             f = open(basedir+'/static/menu.html', 'w')
