@@ -854,12 +854,12 @@ def main():
                             shot=1
                         vumetermessage('Pasting shot, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
+                        shot+=1
                         try:
                             os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3))
                         except:
                             pass
                         os.system('cp -r ' + yanked + ' ' + paste)
-                        add_organize(filmfolder, filmname)
                         yanked = ''
                     if pressed == 'move':
                         for yanked in shots_selected:
@@ -867,6 +867,7 @@ def main():
                             #Remove hidden placeholder
                             #os.system('rm ' + yanked + '/.placeholder')
                     shots_selected = []
+                    add_organize(filmfolder, filmname)
                     organize(filmfolder, filmname)
                     organize(filmfolder, filmname)
                     updatethumb = True
@@ -876,7 +877,7 @@ def main():
                     if shot > shots:
                         shot = shots
                     vumetermessage('All shots pasted!')
-
+                    yanked = ''
                 #(YANK) COPY FILM
                 elif pressed == 'copy' and menu[selected] == 'FILM:':
                     copying = 'film'
@@ -2356,7 +2357,7 @@ def main():
                         if str(fps_check) != str(film_fps):
                             vumetermessage('wrong film project framerate')
                             #waitforanykey()
-                #add_organize(filmfolder, filmname)
+                add_organize(filmfolder, filmname)
                 scenes, shots, takes = countlast(filmname, filmfolder)
                 loadfilmsettings = False
                 rendermenu = True
@@ -4450,7 +4451,10 @@ def organize(filmfolder, filmname):
                 pass
             elif 'shot' in p:
                 #print(p)
-                unorganized_nr = int(p[-3:])
+                if 'yanked' in p:
+                    unorganized_nr = int(p[4:-7])
+                else:
+                    unorganized_nr = int(p[-3:])
                 if organized_nr == unorganized_nr:
                     #print('correct')
                     pass
@@ -4496,13 +4500,14 @@ def add_organize(filmfolder, filmname):
         organized_nr = len(shots)
         for p in sorted(shots, reverse=True):
             if 'yanked' in p:
-                #print(p)
-                os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr - 1).zfill(3) + '_yanked ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
+                print(p)
+                #time.sleep(5)
+                os.system('mv -n ' + filmfolder + filmname + '/' + i + '/' + p + ' ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
             #if _insert in last shot
             elif organized_nr==len(shots) and '_insert' in p:
-                os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '_insert ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
+                os.system('mv -n ' + filmfolder + filmname + '/' + i + '/' +p+ ' ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
             elif '_insert' in p:
-                os.system('mv -n ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr - 1).zfill(3) + '_insert ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
+                os.system('mv -n ' + filmfolder + filmname + '/' + i + '/' +p+ ' ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
                 #run_command('touch ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3) + '/.placeholder')
             elif 'shot' in p:
                 #print(p)
