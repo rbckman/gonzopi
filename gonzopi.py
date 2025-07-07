@@ -825,16 +825,15 @@ def main():
 
                 #PASTE MANY SCENES
                 elif pressed == 'copy' and menu[selected] == 'SCENE:' and scenes_selected != [] or pressed == 'move' and menu[selected] == 'SCENE:' and scenes_selected != []:
+                    landingscene=scene-1
                     for yanked in scenes_selected:
                         vumetermessage('Pasting scene, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene-1).zfill(3) + '_yanked'
                         os.system('cp -r ' + yanked + ' ' + paste)
+                        if pressed == 'move':
+                            os.system('touch ' + yanked + '/.remove')
                         add_organize(filmfolder, filmname)
-                    if pressed == 'move':
-                        for yanked in scenes_selected:
-                            os.system('rm -r ' + yanked+'/*')
-                            #Remove hidden placeholder
-                            #os.system('rm ' + yanked + '/.placeholder')
+                        yanked = ''
                     scenes_selected = []
                     organize(filmfolder, filmname)
                     organize(filmfolder, filmname)
@@ -845,7 +844,8 @@ def main():
                     if shot > shots:
                         shot = shots
                     vumetermessage('All scenes pasted!')
-
+                    yanked = ''
+                    scene=landingscene
                 #PASTE MANY SHOTS
                 elif pressed == 'copy' and menu[selected] == 'SHOT:' and shots_selected != []  or pressed == 'move' and menu[selected] == 'SHOT:' and shots_selected != []:
                     landingshot=shot-1
@@ -4366,6 +4366,14 @@ def clean(filmname, filmfolder):
 def organize(filmfolder, filmname):
     global fps, db
     origin_files=[]
+    #remove scenes with .remove
+    scenes = next(os.walk(filmfolder + filmname))[1]
+    for i in scenes:
+        scenefiles = next(os.walk(filmfolder + filmname+'/'+i))[2]
+        for s in scenefiles:
+            if '.remove' in s:
+                logger.info('removing scene')
+                os.system('rm -r ' + filmfolder + filmname + '/' + i)
     scenes = next(os.walk(filmfolder + filmname))[1]
     for i in scenes:
         if 'scene' not in i:
