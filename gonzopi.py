@@ -848,26 +848,23 @@ def main():
 
                 #PASTE MANY SHOTS
                 elif pressed == 'copy' and menu[selected] == 'SHOT:' and shots_selected != []  or pressed == 'move' and menu[selected] == 'SHOT:' and shots_selected != []:
+                    landingshot=shot-1
                     for yanked in shots_selected:
                         take = counttakes(filmname, filmfolder, scene, shot)
                         if shot == 0:
                             shot=1
                         vumetermessage('Pasting shot, please wait...')
                         paste = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_yanked' 
-                        shot+=1
                         try:
                             os.makedirs(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3))
                         except:
                             pass
                         os.system('cp -r ' + yanked + ' ' + paste)
+                        if pressed == 'move':
+                            os.system('touch ' + yanked + '/.remove')
+                        add_organize(filmfolder, filmname)
                         yanked = ''
-                    if pressed == 'move':
-                        for yanked in shots_selected:
-                            os.system('rm -r ' + yanked+'/*')
-                            #Remove hidden placeholder
-                            #os.system('rm ' + yanked + '/.placeholder')
                     shots_selected = []
-                    add_organize(filmfolder, filmname)
                     organize(filmfolder, filmname)
                     organize(filmfolder, filmname)
                     updatethumb = True
@@ -878,6 +875,7 @@ def main():
                         shot = shots
                     vumetermessage('All shots pasted!')
                     yanked = ''
+                    shot=landingshot
                 #(YANK) COPY FILM
                 elif pressed == 'copy' and menu[selected] == 'FILM:':
                     copying = 'film'
@@ -4383,12 +4381,16 @@ def organize(filmfolder, filmname):
             takes=[]
             takefiles = next(os.walk(filmfolder + filmname + '/' + i + '/' + p))[2]
             for t in takefiles:
+                if '.remove' in t:
+                    logger.info('removing shot')
+                    os.system('rm -r ' + filmfolder + filmname + '/' + i + '/' + p)
                 if 'take' in t:
                     takes.append(t)
             if len(takes) == 0:
                 logger.info('no takes in this shot, removing shot if no placeholder')
                 if not os.path.isfile(filmfolder + filmname + '/' + i + '/' + p + '/.placeholder'):
                     os.system('rm -r ' + filmfolder + filmname + '/' + i + '/' + p)
+
             organized_nr = 1
             print(i)
             print(p)
@@ -4451,7 +4453,7 @@ def organize(filmfolder, filmname):
                 pass
             elif 'shot' in p:
                 #print(p)
-                if 'yanked' in p:
+                if '_yanked' in p:
                     unorganized_nr = int(p[4:-7])
                 else:
                     unorganized_nr = int(p[-3:])
@@ -4471,7 +4473,10 @@ def organize(filmfolder, filmname):
             pass
         elif 'scene' in i:
             #print(i)
-            unorganized_nr = int(i[-3:])
+            if '_yanked' in i:
+                unorganized_nr = int(i[5:-7])
+            else:
+                unorganized_nr = int(i[-3:])
             if organized_nr == unorganized_nr:
                 #print('correct')
                 pass
@@ -4499,7 +4504,7 @@ def add_organize(filmfolder, filmname):
                 shots.remove(c)
         organized_nr = len(shots)
         for p in sorted(shots, reverse=True):
-            if 'yanked' in p:
+            if '_yanked' in p:
                 print(p)
                 #time.sleep(5)
                 os.system('mv -n ' + filmfolder + filmname + '/' + i + '/' + p + ' ' + filmfolder + filmname + '/' + i + '/shot' + str(organized_nr).zfill(3))
@@ -4524,13 +4529,13 @@ def add_organize(filmfolder, filmname):
     organized_nr = len(scenes)
     for i in sorted(scenes, reverse=True):
         #print(i)
-        if 'yanked' in i:
-            os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr - 1).zfill(3) + '_yanked ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
+        if '_yanked' in i:
+            os.system('mv -n ' + filmfolder + filmname + '/'+i+' '+ filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
         elif organized_nr==len(scenes) and '_insert' in i:
-            os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3) + '_insert ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
+            os.system('mv -n ' + filmfolder + filmname + '/'+i+' '+ filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
         elif '_insert' in i:
             #print(p)
-            os.system('mv -n ' + filmfolder + filmname + '/scene' + str(organized_nr - 1).zfill(3) + '_insert ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
+            os.system('mv -n ' + filmfolder + filmname + '/' +i+' '+ filmfolder + filmname + '/scene' + str(organized_nr).zfill(3))
             run_command('touch ' + filmfolder + filmname + '/scene' + str(organized_nr).zfill(3) + '/.placeholder')
         elif 'scene' in i:
             #print(i)
