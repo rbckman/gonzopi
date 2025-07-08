@@ -7088,13 +7088,13 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
             pressed = 'dub'
         elif event == 'O' or (readbus2 == 245 and readbus == 239):
             pressed = 'changemode'
-        elif event == 'H' or (readbus2 == 245 and readbus == 247):
+        elif event == 'H' or (readbus2 == 245 and readbus == 191):
             pressed = 'showhelp'
         elif event == 'A' or (readbus2 == 245 and readbus == 253):
             pressed = 'showmenu'
         elif event == 'C' or (readbus2 == 245 and readbus == 223):
             pressed = 'copy'
-        elif event == 'M' or (readbus2 == 245 and readbus == 191):
+        elif event == 'M' or (readbus2 == 245 and readbus == 247):
             pressed = 'move'
         elif event == '|' or (readbus2 == 245 and readbus == 251):
             pressed = 'split'
