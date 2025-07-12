@@ -989,6 +989,7 @@ def main():
                     insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
                     try:
                         os.makedirs(insertshot)
+                        run_command('touch ' + insertshot + '/.placeholder')
                     except:
                         print('is there already prob')
                     add_organize(filmfolder, filmname)
@@ -1004,6 +1005,7 @@ def main():
                     insertshot = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot-1).zfill(3) + '_insert'
                     try:
                         os.makedirs(insertshot)
+                        run_command('touch ' + insertshot + '/.placeholder')
                     except:
                         print('is there already prob')
                     add_organize(filmfolder, filmname)
@@ -2473,7 +2475,7 @@ def main():
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
                     #settings = '',str(camselected),'','',rectime,'','','','','','','','','',''
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + scene_sel+ '/' + str(scenes), str(shot) + shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname, str(scene) + scenes_sel+ '/' + str(scenes), str(shot) + shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(reclength), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, str(camselected+1), '', '', '', '', '', '', ''
                 #Rerender menu if picamera settings change
                 #if settings != oldsettings or selected != oldselected:
                 oldmenu=writemenu(menu,settings,selected,'',showmenu,oldmenu)
