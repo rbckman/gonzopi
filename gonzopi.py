@@ -5216,6 +5216,10 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                     f.write(audiohash)
             if audiohash != oldaudiohash or newmix == True or renderfix == True:
                 print('rerendering')
+                #check if sound file exist
+                if os.path.isfile(renderfilename+'.wav') == False:
+                    logger.info('no sound, creating empty audio track')
+                    audiosilence(renderfilename)
                 #time.sleep(3)
                 #make scene rerender
                 os.system('touch '+filmfolder + filmname + '/scene' + str(scene).zfill(3)+'/.rerender')
