@@ -1609,6 +1609,7 @@ def main():
                             if onlysound != True:
                                 #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
                                 rec_process, camera=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4',bitrate, quality, profilelevel, reclength)
+                                soundlag=starttime-sound_start
                                 starttime = time.time()
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+foldername+filename+'.mp4')
                             recording = True
@@ -1642,7 +1643,6 @@ def main():
                         #camera.stop_recording()
                         recprocess, camera = stoprecording(camera, rec_process)
                     os.system('pkill arecord')
-                    soundlag=starttime-sound_start
                     try:
                         db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, faststart=False)
                     except:
@@ -4207,8 +4207,8 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
     holdbutton = ''
     time.sleep(0.1)
     header = 'Are you sure you want to remove ' + sceneshotortake + '?'
-    menu = '', ''
-    settings = 'NO', 'YES'
+    menu = '', '', ''
+    settings = 'NO', 'ARCHIVE', 'YES'
     selected = 0
     otf_scene = countscenes(filmfolder, filmname+'_archive')
     otf_scene += 1
@@ -4230,6 +4230,39 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
         elif pressed == 'remove' and time.time()-starttime > 1:
             return
         elif pressed == 'middle':
+            if selected == 2:
+                if sceneshotortake == 'take':
+                    os.system('rm ' + foldername + filename + '.h264')
+                    os.system('rm ' + foldername + filename + '.mp4')
+                    os.system('rm ' + foldername + filename + '.wav')
+                    os.system('rm ' + foldername + filename + '.jpeg')
+                    return
+                elif sceneshotortake == 'shot' and shot > 0:
+                    os.system('rm -r ' + foldername)
+                    return
+                elif sceneshotortake == 'scene':
+                    foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
+                    os.system('rm -r ' + foldername)
+                    scene = countscenes(filmfolder, filmname)
+                    shot=1
+                    take=1
+                    return
+                elif sceneshotortake == 'film':
+                    origin_videos=[]
+                    v=organize(filmfolder, filmname)
+                    if v == '':
+                        return
+                    origin_videos.extend(v)
+                    for i in origin_videos:
+                        print('remove video: '+i)
+                        try:
+                            os.remove(i)
+                        except:
+                            pass
+                        #time.sleep(3)
+                    foldername = filmfolder + filmname
+                    os.system('rm -r ' + foldername)
+                    return
             if selected == 1:
                 if '_archive' in filmname:
                     if sceneshotortake == 'take':
@@ -4237,14 +4270,17 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                         os.system('rm ' + foldername + filename + '.mp4')
                         os.system('rm ' + foldername + filename + '.wav')
                         os.system('rm ' + foldername + filename + '.jpeg')
+                    return
                     elif sceneshotortake == 'shot' and shot > 0:
                         os.system('rm -r ' + foldername)
+                    return
                     elif sceneshotortake == 'scene':
                         foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)
                         os.system('rm -r ' + foldername)
                         scene = countscenes(filmfolder, filmname)
                         shot=1
                         take=1
+                    return
                     elif sceneshotortake == 'film':
                         origin_videos=[]
                         v=organize(filmfolder, filmname)
@@ -6136,6 +6172,26 @@ def playdub(filmname, filename, player_menu, take):
                         #playerAudio.set_position(player.position())
                     except:
                         print('couldnt set position of player')
+        elif holdbutton == 'copy':
+            if t > 1:
+                try:
+                    player.set_position(t-60)
+                    if sound == False:
+                        playerAudio.set_position(t-60)
+                    time.sleep(0.25)
+                    #playerAudio.set_position(player.position())
+                except:
+                    print('couldnt set position of player')
+        elif holdbutton == 'insert':
+            if t > 1:
+                try:
+                    player.set_position(t+60)
+                    if sound == False:
+                        playerAudio.set_position(t+60)
+                    time.sleep(0.25)
+                    #playerAudio.set_position(player.position())
+                except:
+                    print('couldnt set position of player')
         elif pressed == 'view':
             trimfromstart = player.position()
             vumetermessage('shot start position set to: '+ str(trimfromstart))
