@@ -3,7 +3,7 @@ $def with (films, cameras, menu, selected,name,scene,shot,take,str,randhash,thum
 <script>
 function Get(yourUrl){
         var Httpreq = new XMLHttpRequest(); // a new request
-        Httpreq.open("GET",yourUrl,false);
+        Httpreq.open("POST",yourUrl,false);
         Httpreq.send(null);
         return Httpreq.responseText;          
 }
@@ -64,7 +64,7 @@ function Get(yourUrl){
         var $$container = $$("#menu2");
         $$container.load('/static/menu.html');
         $$.ajax({
-            method: "GET",
+            method: "POST",
             type: "Content-type",
             url:"/api",
             success: function(result) {
@@ -97,6 +97,7 @@ $$(document).on('keydown', function (event) {
     } else if (event.which == 34) {
         $$('#RETAKE').trigger('click');
     } else if (event.which == 9) {
+        event.preventDefault();
         $$('#VIEW').trigger('click');
     } else if (event.which == 46) {
         $$('#DELETE').trigger('click');
@@ -155,7 +156,7 @@ connected
 <pre>use keyboard to control</pre>
 $for i in cameras:
     $i
-<br>
+<a href="/e/$name">edit view</a>
 <div id="controller">
 <a id="VIEW">VIEW</a> <a id="UP">UP</a> <a id="RECORD">RECORD</a><br>
 <a id="LEFT">LEFT</a> <a id="MIDDLE">MIDDLE</a> <a id="RIGHT">RIGHT</a><br>
@@ -197,7 +198,7 @@ $if thumb != '':
 <script>
 $$('#CAMERA0').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera0",
     success: function(result) {
@@ -209,7 +210,7 @@ $$('#CAMERA0').on('click', function () {
 });
 $$('#CAMERA1').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera1",
     success: function(result) {
@@ -221,7 +222,7 @@ $$('#CAMERA1').on('click', function () {
 });
 $$('#CAMERA2').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera2",
     success: function(result) {
@@ -233,7 +234,7 @@ $$('#CAMERA2').on('click', function () {
 });
 $$('#CAMERA3').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera3",
     success: function(result) {
@@ -245,7 +246,7 @@ $$('#CAMERA3').on('click', function () {
 });
 $$('#CAMERA4').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera4",
     success: function(result) {
@@ -257,7 +258,7 @@ $$('#CAMERA4').on('click', function () {
 });
 $$('#CAMERA5').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera5",
     success: function(result) {
@@ -269,7 +270,7 @@ $$('#CAMERA5').on('click', function () {
 });
 $$('#CAMERA6').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera6",
     success: function(result) {
@@ -281,7 +282,7 @@ $$('#CAMERA6').on('click', function () {
 });
 $$('#CAMERA7').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera7",
     success: function(result) {
@@ -294,7 +295,7 @@ $$('#CAMERA7').on('click', function () {
 
 $$('#LEFT').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=left",
     success: function(result) {
@@ -306,7 +307,7 @@ $$('#LEFT').on('click', function () {
 });
 $$('#RIGHT').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=right",
     success: function(result) {
@@ -318,7 +319,7 @@ $$('#RIGHT').on('click', function () {
 });
 $$('#DOWN').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=down",
     success: function(result) {
@@ -330,7 +331,7 @@ $$('#DOWN').on('click', function () {
 });
 $$('#UP').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=up",
     success: function(result) {
@@ -342,7 +343,7 @@ $$('#UP').on('click', function () {
 });
 $$('#RECORD').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=record",
     success: function(result) {
@@ -354,7 +355,7 @@ $$('#RECORD').on('click', function () {
 });
 $$('#RETAKE').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=retake",
     success: function(result) {
@@ -366,7 +367,7 @@ $$('#RETAKE').on('click', function () {
 });
 $$('#DELETE').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=delete",
     success: function(result) {
@@ -378,7 +379,7 @@ $$('#DELETE').on('click', function () {
 });
 $$('#VIEW').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=view",
     success: function(result) {
@@ -390,7 +391,7 @@ $$('#VIEW').on('click', function () {
 });
 $$('#MIDDLE').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=middle",
     success: function(result) {
@@ -402,7 +403,7 @@ $$('#MIDDLE').on('click', function () {
 });
 $$('#CAMERA0').on('click', function () {
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera0",
     success: function(result) {
@@ -414,7 +415,7 @@ $$('#CAMERA0').on('click', function () {
 });
 $$('#CAMERA1').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera1",
     success: function(result) {
@@ -426,7 +427,7 @@ $$('#CAMERA1').on('click', function () {
 });
 $$('#CAMERA2').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera2",
     success: function(result) {
@@ -438,7 +439,7 @@ $$('#CAMERA2').on('click', function () {
 });
 $$('#CAMERA3').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera3",
     success: function(result) {
@@ -450,7 +451,7 @@ $$('#CAMERA3').on('click', function () {
 });
 $$('#CAMERA4').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera4",
     success: function(result) {
@@ -462,7 +463,7 @@ $$('#CAMERA4').on('click', function () {
 });
 $$('#CAMERA5').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera5",
     success: function(result) {
@@ -474,7 +475,7 @@ $$('#CAMERA5').on('click', function () {
 });
 $$('#CAMERA6').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera6",
     success: function(result) {
@@ -486,7 +487,7 @@ $$('#CAMERA6').on('click', function () {
 });
 $$('#CAMERA7').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera7",
     success: function(result) {
@@ -498,7 +499,7 @@ $$('#CAMERA7').on('click', function () {
 });
 $$('#CAMERA8').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera8",
     success: function(result) {
@@ -510,7 +511,7 @@ $$('#CAMERA8').on('click', function () {
 });
 $$('#CAMERA9').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=camera9",
     success: function(result) {
@@ -522,7 +523,7 @@ $$('#CAMERA9').on('click', function () {
 });
 $$('#MOVE').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=move",
     success: function(result) {
@@ -534,7 +535,7 @@ $$('#MOVE').on('click', function () {
 });
 $$('#COPY').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=copy",
     success: function(result) {
@@ -546,7 +547,7 @@ $$('#COPY').on('click', function () {
 });
 $$('#PASTE').on('click', function () { 
     $$.ajax({
-    method: "GET",
+    method: "POST",
     type: "Content-type",
     url:"/api?func=paste",
     success: function(result) {

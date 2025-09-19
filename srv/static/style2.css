@@ -14,7 +14,6 @@ pre
     margin: 5px auto;
     padding: 3px;
     display: inline-block;
-    background-color: #555;
     color: #fff;
 }
 
@@ -28,6 +27,17 @@ img
 {
     width: 90%;
     max-width: 800px;
+}
+
+#controller {
+    position: fixed;
+    margin: 0 auto;
+    background-color:#231f20;
+    font-weight: normal;
+    font-size: 17px;
+    bottom:0px;
+    padding-top:10px;
+    width: 100%;
 }
 
 #controller a
