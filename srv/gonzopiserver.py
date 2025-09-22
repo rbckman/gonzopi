@@ -9,6 +9,8 @@ import time
 import random
 import hashlib
 import configparser
+import json
+from PIL import Image
 from pymediainfo import MediaInfo
 
 # Get path of the current dir, then use it as working directory:
@@ -21,6 +23,8 @@ urls = (
     '/c/?', 'index',
     '/f/(.*)?', 'films',
     '/t/(.*)?', 'tree',
+    '/e/(.*)?', 'edit',
+    '/save-order/(.*)?', 'logorder',
     '/p/(.*)?', 'player',
     '/api','api'
 )
@@ -336,20 +340,20 @@ class index:
         except:
             selected=0
         try:
-            name=menu[3].split(':')[1]
+            name=menu[4].split(':')[1]
             name=name.rstrip('\n')
         except:
             name=''
         try:
-            scene=menu[4].split(':')[1].split('/')[0]
+            scene=menu[5].split(':')[1].split('/')[0]
         except:
             scene=1
         try:
-            shot=menu[5].split(':')[1].split('/')[0]
+            shot=menu[6].split(':')[1].split('/')[0]
         except:
             shot=1
         try:
-            take=menu[6].split(':')[1].split('/')[0]
+            take=menu[7].split(':')[1].split('/')[0]
         except:
             take=1
             session.reload = 0
@@ -425,6 +429,61 @@ class tree:
         scenes = countscenes(filmfolder, film)
         return render2.tree(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist)
 
+def createthumb(picture, thumbnail):
+    sendtocamera(ip,port,'THUMB|'+picture+':'+thumbnail)
+
+class edit:
+    def GET(self, film):
+        shots = 0
+        takes = 0
+        gonzopifilms = getfilms(filmfolder)
+        renderedfilms = []
+        unrenderedfilms = []
+        allfilms = []
+        for f in gonzopifilms:
+            if os.path.isfile(filmfolder + f[0] + '/' + f[0] + '.mp4') == True:
+                renderedfilms.append(f[0])
+                allfilms.append(f[0])
+            else:
+                unrenderedfilms.append(f[0])
+                allfilms.append(f[0])
+        i = web.input(page=None, scene=None, shot=None, take=None, film=None, randhash=None)
+        if i.scene != None:
+            shots = countshots(film, filmfolder, i.scene)
+            takes = counttakes(film, filmfolder, i.scene, i.shot)
+        if i.scene != None and i.shot != None:
+            shots = countshots(film, filmfolder, i.scene)
+        if i.randhash == None:
+            randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+        scenes = countscenes(filmfolder, film)
+        return render2.edit(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist, createthumb,basedir,time)
+
+class logorder:
+    def POST(self, film):
+        try:
+            data = web.data()
+            order = json.loads(data)
+
+            if not order:
+                web.header('Content-Type', 'application/json')
+                return json.dumps({"error": "No data provided"})
+
+            # Write alt values to file without index
+            with open(basedir+'/static/order.edit', 'w') as f:
+                for alt in order:
+                    f.write(f"{alt}\n")
+                    print(alt)
+
+            web.header('Content-Type', 'application/json')
+            return json.dumps({"message": "Order saved successfully"})
+        except json.JSONDecodeError:
+            web.header('Content-Type', 'application/json')
+            return json.dumps({"error": "Invalid JSON data"})
+        except Exception as e:
+            web.header('Content-Type', 'application/json')
+            return json.dumps({"error": f"Server error: {str(e)}"})
+
+
 class player:
     def GET(self, film):
         i=web.input(scene=None,shot=None,take=None)
@@ -432,9 +491,9 @@ class player:
         return render.player(real_filmfolder,filmfolder,film,i.scene,i.shot,i.take,str,randhash,has_audio_track)
 
 class api:
-    def GET(self):
+    def POST(self):
         global menuold, vumeterold
-        i=web.input(func=None,selected=None)
+        i=web.input(func=None,selected=None, scene=None, shot=None, film=None)
         if i.func == 'record':
             sendtocamera(ip,port,'RECORD')
         elif i.func == 'retake':
@@ -479,6 +538,12 @@ class api:
             sendtocamera(ip,port,'copy')
         elif i.func == 'paste':
             sendtocamera(ip,port,'paste')
+        elif i.scene!=None and i.shot!=None and i.film != None:
+            sendtocamera(ip,port,'SCENE:'+str(i.scene))
+            time.sleep(0.2)
+            sendtocamera(ip,port,'SHOT:'+str(i.shot))
+            time.sleep(0.2)
+            sendtocamera(ip,port,'SELECTED:3')
         interface=open('/dev/shm/interface','r')
         menu=interface.readlines()
         vumeter=open('/dev/shm/vumeter','r')
