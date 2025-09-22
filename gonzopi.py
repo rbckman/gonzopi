@@ -138,9 +138,9 @@ def main():
 
     #MENUS
     if slidecommander:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'SLIDE:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'MUX:', 'HDMI:', 'SLIDE:'
     else:
-        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'MUX:'
+        standardmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'UPDATE', 'UPLOAD', 'LOAD', 'NEW', 'TITLE', 'LIVE:', 'MUX:', 'HDMI:'
     gonzopictrlmenu = 'DSK:', 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'VFX:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'MODE:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'New SCENE', 'Sync SCENE'
     #gonzopictrlmenu = "BACK","CAMERA:", "Add CAMERA","New FILM","","New SCENE","Sync SCENE","Snapshot"
     emptymenu='','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','','',''
@@ -169,6 +169,7 @@ def main():
     blending=False
     fade='in'
     fadelength=3
+    hdmi='off'
     cammode = 'film'
     camera_model=''
     slidemode=False
@@ -1876,6 +1877,17 @@ def main():
                         camera.vflip = True
                         flip = 'yes'
                         time.sleep(0.2)
+                elif menu[selected] == 'HDMI:':
+                    if hdmi == 'on':
+                        hdmi = 'off'
+                        os.system("sudo sed -i 's/\[edid=Ras-LCD Panel\]/\#\[edid=Ras-LCD Panel\]/' /boot/config.txt")
+                        os.system("sudo sed -i 's/\#\[edid=HDMI-A-2\]/\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        time.sleep(0.2)
+                    else:
+                        hdmi = 'on'
+                        os.system("sudo sed -i 's/\#\[edid=Ras-LCD Panel\]/\[edid=Ras-LCD Panel\]/' /boot/config.txt")
+                        os.system("sudo sed -i 's/\[edid=HDMI-A-2\]/\#\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        time.sleep(0.2)
                 elif menu[selected] == 'LENGTH:':
                     if reclength < 1:
                         reclength = reclength + 0.2
@@ -2097,6 +2109,17 @@ def main():
                 elif menu[selected] == 'BEEP:':
                     if beeps > 0:
                         beeps = beeps - 1
+                elif menu[selected] == 'HDMI:':
+                    if hdmi == 'on':
+                        hdmi = 'off'
+                        os.system("sudo sed -i 's/\[edid=Ras-LCD Panel\]/\#\[edid=Ras-LCD Panel\]/' /boot/config.txt")
+                        os.system("sudo sed -i 's/\#\[edid=HDMI-A-2\]/\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        time.sleep(0.2)
+                    else:
+                        hdmi = 'on'
+                        os.system("sudo sed -i 's/\#\[edid=Ras-LCD Panel\]/\[edid=Ras-LCD Panel\]/' /boot/config.txt")
+                        os.system("sudo sed -i 's/\[edid=HDMI-A-2\]/\#\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        time.sleep(0.2)
                 elif menu[selected] == 'FLIP:':
                     if flip == 'yes':
                         camera.hflip = False
@@ -2488,7 +2511,7 @@ def main():
                 lastmenu = menu[selected]
                 if showgonzopictrl == False:
                     menu = standardmenu
-                    settings = storagedrives[dsk][0]+' '+diskleft, filmname+films_sel, str(scene)+scenes_sel+ '/' + str(scenes), str(shot)+shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', live, mux, str(slide)
+                    settings = storagedrives[dsk][0]+' '+diskleft, filmname+films_sel, str(scene)+scenes_sel+ '/' + str(scenes), str(shot)+shots_sel+ '/' + str(shots), str(take) + '/' + str(takes), rectime, camerashutter, cameraiso, camerared, camerablue, str(round(camera.framerate)), str(quality), str(camera.brightness), str(camera.contrast), str(camera.saturation), effects[effectselected], str(flip), str(beeps), str(round(reclength,2)), str(plughw), str(channels), str(miclevel), str(headphoneslevel), str(comp), '',blendmodes[blendselect], cammode, '', serverstate, searchforcameras, wifistate, '', '', '', '', '', live, mux, hdmi, str(slide)
                 else:
                     #gonzopictrlmenu = 'FILM:', 'SCENE:', 'SHOT:', 'TAKE:', '', 'SHUTTER:', 'ISO:', 'RED:', 'BLUE:', 'FPS:', 'Q:', 'BRIGHT:', 'CONT:', 'SAT:', 'FLIP:', 'BEEP:', 'LENGTH:', 'HW:', 'CH:', 'MIC:', 'PHONES:', 'COMP:', 'TIMELAPSE', 'BLEND:', 'FADE:', 'L:', 'MODE:', 'DSK:', 'SHUTDOWN', 'SRV:', 'SEARCH:', 'WIFI:', 'CAMERA:', 'Add CAMERA', 'New FILM', 'Sync FILM', 'Sync SCENE'
                     menu = gonzopictrlmenu
