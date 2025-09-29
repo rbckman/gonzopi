@@ -1,4 +1,4 @@
-$def with (films, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, scene, takes, shot, take, checkvideo,randhash, if_exist, createthumb,basedir,time)
+$def with (films, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, scene, takes, shot, take, checkvideo,randhash, if_exist, createthumb,basedir,time,get_video_length)
 $ video = ''
 
 <script>
@@ -115,6 +115,7 @@ $if film != '' and scene != '' and shot != '':
             <button class="sendDataButton">
             $ t2 = countshots(i, filmfolder, s+1)
             $ p2 = counttakes(i, filmfolder, s+1, s2+1)
+            $ mp4_file = basedir+'/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.mp4'
             $ picture = basedir+'/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.jpeg'
             $ picture_url = '/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.jpeg'
             $ thumbnail = basedir+'/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '_thumb.jpeg'
@@ -131,6 +132,7 @@ $if film != '' and scene != '' and shot != '':
                 $else:
                     $ thumbnail_url = '/static/empty.jpeg'
                     <img style="vertical-align:middle; width:100%; max-width:80px; height:auto;" src="$thumbnail_url?$randhash" alt="scene=${str(s+1)}&shot=${str(s2+1)}"/>
+            $#get_video_length(mp4_file)
             </button>
             </div>
         </br>

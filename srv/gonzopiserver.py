@@ -10,6 +10,7 @@ import random
 import hashlib
 import configparser
 import json
+import datetime
 from PIL import Image
 from pymediainfo import MediaInfo
 
@@ -242,6 +243,20 @@ def checkvideo(video,filmfolder,film,scene,shot,take):
         return p, v
     return '', v
 
+def get_video_length(filepath):
+    # Parse the file
+    media_info = MediaInfo.parse(filepath)
+    # Find the video track (usually the first video track)
+    for track in media_info.tracks:
+        if track.track_type == "Video":
+            # Duration is in milliseconds, convert to seconds
+            duration_ms = track.duration
+            if duration_ms is None:
+                return None  # No duration found
+            return str(datetime.timedelta(seconds=round(duration_ms)))
+            #return int(duration_ms)
+    return None  # No video track found
+
 def has_audio_track(file_path):
     try:
         # Parse the media file
@@ -456,7 +471,7 @@ class edit:
         if i.randhash == None:
             randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
         scenes = countscenes(filmfolder, film)
-        return render2.edit(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist, createthumb,basedir,time)
+        return render2.edit(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist, createthumb,basedir,time,get_video_length)
 
 class logorder:
     def POST(self, film):

@@ -649,17 +649,21 @@ def main():
                         filename = 'take' + str(take).zfill(3)
                         if dubfiles==[]:
                             print('no dubs, copying original sound to original')
-                            os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
+                            #os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
+                            audio_origins = (os.path.realpath(saveoriginal+'.wav'))[:-5]
+                            os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+saveoriginal)
                             time.sleep(0.2)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
                         playdub(filmname,renderfilename, 'dub',take)
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
                         #add audio/video start delay sync
-                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 /dev/shm/temp.wav trim 0.013')
-                        run_command('mv /dev/shm/temp.wav '+ newdub)
-                        audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
+                        audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+                        run_command('sox -V0 -G '+filmfolder+'.tmp/dub.wav -c 2 '+filmfolder+'.videos/'+audio_origins+'.wav trim 0.013')
+                        os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+newdub)
+                        #audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
                         vumetermessage('new shot dubbing made!')
                         #rerender audio
+                        #run_command('rm '+filmfolder+'.tmp/dub.wav')
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
                         camera.start_preview()
                         time.sleep(1)
@@ -677,9 +681,12 @@ def main():
                         #add audio/video start delay sync 
                         dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/dub/'
                         os.makedirs(dubfolder,exist_ok=True)
-                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 '+newdub+' trim 0.013')
-                        run_command('rm /dev/shm/dub.wav')
-                        audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
+
+                        audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+                        run_command('sox -V0 -G '+filmfolder+'.tmp/dub.wav -c 2 '+filmfolder+'.videos/'+audio_origins+'.wav trim 0.013')
+                        os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+newdub)
+                        run_command('rm '+filmfolder+'.tmp/dub.wav')
+                        #audiosync, videolength, audiolength = audiotrim(renderfilename, 'end', newdub)
                         vumetermessage('new scene dubbing made!')
                         #rerender audio
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
@@ -695,7 +702,10 @@ def main():
                         camera.stop_preview()
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         playdub(filmname,renderfilename, 'dub',take)
-                        run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub+' trim 0.013')
+                        audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+                        run_command('sox -V0 -G '+filmfolder+'.tmp/dub.wav -c 2 '+filmfolder+'.videos/'+audio_origins+'.wav trim 0.013')
+                        os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+newdub)
+                        run_command('rm '+filmfolder+'.tmp/dub.wav')
                         vumetermessage('new film dubbing made!')
                         camera.start_preview()
                         time.sleep(1)
@@ -1609,7 +1619,7 @@ def main():
                             except:
                                 db=correct_database(filmname,filmfolder,db)
                                 db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
-                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+ foldername + filename + '.wav &')
+                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+filmfolder+ '.videos/'+video_origins+'.wav &')
                             sound_start = time.time()
                             if onlysound != True:
                                 #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
@@ -1617,6 +1627,7 @@ def main():
                                 starttime = time.time()
                                 soundlag=sound_start-starttime
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+foldername+filename+'.mp4')
+                            os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.wav '+foldername+filename+'.wav')
                             recording = True
                             showmenu = 0
                         if cammode == 'picture':
@@ -2606,6 +2617,8 @@ class logger():
 def get_film_files(filmname,filmfolder,db):
     if not os.path.isdir(filmfolder+'.videos/'):
         os.makedirs(filmfolder+'.videos/')
+    if not os.path.isdir(filmfolder+'.tmp/'):
+        os.makedirs(filmfolder+'.tmp/')
     filmdb = filmfolder+'.videos/gonzopi.db'
     db = web.database(dbn='sqlite', db=filmdb)
     try:
@@ -4489,6 +4502,17 @@ def organize(filmfolder, filmname):
             #time.sleep(2)
             for s in sorted(takes):
                 if 'take' in s:
+                    make_audio_sublink=False
+                    if '.wav' in s:
+                        origin=os.path.realpath(takename+'.wav')
+                        if origin != os.path.abspath(takename+'.wav'):
+                            print('appending: '+origin)
+                            origin_files.append(origin)
+                            origin_scene_files.append(origin)
+                        else:
+                            print('no sublink for sound, create it here')
+                            time.sleep(1)
+                            make_audio_sublink=True
                     if '.mp4' in s or '.h264' in s:
                         unorganized_nr = int(s[4:7])
                         takename = filmfolder + filmname + '/' + i + '/' + p + '/take' + str(unorganized_nr).zfill(3)
@@ -4500,6 +4524,13 @@ def organize(filmfolder, filmname):
                                 origin_scene_files.append(origin)
                                 if os.path.isfile(takename+'.h264'):
                                     print('oh no boubles found!')
+                                if make_audio_sublink == True:
+                                    os.system('mv '+takename+'.wav '+origin[:-4]+'.wav')
+                                    os.system('ln -sfr '+origin[:-4]+'.wav '+takename+'.wav')
+                                    make_audio_sublink=False
+                            else:
+                                print('no sublink for video, create it here')
+                                time.sleep(1)
                         if '.h264' in s:
                             origin=os.path.realpath(takename+'.h264')
                             if origin != os.path.abspath(takename+'.h264'):
@@ -4673,7 +4704,7 @@ def organizedubs(foldername):
 #-------------Stretch Audio--------------
 
 def stretchaudio(filename,fps):
-    global film_fps
+    global film_fps,filmfolder
     fps_rounded=round(fps)
     if int(fps_rounded) != int(film_fps):
         #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
@@ -4690,9 +4721,10 @@ def stretchaudio(filename,fps):
         logger.info('audio is:' + str(audiolength))
         ratio = int(audiolength)/int(videolength)
         print(str(ratio))
-        run_command('cp '+filename+'.wav '+filename+'_temp.wav')
-        run_command('ffmpeg -y -i ' + filename + '_temp.wav -filter:a atempo="'+str(ratio) + '" ' + filename + '.wav')
-        os.remove(filename + '_temp.wav')
+        #run_command('cp '+filename+'.wav '+filename+'_temp.wav')
+        run_command('ffmpeg -y -i ' + filename + '.wav -filter:a atempo="'+str(ratio) + '" ' + filmfolder + '.tmp/'+filename+'.wav')
+        run_command('cp '+filmfolder+'.tmp/'+filename+'.wav '+filename+'.wav')
+        os.remove(filmfolder+'.tmp/'+filename+'.wav')
     #time.sleep(5)
     return
 
@@ -4835,9 +4867,9 @@ def compileshot(filename,filmfolder,filmname):
     print('trimming audio')
     if int(audiolength) > int(videolength+int(0.013*1000)):
         vumetermessage('trimming audio...')
-        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 /dev/shm/temp.wav trim 0.013')
-        run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
-        os.system('rm /dev/shm/temp.wav')
+        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 '+filmfolder+'.tmp/temp.wav trim 0.013')
+        run_command('mv '+filmfolder+'.tmp/temp.wav '+ filename + '.wav')
+        os.system('rm '+filmfolder+'.tmp/temp.wav')
     fps_rounded=round(fps)
     if int(fps) != int(film_fps):
         vumetermessage('stretching audio...')
@@ -4854,9 +4886,9 @@ def compileshot(filename,filmfolder,filmname):
     #one more if stereo check!
     stereo = is_audio_stereo(filename+'.wav')
     if stereo == False:
-        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 /dev/shm/temp.wav')
-        run_command('mv /dev/shm/temp.wav '+ filename + '.wav')
-        os.system('rm /dev/shm/temp.wav')
+        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 '+filmfolder+'.tmp/temp.wav')
+        run_command('mv '+filmfolder+'.tmp/temp.wav '+ filename + '.wav')
+        os.system('rm '+filmfolder+'.tmp/temp.wav')
     logger.info('audio is:' + str(audiolength))
     if mux == True:
         #muxing mp3 layer to mp4 file
@@ -5022,11 +5054,11 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
         #time.sleep(3)
         os.system('cp ' + filename + '.wav ' + filename + '_tmp.wav')
         #Fade and make stereo
-        run_command('sox -V0 -b 16 -G ' + d + ' -c 2 /dev/shm/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
-        run_command('sox -V0 -b 16 -G -m -v ' + str(round(i[0],1)) + ' /dev/shm/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav -c 2 ' + filename + '.wav trim 0 ' + str(audiolength))
+        run_command('sox -V0 -b 16 -G ' + d + ' -c 2 '+filmfolder+'.tmp/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
+        run_command('sox -V0 -b 16 -G -m -v ' + str(round(i[0],1)) + ' '+filmfolder+'.tmp/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav -c 2 ' + filename + '.wav trim 0 ' + str(audiolength))
         try:
             os.remove(filename + '_tmp.wav')
-            os.remove('/dev/shm/fade.wav')
+            os.remove(''+filmfolder+'.tmp/fade.wav')
         except:
             pass
         print('Dub mix ' + str(p) + ' done!')
@@ -5230,13 +5262,13 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
             #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
             call(['MP4Box', '-rem', '2', scenedir+'blend/'+blendmodes[blendselect] + '.mp4'], shell=False)
-            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 '+encoder()+'-filter_complex "blend="'+blendmodes[blendselect]+' /dev/shm/blend.mp4')
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 '+encoder()+'-filter_complex "blend="'+blendmodes[blendselect]+' '+filmfolder+'.tmp/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
             #make a new sublink
-            run_command('cp /dev/shm/blend.mp4 '+video_origins+'.mp4')
+            run_command('cp '+filmfolder+'.tmp/blend.mp4 '+video_origins+'.mp4')
             os.system('ln -sfr '+video_origins+'.mp4 '+screen_filename+'.mp4')
-            run_command('rm /dev/shm/blend.mp4')
+            run_command('rm '+filmfolder+'.tmp/blend.mp4')
             run_command('rm '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4')
             run_command('ffmpeg -y -sseof -1 -i ' + screen_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + screen_filename + '.jpeg')
             #ffmpeg -i blendtest.mp4 -i blendtest3.mp4 -filter_complex "blend=screen" output2.mp4
@@ -6087,7 +6119,7 @@ def playdub(filmname, filename, player_menu, take):
         #run_command('aplay -D plughw:0 ' + filename + '.wav &')
         #run_command('mplayer ' + filename + '.wav &')
     if player_menu == 'dub':
-        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv /dev/shm/dub.wav &')
+        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+filmfolder+'.tmp/dub.wav &')
     time.sleep(0.5)
     #try:
     #    playerAudio.play()
@@ -6321,7 +6353,7 @@ def playdub(filmname, filename, player_menu, take):
                     #    playerAudio.play()
                     #run_command('aplay -D plughw:0 ' + filename + '.wav &')
                     if dub == True:
-                        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv /dev/shm/dub.wav &')
+                        run_command(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+filmfolder+'.tmp/dub.wav &')
                 except:
                     pass
                 starttime = time.time()
@@ -6665,7 +6697,7 @@ def audiotrim(filename, where, dub):
 # make an empty audio file as long as a video file
 
 def audiosilence(renderfilename):
-    global channels, soundrate
+    global channels, soundrate,filmfolder
     writemessage('Creating audiosilence..')
     #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + renderfilename + '.mp4', shell=True)
     #videolength = pipe.decode()
@@ -6676,9 +6708,9 @@ def audiosilence(renderfilename):
     videoms = int(videolength) % 1000
     videos = int(videolength) / 1000
     logger.info('Videofile is: ' + str(videos) + 's ' + str(videoms))
-    run_command('sox -V0 -n -b 16 -r '+soundrate+' -c 2 /dev/shm/silence.wav trim 0.0 ' + str(videos))
-    os.system('cp /dev/shm/silence.wav ' + renderfilename + '.wav')
-    os.system('rm /dev/shm/silence.wav')
+    run_command('sox -V0 -n -b 16 -r '+soundrate+' -c 2 '+filmfolder+'.tmp/silence.wav trim 0.0 ' + str(videos))
+    os.system('cp '+filmfolder+'.tmp/silence.wav ' + renderfilename + '.wav')
+    os.system('rm '+filmfolder+'.tmp/silence.wav')
 
 #--------------USB filmfolder-------------------
 
@@ -6695,6 +6727,11 @@ def usbfilmfolder(dsk):
     if os.path.exists('/dev/sda1') == True:
         os.system('sudo mount -o  noatime,nodiratime,async /dev/sda1 /media/usb0')
         os.system('sudo chown pi /media/usb0')
+        os.system('sudo echo none | sudo tee /sys/block/sda/queue/scheduler')
+        #os.system('sudo umount -l /media/usb0')
+    if os.path.exists('/dev/sdb1') == True:
+        os.system('sudo mount -o  noatime,nodiratime,async /dev/sdb1 /media/usb1')
+        os.system('sudo chown pi /media/usb1')
         os.system('sudo echo none | sudo tee /sys/block/sda/queue/scheduler')
         #os.system('sudo umount -l /media/usb0')
     waiting = time.time() 
