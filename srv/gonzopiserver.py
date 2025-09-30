@@ -506,6 +506,97 @@ class player:
         return render.player(real_filmfolder,filmfolder,film,i.scene,i.shot,i.take,str,randhash,has_audio_track)
 
 class api:
+    def GET(self):
+        i=web.input(func=None,selected=None, scene=None, shot=None, film=None)
+        interface=open('/dev/shm/interface','r')
+        menu=interface.readlines()
+        vumeter=open('/dev/shm/vumeter','r')
+        vumetermessage=vumeter.readlines()[0].rstrip('\n')
+        #print(menu)
+        menudone=''
+        p=0
+        film=None
+        selectfilm=False
+        if menu != '':
+            scene=1
+            shot=1
+            take=1
+            for i in menu:
+                if p == 0:
+                    selected=int(i)+3
+                if p > 1:
+                    if selected == p:
+                        #menudone=menudone+'<b> '+i.rstrip('\n')+' </b> | '
+                        menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                    else:
+                        #menudone=menudone+i.rstrip('\n')+' | '
+                        menudone=menudone+'<a style="text-decoration:none; font-size:20px;" href="?selected='+str(p-3)+'"> '+i+' </a>'
+                    #if p == 7:
+                    #    menudone=menudone+'<br>'
+                    #if p == 13:
+                    #    menudone=menudone+'<br>'
+                    #if p == 21:
+                    #    menudone=menudone+'<br>'
+                    #if p == 30:
+                    #    menudone=menudone+'<br>'
+                if p == 2 and i.rstrip('\n') == 'Up and down to select and load film':
+                    selectfilm=True
+                if p == 3 and selectfilm==True:
+                    try:
+                        film=i.split(':')[1].rstrip('\n')
+                    except:
+                        film=None
+                if p == 4 and selectfilm == False:
+                    try:
+                        film=i.split(':')[1].rstrip('\n')
+                    except:
+                        film=None
+                if p == 5 and film != None:
+                    try:
+                        scene=int(i.split(':')[1].split('/')[0])
+                    except:
+                        scene=1
+                if p == 6 and film != None:
+                    try:
+                        shot=int(i.split(':')[1].split('/')[0])
+                    except:
+                        shot=1
+                if p == 7 and film != None:
+                    try:
+                        take=int(i.split(':')[1].split('/')[0])
+                    except:
+                        take=1
+                if p > 0 and selected == 423:
+                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                #if p > 2 and film == None:
+                    #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                p = p + 1
+        thumb = ''
+        video = ''
+        if film != None:
+            if selected == 0:
+                video = '/p/'+film
+                menudone+=menudone+'video'
+            if selected == 4:
+                video = '/p/'+film
+            elif selected == 5:
+                video = '/p/'+film+'?scene=' + str(scene)
+            elif selected == 6:
+                video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
+            elif selected == 7:
+                video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
+            else:
+                video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
+            thumb = '/'+filmfolder + film + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg" 
+        if os.path.isfile(basedir+thumb) == True:
+            randhashimg = '?'+hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+            writemenu=menudone+'<br><br>'+vumetermessage+'<br><a href="'+video+'"><img src="'+thumb+randhashimg+'"></a>'
+            #writemenu=menudone+render.player(filmfolder,film,scene,shot,take,str)
+        else:
+            writemenu=menudone+'<br><br>'+vumetermessage+'<br>'
+        isActive=True
+        return json.dumps({"film": film, "scene":scene,"shot":shot,"isActive":isActive})
+
     def POST(self):
         global menuold, vumeterold
         i=web.input(func=None,selected=None, scene=None, shot=None, film=None)

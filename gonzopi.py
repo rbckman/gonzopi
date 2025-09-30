@@ -650,13 +650,19 @@ def main():
                         if dubfiles==[]:
                             print('no dubs, copying original sound to original')
                             #os.system('cp '+saveoriginal+' '+dubfolder+'original.wav')
-                            audio_origins = (os.path.realpath(saveoriginal+'.wav'))[:-5]
-                            os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+saveoriginal)
+                            #audio_origins = (os.path.realpath(saveoriginal+'.wav'))[:-5]
+                            videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+                            tot = int(videos_totalt.videos)
+                            audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+                            os.system('cp '+saveoriginal+' '+filmfolder+'.videos/'+audio_origins+'.wav')
+                            os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+dubfolder+'original.wav')
                             time.sleep(0.2)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
                         playdub(filmname,renderfilename, 'dub',take)
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
                         #add audio/video start delay sync
+                        videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+                        tot = int(videos_totalt.videos)
                         audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
                         run_command('sox -V0 -G '+filmfolder+'.tmp/dub.wav -c 2 '+filmfolder+'.videos/'+audio_origins+'.wav trim 0.013')
                         os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+newdub)
@@ -681,6 +687,8 @@ def main():
                         #add audio/video start delay sync 
                         dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/dub/'
                         os.makedirs(dubfolder,exist_ok=True)
+                        videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+                        tot = int(videos_totalt.videos)
 
                         audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
                         run_command('sox -V0 -G '+filmfolder+'.tmp/dub.wav -c 2 '+filmfolder+'.videos/'+audio_origins+'.wav trim 0.013')
@@ -702,6 +710,8 @@ def main():
                         camera.stop_preview()
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         playdub(filmname,renderfilename, 'dub',take)
+                        videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+                        tot = int(videos_totalt.videos)
                         audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
                         run_command('sox -V0 -G '+filmfolder+'.tmp/dub.wav -c 2 '+filmfolder+'.videos/'+audio_origins+'.wav trim 0.013')
                         os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+newdub)
@@ -4502,7 +4512,6 @@ def organize(filmfolder, filmname):
             #time.sleep(2)
             for s in sorted(takes):
                 if 'take' in s:
-                    make_audio_sublink=False
                     if '.wav' in s:
                         origin=os.path.realpath(takename+'.wav')
                         if origin != os.path.abspath(takename+'.wav'):
@@ -4511,8 +4520,10 @@ def organize(filmfolder, filmname):
                             origin_scene_files.append(origin)
                         else:
                             print('no sublink for sound, create it here')
-                            time.sleep(1)
-                            make_audio_sublink=True
+                            #time.sleep(1)
+                            origin=os.path.realpath(takename+'.mp4')
+                            os.system('mv '+takename+'.wav '+origin[:-4]+'.wav')
+                            os.system('ln -sfr '+origin[:-4]+'.wav '+takename+'.wav')
                     if '.mp4' in s or '.h264' in s:
                         unorganized_nr = int(s[4:7])
                         takename = filmfolder + filmname + '/' + i + '/' + p + '/take' + str(unorganized_nr).zfill(3)
@@ -4524,10 +4535,6 @@ def organize(filmfolder, filmname):
                                 origin_scene_files.append(origin)
                                 if os.path.isfile(takename+'.h264'):
                                     print('oh no boubles found!')
-                                if make_audio_sublink == True:
-                                    os.system('mv '+takename+'.wav '+origin[:-4]+'.wav')
-                                    os.system('ln -sfr '+origin[:-4]+'.wav '+takename+'.wav')
-                                    make_audio_sublink=False
                             else:
                                 print('no sublink for video, create it here')
                                 time.sleep(1)
@@ -4867,8 +4874,9 @@ def compileshot(filename,filmfolder,filmname):
     print('trimming audio')
     if int(audiolength) > int(videolength+int(0.013*1000)):
         vumetermessage('trimming audio...')
+        audio_origins = (os.path.realpath(filename+'.wav'))
         run_command('sox -V0 -b 16 '+filename+'.wav -c 2 '+filmfolder+'.tmp/temp.wav trim 0.013')
-        run_command('mv '+filmfolder+'.tmp/temp.wav '+ filename + '.wav')
+        run_command('mv '+filmfolder+'.tmp/temp.wav '+ audio_origins)
         os.system('rm '+filmfolder+'.tmp/temp.wav')
     fps_rounded=round(fps)
     if int(fps) != int(film_fps):
@@ -4945,6 +4953,7 @@ def shotfiles(filmfolder, filmname, scene):
 
 def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
     videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+    rendered_video = filmfolder+'.rendered/'+filmname+'_scene' + str(scene).zfill(3)
     tot = int(videos_totalt.videos)
     #video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
@@ -4983,7 +4992,7 @@ def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
     videomerge.append('copy')
     videomerge.append('-movflags')
     videomerge.append('+faststart')
-    videomerge.append(filename+'.mp4')
+    videomerge.append(rendered_video+'.mp4')
     videomerge.append('-y')
     #videomerge.append(filename + '.h264')
     #videomerge.append(filename + '.h264')
@@ -4998,17 +5007,18 @@ def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
             continue
         writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done')
     print('Video rendered!')
-    #os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
+    os.system('ln -sfr '+rendered_video+'.mp4 '+filename+'.mp4')
     run_command('rm '+scenedir+'.renderlist')
     return
 
 #---------------Render Audio----------------
 
-def renderaudio(audiofiles, filename, dubfiles, dubmix):
+def renderaudio(filmfolder, filmname, scene, audiofiles, filename, dubfiles, dubmix):
     #if len(audiofiles) < 1:
     #    writemessage('Nothing here!')
     #    time.sleep(2)
     #    return None
+    rendered_audio = filmfolder+'.rendered/'+filmname+'_scene' + str(scene).zfill(3)
     print('Rendering audiofiles')
     ##PASTE AUDIO TOGETHER
     writemessage('Hold on, rendering audio...')
@@ -5018,12 +5028,13 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
     if isinstance(audiofiles, list):
         for f in audiofiles:
             audiomerge.append(f + '.wav')
-        audiomerge.append(filename + '.wav')
+        audiomerge.append(rendered_audio + '.wav')
         call(audiomerge, shell=False)
     else:
         #if rendering scene with one shot
         if audiofiles[0] != filename:
-            os.system('cp '+audiofiles[0]+'.wav '+filename+'.wav')
+            os.system('cp '+audiofiles[0]+'.wav '+rendered_audio+'.wav')
+    os.system('ln -sfr '+rendered_audio+'.wav '+filename+'.wav')
     #DUBBING
     p = 1
     #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
@@ -5055,7 +5066,7 @@ def renderaudio(audiofiles, filename, dubfiles, dubmix):
         os.system('cp ' + filename + '.wav ' + filename + '_tmp.wav')
         #Fade and make stereo
         run_command('sox -V0 -b 16 -G ' + d + ' -c 2 '+filmfolder+'.tmp/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
-        run_command('sox -V0 -b 16 -G -m -v ' + str(round(i[0],1)) + ' '+filmfolder+'.tmp/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav -c 2 ' + filename + '.wav trim 0 ' + str(audiolength))
+        run_command('sox -V0 -b 16 -G -m -v ' + str(round(i[0],1)) + ' '+filmfolder+'.tmp/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav -c 2 ' + rendered_audio + '.wav trim 0 ' + str(audiolength))
         try:
             os.remove(filename + '_tmp.wav')
             os.remove(''+filmfolder+'.tmp/fade.wav')
@@ -5347,7 +5358,7 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 if os.path.exists(scenedir+'dub') == True:
                     os.system('cp '+scenedir+'dub/original.wav '+renderfilename+'.wav')
                 #os.system('cp '+dubfolder+'original.wav '+renderfilename+'.wav')
-                renderaudio(renderfilename, renderfilename, dubfiles, dubmix)
+                renderaudio(filmfolder, filmname, scene, renderfilename, renderfilename, dubfiles, dubmix)
                 print('updating audiohash...')
                 with open(scenedir + '.audiohash', 'w') as f:
                     f.write(audiohash)
@@ -5529,7 +5540,7 @@ def renderscene(filmfolder, filmname, scene):
         renderfixscene=True
         os.system('rm '+scenedir+'/.rerender')
     if audiohash != oldaudiohash or newmix == True or renderfix == True or renderfixscene == True:
-        renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
+        renderaudio(filmfolder, filmname, scene, filmfiles, renderfilename, dubfiles, dubmix)
         print('updating audiohash...')
         with open(scenedir + '.audiohash', 'w') as f:
             f.write(audiohash)
@@ -5645,7 +5656,7 @@ def renderfilm(filmfolder, filmname, comp, scene):
         if newaudiomix == True:
             newmix = True
         if audiohash != oldaudiohash or newmix == True:
-            renderaudio(filmfiles, renderfilename, dubfiles, dubmix)
+            renderaudio(filmfolder, filmname, scene, filmfiles, renderfilename, dubfiles, dubmix)
             print('updating audiohash...')
             with open(filmdir+ '.audiohash', 'w') as f:
                 f.write(audiohash)
@@ -6615,6 +6626,7 @@ def audiotrim(filename, where, dub):
     #audioms = int(audiolength) % 1000
     #videos = int(videolength) / 1000
     #audios = int(audiolength) / 1000
+    audio_origins = (os.path.realpath(filename+'.wav'))
     if int(audiolength) > int(videolength):
         #calculate difference
         audiosync = int(audiolength) - int(videolength)
@@ -6637,7 +6649,7 @@ def audiotrim(filename, where, dub):
             run_command('sox -V0 -b 16 -G ' + dub[:-4] + '_temp.wav -c 2 ' + dub[:-4] + '.wav fade 0.01 0 0.01')
             os.remove(dub[:-4] + '_temp.wav')
         else:
-            run_command('sox -V0 -b 16 -G ' + filename + '_temp.wav -c 2 ' + filename + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -G ' + filename + '_temp.wav -c 2 ' + audio_origins + ' fade 0.01 0 0.01')
             os.remove(filename + '_temp.wav')
         #if int(audiosync) > 400:
         #    writemessage('WARNING!!! VIDEO FRAMES DROPPED!')
@@ -6665,7 +6677,7 @@ def audiotrim(filename, where, dub):
             run_command('sox -V0 -b 16 -G ' + dub[:-4] + '_temp.wav -c 2 ' + dub[:-4] + '.wav fade 0.01 0 0.01')
         else:
             run_command('sox -V0 -b 16 -r '+soundrate+' '+filename+'.wav -c 2 '+filename+'_temp.wav trim 0.0 pad 0 ' + str(int(audiosync)/1000))
-            run_command('sox -V0 -b 16 -G ' + filename + '_temp.wav -c 2 ' + filename + '.wav fade 0.01 0 0.01')
+            run_command('sox -V0 -b 16 -G ' + filename + '_temp.wav -c 2 ' + audio_origins + ' fade 0.01 0 0.01')
         #add silence to end
         #run_command('sox -V0 /dev/shm/silence.wav ' + filename + '_temp.wav')
         #run_command('cp '+filename+'.wav '+filename+'_temp.wav')
@@ -6709,7 +6721,11 @@ def audiosilence(renderfilename):
     videos = int(videolength) / 1000
     logger.info('Videofile is: ' + str(videos) + 's ' + str(videoms))
     run_command('sox -V0 -n -b 16 -r '+soundrate+' -c 2 '+filmfolder+'.tmp/silence.wav trim 0.0 ' + str(videos))
-    os.system('cp '+filmfolder+'.tmp/silence.wav ' + renderfilename + '.wav')
+    videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+    tot = int(videos_totalt.videos)
+    audio_origins=datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+    os.system('cp '+filmfolder+'.tmp/silence.wav ' +filmfolder+'.videos/'+audio_origins+'.wav')
+    os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+renderfilename+'.wav')
     os.system('rm '+filmfolder+'.tmp/silence.wav')
 
 #--------------USB filmfolder-------------------

@@ -338,7 +338,48 @@ $$('#PASTE').on('click', function () {
     }
 })
 });
+
+  // Function to fetch data and update div
+  function updateShotData() {
+    // Get the div and its data attributes
+    const $$shotDivs = $$('.shotdata');
+
+    // AJAX request
+    $$.ajax({
+      url: '/api', // Replace with your actual API endpoint
+      method: 'GET',
+      dataType: 'json', // Explicitly expect JSON response
+      success: function(response) {
+        // Assuming JSON response like: { "scene": "1", "shot": "2" }
+        const currentScene = response.scene;
+        const currentShot = response.shot;
+
+        // Reset all divs to transparent border
+        $$shotDivs.css('border', '1px solid transparent');
+
+        // Find and update matching div
+        $$shotDivs.each(function() {
+          const $$div = $$(this);
+          if ($$div.data('scene') == currentScene && $$div.data('shot') == currentShot) {
+            $$div.css('border', '1px solid white'); // Draw border on matching div
+          }
+        });
+      },
+      error: function(xhr, status, error) {
+        console.error('API request failed:', error);
+        $$shotDivs.css('border', '1px solid transparent'); // Reset all borders on error
+      }
+    });
+  }
+
+
+  // Initial call
+  updateShotData();
+
+  // Set interval to call every second (1000ms)
+  setInterval(updateShotData, 1000);
 });
+
 
 </script>
 
