@@ -1,4 +1,4 @@
-$def with (films, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, scene, takes, shot, take, checkvideo,randhash, if_exist, createthumb,basedir,time,get_video_length)
+$def with (films, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, scene, takes, shot, take, checkvideo,randhash, if_exist, createthumb,basedir,time,get_video_length, db, real_filmfolder)
 $ video = ''
 
 <script>
@@ -73,7 +73,7 @@ button {
 .responsive-div {
     display: none; /* Hide by default */
 }
-@media (max-width: 500px) {
+@media (max-width: 700px) {
     .responsive-div {
         display: block; /* Show when screen width is 500px or less */
     }
@@ -97,8 +97,9 @@ button {
 </div>
 </div>
 
+</div>
 <br>
-
+<div id="content">
 $ t=0
 <br>
 $if film != '' and scene != '' and shot != '':
@@ -110,16 +111,19 @@ $if film != '' and scene != '' and shot != '':
         $ t = counttakes(i, filmfolder, s+1, 1)
         $ shots = countshots(i, filmfolder, s+1)
         $for s2 in range(shots):
-            <div class='shotdata' data-film="$film" data-scene="${str(s+1)}" data-shot="${str(s2+1)}" style="padding:0px;">
-            shot $str(s2+1)
-            <button class="sendDataButton">
             $ t2 = countshots(i, filmfolder, s+1)
             $ p2 = counttakes(i, filmfolder, s+1, s2+1)
             $ mp4_file = basedir+'/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.mp4'
+            $ shot_file = real_filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/'
+            $ shot_mp4_file = real_filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.mp4'
             $ picture = basedir+'/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.jpeg'
             $ picture_url = '/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '.jpeg'
             $ thumbnail = basedir+'/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '_thumb.jpeg'
             $ thumbnail_url = '/'+filmfolder + i + '/scene' + str(s+1).zfill(3) + '/shot' + str(s2+1).zfill(3) + '/take' + str(p2).zfill(3) + '_thumb.jpeg'
+            <div class='shotdata' data-file="$shot_file" data-film="$film" data-scene="${str(s+1)}" data-shot="${str(s2+1)}" style="padding:0px;">
+            |$str(s2+1)|
+            $get_video_length(shot_mp4_file)
+            <button class="sendDataButton">
             $ check=if_exist(thumbnail_url)
             $if check == True:
                 <img style="vertical-align:middle; width:100%; max-width:80px; height:auto;" src="$thumbnail_url?$randhash" alt="scene=${str(s+1)}&shot=${str(s2+1)}"/>
@@ -132,7 +136,6 @@ $if film != '' and scene != '' and shot != '':
                 $else:
                     $ thumbnail_url = '/static/empty.jpeg'
                     <img style="vertical-align:middle; width:100%; max-width:80px; height:auto;" src="$thumbnail_url?$randhash" alt="scene=${str(s+1)}&shot=${str(s2+1)}"/>
-            $#get_video_length(mp4_file)
             </button>
             </div>
         </br>
@@ -157,11 +160,20 @@ $elif scene != None:
         $ thumbnail_url = '/'+filmfolder + film + '/scene' + str(scene).zfill(3) + '/shot' + str(s+1).zfill(3) + '/take' + str(p).zfill(3) + '.jpeg'
         <a href="?scene=$scene&shot=${str(s+1)}"><img style="vertical-align:middle; width:80%; max-width:50px;" src="$thumbnail_url?$randhash" alt="scene=$scene&shot=$shot&take=${str(t+1)}"/></a><br>
 
-
-
 </div>
 <script>
 $$(document).ready(function() {
+function refreshPage() {
+    $$.ajax({
+        url: '/e/$film', // Replace with your server endpoint
+        method: 'GET',
+        success: function(html) {
+        },
+        error: function(error) {
+            console.error('Error refreshing page:', error);
+        }
+    });
+}
 $$('.sendDataButton').click(function() {
     // Retrieve data from the div
     var shotname = $$('.sendDataButton').text(); //
@@ -308,6 +320,9 @@ $$('#MOVE').on('click', function () {
     type: "Content-type",
     url:"/api?func=move",
     success: function(result) {
+    setTimeout(function() {
+    location.reload(); // Refresh the entire page
+},1500);
     },
     error: function(result) {
     console.log('error', result);
@@ -353,15 +368,20 @@ $$('#PASTE').on('click', function () {
         // Assuming JSON response like: { "scene": "1", "shot": "2" }
         const currentScene = response.scene;
         const currentShot = response.shot;
+        const fileList = response.selected;
 
         // Reset all divs to transparent border
         $$shotDivs.css('border', '1px solid transparent');
+        $$shotDivs.css('background', 'transparent');
 
         // Find and update matching div
         $$shotDivs.each(function() {
           const $$div = $$(this);
           if ($$div.data('scene') == currentScene && $$div.data('shot') == currentShot) {
             $$div.css('border', '1px solid white'); // Draw border on matching div
+          }
+          if (fileList.includes($$div.data('file'))) {
+            $$div.css('background', 'grey');
           }
         });
       },
@@ -377,7 +397,7 @@ $$('#PASTE').on('click', function () {
   updateShotData();
 
   // Set interval to call every second (1000ms)
-  setInterval(updateShotData, 1000);
+  setInterval(updateShotData, 300);
 });
 
 

@@ -75,10 +75,14 @@ if filmfolderusb:
     # Link video directory to static dir
     os.system("ln -s -t static/ " + filmfolder)
     filmfolder='static/gonzopifilms/'
+    filmdb = filmfolder+'.videos/gonzopi.db'
+    db = web.database(dbn='sqlite', db=filmdb)
 else:
     os.system("ln -s -t static/ " + filmfolder)
     filmfolder='static/gonzopifilms/'
     #fix filmfolder root to Videos/gonzopifilms
+    filmdb = filmfolder+'.videos/gonzopi.db'
+    db = web.database(dbn='sqlite', db=filmdb)
 
 basedir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(basedir)
@@ -244,8 +248,18 @@ def checkvideo(video,filmfolder,film,scene,shot,take):
     return '', v
 
 def get_video_length(filepath):
+    video_origins = (os.path.realpath(filepath))
+    try:
+        video_db=db.select('videos', where='filename="'+video_origins+'"')[0]
+        return str(datetime.timedelta(seconds=round(video_db.videolength)))
+    except:
+        pass
+    return
     # Parse the file
-    media_info = MediaInfo.parse(filepath)
+    try:
+        media_info = MediaInfo.parse(filepath)
+    except:
+        return
     # Find the video track (usually the first video track)
     for track in media_info.tracks:
         if track.track_type == "Video":
@@ -253,7 +267,8 @@ def get_video_length(filepath):
             duration_ms = track.duration
             if duration_ms is None:
                 return None  # No duration found
-            return str(datetime.timedelta(seconds=round(duration_ms)))
+            db.update('videos', where='filename="'+video_origins+'"', videolength=duration_ms/1000, audiolength=duration_ms/1000)
+            return str(datetime.timedelta(seconds=round(duration_ms/1000)))
             #return int(duration_ms)
     return None  # No video track found
 
@@ -455,6 +470,8 @@ class edit:
         renderedfilms = []
         unrenderedfilms = []
         allfilms = []
+        filmdb = filmfolder+'.videos/gonzopi.db'
+        db = web.database(dbn='sqlite', db=filmdb)
         for f in gonzopifilms:
             if os.path.isfile(filmfolder + f[0] + '/' + f[0] + '.mp4') == True:
                 renderedfilms.append(f[0])
@@ -471,7 +488,7 @@ class edit:
         if i.randhash == None:
             randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
         scenes = countscenes(filmfolder, film)
-        return render2.edit(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist, createthumb,basedir,time,get_video_length)
+        return render2.edit(allfilms, film, scenes, str, filmfolder, counttakes, countshots, countscenes, shots, i.scene, takes, i.shot, i.take, checkvideo, randhash, if_exist, createthumb,basedir,time,get_video_length, db, real_filmfolder)
 
 class logorder:
     def POST(self, film):
@@ -558,7 +575,7 @@ class api:
                         scene=1
                 if p == 6 and film != None:
                     try:
-                        shot=int(i.split(':')[1].split('/')[0])
+                        shot=int(i.split(':')[1].split('/')[0].rstrip('*'))
                     except:
                         shot=1
                 if p == 7 and film != None:
@@ -595,7 +612,12 @@ class api:
         else:
             writemenu=menudone+'<br><br>'+vumetermessage+'<br>'
         isActive=True
-        return json.dumps({"film": film, "scene":scene,"shot":shot,"isActive":isActive})
+        try:
+            with open('/dev/shm/videos_selected','r') as f:
+                selected_videos=[line.rstrip('\n') for line in f.readlines()]
+        except:
+            selected_videos=[]
+        return json.dumps({"film": film, "scene":scene,"shot":shot,"isActive":isActive, "selected":selected_videos})
 
     def POST(self):
         global menuold, vumeterold
@@ -645,9 +667,7 @@ class api:
         elif i.func == 'paste':
             sendtocamera(ip,port,'paste')
         elif i.scene!=None and i.shot!=None and i.film != None:
-            sendtocamera(ip,port,'SCENE:'+str(i.scene))
-            time.sleep(0.2)
-            sendtocamera(ip,port,'SHOT:'+str(i.shot))
+            sendtocamera(ip,port,'SHOTSCENES:'+str(i.scene)+'|'+str(i.shot))
             time.sleep(0.2)
             sendtocamera(ip,port,'SELECTED:3')
         interface=open('/dev/shm/interface','r')

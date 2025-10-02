@@ -5,6 +5,7 @@ body
     background-color:#000;
     color: #f4f4f4;
     font-family: monospace;
+    font-size: 10px;
     width: 100%;
     white-space: nowrap
 }
