@@ -667,7 +667,9 @@ class api:
         elif i.func == 'paste':
             sendtocamera(ip,port,'paste')
         elif i.scene!=None and i.shot!=None and i.film != None:
-            sendtocamera(ip,port,'SHOTSCENES:'+str(i.scene)+'|'+str(i.shot))
+            #sendtocamera(ip,port,'NEWFILM:'+i.film)
+            #time.sleep(0.05)
+            sendtocamera(ip,port,'SHOTSCENES:'+str(i.scene)+'|'+str(i.shot)+'#'+i.film)
             time.sleep(0.2)
             sendtocamera(ip,port,'SELECTED:3')
         interface=open('/dev/shm/interface','r')

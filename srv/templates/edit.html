@@ -72,6 +72,7 @@ button {
 }
 .responsive-div {
     display: none; /* Hide by default */
+    text-align: center;
 }
 @media (max-width: 700px) {
     .responsive-div {
@@ -107,6 +108,7 @@ $if film != '' and scene != '' and shot != '':
     $ i = film
     $ scenes=countscenes(filmfolder, i)
     $for s in range(scenes):
+        <pre style="margin-top:0px; margin-left:5px; width: 100%; " ></pre>
         <pre style="margin-top:0px; margin-left:5px; width: 100%; " >scene $str(s+1)</pre>
         $ t = counttakes(i, filmfolder, s+1, 1)
         $ shots = countshots(i, filmfolder, s+1)
@@ -368,6 +370,7 @@ $$('#PASTE').on('click', function () {
         // Assuming JSON response like: { "scene": "1", "shot": "2" }
         const currentScene = response.scene;
         const currentShot = response.shot;
+        const currentFilm = response.film;
         const fileList = response.selected;
 
         // Reset all divs to transparent border
@@ -377,7 +380,7 @@ $$('#PASTE').on('click', function () {
         // Find and update matching div
         $$shotDivs.each(function() {
           const $$div = $$(this);
-          if ($$div.data('scene') == currentScene && $$div.data('shot') == currentShot) {
+          if ($$div.data('scene') == currentScene && $$div.data('shot') == currentShot && $$div.data('film') == currentFilm ) {
             $$div.css('border', '1px solid white'); // Draw border on matching div
           }
           if (fileList.includes($$div.data('file'))) {

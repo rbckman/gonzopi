@@ -832,11 +832,6 @@ def main():
                         print(term.clear)
                         filmname = newfilmname
                         newfilmname = ''
-                        vumetermessage('film already exist!')
-                        logger.info('film already exist!')
-                        updatethumb = True
-                        loadfilmsettings = True
-                        rendermenu = True
                 #EDIT FILM NAME
                 elif pressed == 'middle' and menu[selected] == 'TITLE' or filmname == '':
                     newfilmname = nameyourfilm(filmfolder, filmname, abc, False)
@@ -1321,10 +1316,11 @@ def main():
                     take = counttakes(filmname, filmfolder, scene, shot)
                 elif 'SHOTSCENES:' in pressed:
                     sceneshot=pressed.split(':')[1]
-                    scene=sceneshot.split('|')[0]
+                    scene=sceneshot.split('|')[0].split('#')[0]
                     scene=int(scene)
-                    shot=sceneshot.split('|')[1]
+                    shot=sceneshot.split('|')[1].split('#')[0]
                     shot=int(shot)
+                    filmname = sceneshot.split('|')[1].split('#')[1]
                     take = counttakes(filmname, filmfolder, scene, shot)
                 elif 'REMOVE:' in pressed:
                     scene=pressed.split(':')[1]
@@ -6536,7 +6532,7 @@ def split_list_save(foldername, splitlist):
 #---------------Video Trim--------------------
 
 def videotrim(filmfolder, foldername ,filename, where, s, t, make_new_take_or_shot):
-    global film_reso
+    global film_reso, db
     #theres two different ways of non-rerendering mp4 cut techniques that i know MP4Box and ffmpeg
     if make_new_take_or_shot == 'take':
         trim_filename = foldername+filename[:-3] + str(counttakes2(foldername)+1).zfill(3)
@@ -6605,6 +6601,8 @@ def videotrim(filmfolder, foldername ,filename, where, s, t, make_new_take_or_sh
         #    writemessage('trimming original sound')
         #    audiotrim(trim_filename, 'end', foldername+'dub/original.wav')
     #take last frame 
+    videolength = get_video_length(video_origins+'.mp4')
+    db.insert('videos', tid=datetime.datetime.now(), filename=video_origins+'.mp4', foldername=foldername, audiolength=videolength/1000, videolength=videolength/1000)
     if film_reso == '1920x1080':
         run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
         run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=80:45 ' + trim_filename + '_thumb.jpeg')
@@ -6645,7 +6643,7 @@ def fastaudiotrim(filename, beginning, end):
 #--------------Audio Trim--------------------
 # make audio file same length as video file
 def audiotrim(filename, where, dub):
-    global channels, fps
+    global channels, fps, db
     videofile=filename
     audiosync=0
     print("chaaaaaaaaaaaaaaaanel8: " +str(channels))
@@ -6673,6 +6671,7 @@ def audiotrim(filename, where, dub):
     #audioms = int(audiolength) % 1000
     #videos = int(videolength) / 1000
     #audios = int(audiolength) / 1000
+    video_origins = (os.path.realpath(filename+'.mp4'))
     audio_origins = (os.path.realpath(filename+'.wav'))
     if int(audiolength) > int(videolength):
         #calculate difference
