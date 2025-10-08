@@ -4979,6 +4979,7 @@ def shotfiles(filmfolder, filmname, scene):
 def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
     videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
     rendered_video = filmfolder+'.rendered/'+filmname+'_scene' + str(scene).zfill(3)
+    os.makedirs(filmfolder+'.rendered',exist_ok=True)
     tot = int(videos_totalt.videos)
     #video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
     scenedir = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/'
@@ -5049,6 +5050,7 @@ def renderaudio(filmfolder, filmname, scene, audiofiles, filename, dubfiles, dub
         rendered_audio=filename
     else:
         rendered_audio = filmfolder+'.rendered/'+filmname+'_scene' + str(scene).zfill(3)
+        os.makedirs(filmfolder+'.rendered',exist_ok=True)
     print('Rendering audiofiles')
     ##PASTE AUDIO TOGETHER
     writemessage('Hold on, rendering audio...')
@@ -5069,14 +5071,18 @@ def renderaudio(filmfolder, filmname, scene, audiofiles, filename, dubfiles, dub
     p = 1
     #pipe = subprocess.check_output('mediainfo --Inform="Video;%Duration%" ' + filename + '.mp4', shell=True)
     #videolength = pipe.decode().strip()
-    videolength = get_video_length(filename+'.mp4')
+    try:
+        videolength = get_video_length(filename+'.mp4')
+    except:
+        videolength = 0
     try:
         audiolength = get_audio_length(filename+'.wav')
     except:
         audiosilence(filename)
         audiolength = get_audio_length(filename+'.wav')
-    if audiolength > videolength:
-        audiotrim(filename, 'end','')
+    if videolength != 0 and videolength != None:
+        if audiolength > videolength:
+            audiotrim(filename, 'end','')
     for i, d in zip(dubmix, dubfiles):
         writemessage('Dub ' + str(p) + ' audio found lets mix...')
         #first trimit!

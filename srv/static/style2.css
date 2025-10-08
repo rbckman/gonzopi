@@ -7,7 +7,6 @@ body
     font-family: monospace;
     font-size: 10px;
     width: 100%;
-    white-space: nowrap
 }
 
 pre
@@ -26,14 +25,30 @@ a
 
 img
 {
-    width: 90%;
+    width: 97%;
     max-width: 800px;
 }
 
-#controller {
-    position: fixed;
-    margin: 0 auto;
-    background-color:#231f20;
+.responsive-div {
+    display: none; /* Hide by default */
+    text-align: center;
+
+}
+@media (max-width: 700px) {
+    .responsive-div {
+        display: block; /* Show when screen width is 500px or less */
+        position: fixed;
+        margin: 0 auto;
+        background-color:#231f20;
+        font-weight: normal;
+        font-size: 17px;
+        bottom:0px;
+        padding-top:10px;
+        width: 100%;
+    }
+}
+
+.controller {
     font-weight: normal;
     font-size: 17px;
     bottom:0px;
@@ -41,7 +56,7 @@ img
     width: 100%;
 }
 
-#controller a
+.controller a
 {
     margin-bottom: 20px;
     color: #FFF;
@@ -53,7 +68,7 @@ img
     border-radius: 10px
 }
 
-#controller a:active
+.controller a:active
 {
     margin-bottom: 20px;
     color: #000;
@@ -65,7 +80,7 @@ img
     border-radius: 10px
 }
 
-#controller2 a
+.controller2 a
 {
     margin-bottom: 20px;
     color: #FFF;
@@ -77,7 +92,7 @@ img
     border-radius: 10px
 }
 
-#controller2 a:active
+.controller2 a:active
 {
     margin-bottom: 20px;
     color: #000;
@@ -89,7 +104,7 @@ img
     border-radius: 10px
 }
 
-#controller3 a
+.controller3 a
 {
     margin-bottom: 20px;
     color: #FFF;
@@ -101,7 +116,7 @@ img
     border-radius: 10px
 }
 
-#controller3 a:active
+.controller3 a:active
 {
     margin-bottom: 20px;
     color: #000;

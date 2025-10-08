@@ -1,4 +1,4 @@
-$def with (films, cameras, menu, selected,name,scene,shot,take,str,randhash,thumb,vumetermessage,func,filmfolder)
+$def with (films, cameras, menu, selected,name,scene,shot,take,str,randhash,thumb,vumetermessage,func,filmfolder,dsk)
 
 <script>
 function Get(yourUrl){
@@ -87,14 +87,19 @@ $$(document).on('keydown', function (event) {
     } else if (event.which == 39) {
         $$('#RIGHT').trigger('click');
     } else if (event.which == 38) {
+        event.preventDefault();
         $$('#UP').trigger('click');
     } else if (event.which == 40) {
+        event.preventDefault();
         $$('#DOWN').trigger('click');
     } else if (event.which == 33) {
+        event.preventDefault();
         $$('#RECORD').trigger('click');
     } else if (event.which == 32) {
+        event.preventDefault();
         $$('#RECORD').trigger('click');
     } else if (event.which == 34) {
+        event.preventDefault();
         $$('#RETAKE').trigger('click');
     } else if (event.which == 9) {
         event.preventDefault();
@@ -156,26 +161,6 @@ connected
 <pre>use keyboard to control</pre>
 $for i in cameras:
     $i
-<a href="/e/$name">edit view</a>
-<div id="controller">
-<a id="VIEW">VIEW</a> <a id="UP">UP</a> <a id="RECORD">RECORD</a><br>
-<a id="LEFT">LEFT</a> <a id="MIDDLE">MIDDLE</a> <a id="RIGHT">RIGHT</a><br>
-<a id="DELETE">DELETE</a> <a id="DOWN">DOWN</a> <a id="RETAKE">RETAKE</a><br>
-</div>
-<div id="controller2">
-<a id="CAMERA0">CAM1</a> <a id="CAMERA1">CAM2</a> <a id="CAMERA2">CAM3</a><br>
-<a id="CAMERA3">CAM4</a> <a id="CAMERA4">CAM5</a> <a id="CAMERA5">CAM6</a><br>
-</div>
-<div id="controller3">
-<a id="MOVE">MOVE</a> <a id="COPY">COPY</a> <a id="PASTE">PASTE</a><br>
-</div>
-
-<div id="menu2" style="margin:0 auto; width:99%" ></div>
-<div id="menu" style="margin:0 auto; width:99%">
-</div>
-<br>
-<br>
-<input></input>
 
 $if thumb != '':
     $ picture= '/'+filmfolder + name + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/picture" + str(take).zfill(3) + ".jpeg"
@@ -194,6 +179,29 @@ $if thumb != '':
     $elif selected > 1:
         <a href='$take_link'><img width="80%" src="$picture?$randhash"/></a><br>
     <br>
+
+<div class="responsive-div">
+
+<div class="controller">
+<a id="VIEW">VIEW</a> <a id="UP">UP</a> <a id="RECORD">RECORD</a><br>
+<a id="LEFT">LEFT</a> <a id="MIDDLE">MIDDLE</a> <a id="RIGHT">RIGHT</a><br>
+<a id="DELETE">DELETE</a> <a id="DOWN">DOWN</a> <a id="RETAKE">RETAKE</a><br>
+</div>
+
+<div class="controller2">
+<a id="CAMERA0">CAM1</a> <a id="CAMERA1">CAM2</a> <a id="CAMERA2">CAM3</a><br>
+<a id="CAMERA3">CAM4</a> <a id="CAMERA4">CAM5</a> <a id="CAMERA5">CAM6</a><br>
+</div>
+
+<div class="controller3">
+<a id="MOVE">MOVE</a> <a id="COPY">COPY</a> <a id="PASTE">PASTE</a><br>
+</div>
+
+</div>
+
+<div id="menu2" style="width:95%; max-width:800px;" ></div>
+<div id="menu" style="width:95%; max-width:800px;">
+</div>
 
 <script>
 $$('#CAMERA0').on('click', function () {

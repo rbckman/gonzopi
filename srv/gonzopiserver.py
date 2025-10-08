@@ -32,8 +32,8 @@ urls = (
 
 #--------------USB filmfolder-------------------
 
-def usbfilmfolder():
-    usbmount = 0
+def usbfilmfolder(dsk):
+    usbmount = dsk
     while True:
         usbconnected = os.path.ismount('/media/usb'+str(usbmount))
         time.sleep(0.02)
@@ -68,7 +68,7 @@ real_filmfolder=filmfolder
 
 os.system("unlink static/*")
 #CHECK IF FILMING TO USB STORAGE
-filmfolderusb=usbfilmfolder()
+filmfolderusb=usbfilmfolder(0)
 if filmfolderusb:
     filmfolder=filmfolderusb
     real_filmfolder=filmfolder
@@ -115,6 +115,9 @@ cameras=[]
 recording = False
 
 session.randhash = hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+
+oldhash = ''
+oldthumb = ''
 
 ##---------------Connection----------------------------------------------
 
@@ -370,6 +373,11 @@ class index:
         except:
             selected=0
         try:
+            dsk=menu[3].split(':')[1].split(' ')[0]
+            dsk=dsk.rstrip('\n')
+        except:
+            dsk=''
+        try:
             name=menu[4].split(':')[1]
             name=name.rstrip('\n')
         except:
@@ -405,7 +413,7 @@ class index:
         if os.path.isfile(basedir+thumb) == False:
             print(basedir+thumb)
             thumb=''
-        return render.index(allfilms, session.cameras, menu, selected,name,scene,shot,take,str,session.randhash,thumb,vumetermessage,i.func,filmfolder)
+        return render2.index(allfilms, session.cameras, menu, selected,name,scene,shot,take,str,session.randhash,thumb,vumetermessage,i.func,filmfolder, dsk)
 
 class films:
     def GET(self, film):
@@ -466,6 +474,39 @@ class edit:
     def GET(self, film):
         shots = 0
         takes = 0
+        interface=open('/dev/shm/interface','r')
+        vumeter=open('/dev/shm/vumeter','r')
+        menu=interface.readlines()
+        vumetermessage=vumeter.readlines()[0].rstrip('\n')
+        try:
+            selected=int(menu[0])
+        except:
+            selected=0
+        try:
+            dsk=menu[3].split(':')[1].split(' ')[0]
+            dsk=dsk.rstrip('\n')[-1:]
+            dsk=int(dsk)
+        except:
+            dsk=0
+        filmfolder = '/home/pi/gonzopifilms/'
+        real_filmfolder=filmfolder
+        os.system("unlink static/*")
+        #CHECK IF FILMING TO USB STORAGE
+        filmfolderusb=usbfilmfolder(dsk)
+        if filmfolderusb:
+            filmfolder=filmfolderusb
+            real_filmfolder=filmfolder
+            # Link video directory to static dir
+            os.system("ln -s -t static/ " + filmfolder)
+            filmfolder='static/gonzopifilms/'
+            filmdb = filmfolder+'.videos/gonzopi.db'
+            db = web.database(dbn='sqlite', db=filmdb)
+        else:
+            os.system("ln -s -t static/ " + filmfolder)
+            filmfolder='static/gonzopifilms/'
+            #fix filmfolder root to Videos/gonzopifilms
+            filmdb = filmfolder+'.videos/gonzopi.db'
+            db = web.database(dbn='sqlite', db=filmdb)
         gonzopifilms = getfilms(filmfolder)
         renderedfilms = []
         unrenderedfilms = []
@@ -620,7 +661,7 @@ class api:
         return json.dumps({"film": film, "scene":scene,"shot":shot,"isActive":isActive, "selected":selected_videos})
 
     def POST(self):
-        global menuold, vumeterold
+        global menuold, vumeterold, oldthumb, oldhash
         i=web.input(func=None,selected=None, scene=None, shot=None, film=None)
         if i.func == 'record':
             sendtocamera(ip,port,'RECORD')
@@ -684,60 +725,63 @@ class api:
             p=0
             film=None
             selectfilm=False
-            if menu != '':
+            if menu != '' and menu != ' ':
                 scene=1
                 shot=1
                 take=1
                 for i in menu:
-                    if p == 0:
-                        selected=int(i)+3
-                    if p > 1:
-                        if selected == p:
-                            #menudone=menudone+'<b> '+i.rstrip('\n')+' </b> | '
+                    if i != '' and i != ' ':
+                        if p == 0:
+                            selected=int(i)+3
+                        if p > 1:
+                            if selected == p:
+                                if i.rstrip('\n') != '':
+                                    #menudone=menudone+'<b> '+i.rstrip('\n')+' </b> | '
+                                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                            else:
+                                if i.rstrip('\n') != '':
+                                    #menudone=menudone+i.rstrip('\n')+' | '
+                                    menudone=menudone+'<a style="text-decoration:none; font-size:20px;" href="?selected='+str(p-3)+'"> '+i+' </a>'
+                            #if p == 7:
+                            #    menudone=menudone+'<br>'
+                            #if p == 13:
+                            #    menudone=menudone+'<br>'
+                            #if p == 21:
+                            #    menudone=menudone+'<br>'
+                            #if p == 30:
+                            #    menudone=menudone+'<br>'
+                        if p == 2 and i.rstrip('\n') == 'Up and down to select and load film':
+                            selectfilm=True
+                        if p == 3 and selectfilm==True:
+                            try:
+                                film=i.split(':')[1].rstrip('\n')
+                            except:
+                                film=None
+                        if p == 4 and selectfilm == False:
+                            try:
+                                film=i.split(':')[1].rstrip('\n')
+                            except:
+                                film=None
+                        if p == 5 and film != None:
+                            try:
+                                scene=int(i.split(':')[1].split('/')[0])
+                            except:
+                                scene=1
+                        if p == 6 and film != None:
+                            try:
+                                shot=int(i.split(':')[1].split('/')[0])
+                            except:
+                                shot=1
+                        if p == 7 and film != None:
+                            try:
+                                take=int(i.split(':')[1].split('/')[0])
+                            except:
+                                take=1
+                        if p > 0 and selected == 423:
                             menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
-                        else:
-                            #menudone=menudone+i.rstrip('\n')+' | '
-                            menudone=menudone+'<a style="text-decoration:none; font-size:20px;" href="?selected='+str(p-3)+'"> '+i+' </a>'
-                        #if p == 7:
-                        #    menudone=menudone+'<br>'
-                        #if p == 13:
-                        #    menudone=menudone+'<br>'
-                        #if p == 21:
-                        #    menudone=menudone+'<br>'
-                        #if p == 30:
-                        #    menudone=menudone+'<br>'
-                    if p == 2 and i.rstrip('\n') == 'Up and down to select and load film':
-                        selectfilm=True
-                    if p == 3 and selectfilm==True:
-                        try:
-                            film=i.split(':')[1].rstrip('\n')
-                        except:
-                            film=None
-                    if p == 4 and selectfilm == False:
-                        try:
-                            film=i.split(':')[1].rstrip('\n')
-                        except:
-                            film=None
-                    if p == 5 and film != None:
-                        try:
-                            scene=int(i.split(':')[1].split('/')[0])
-                        except:
-                            scene=1
-                    if p == 6 and film != None:
-                        try:
-                            shot=int(i.split(':')[1].split('/')[0])
-                        except:
-                            shot=1
-                    if p == 7 and film != None:
-                        try:
-                            take=int(i.split(':')[1].split('/')[0])
-                        except:
-                            take=1
-                    if p > 0 and selected == 423:
-                        menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
-                    #if p > 2 and film == None:
-                        #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
-                    p = p + 1
+                        #if p > 2 and film == None:
+                            #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                        p = p + 1
             thumb = ''
             video = ''
             if film != None:
@@ -756,9 +800,14 @@ class api:
                     video = '/p/'+film+'?scene='+str(scene)+'&shot='+str(shot)+'&take='+str(take)
                 thumb = '/'+filmfolder + film + "/scene" + str(scene).zfill(3) + "/shot" + str(shot).zfill(3) + "/take" + str(take).zfill(3) + ".jpeg" 
             if os.path.isfile(basedir+thumb) == True:
-                randhashimg = '?'+hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
-                writemenu=menudone+'<br><br>'+vumetermessage+'<br><a href="'+video+'"><img src="'+thumb+randhashimg+'"></a>'
-                #writemenu=menudone+render.player(filmfolder,film,scene,shot,take,str)
+                if oldthumb != basedir+thumb:
+                    randhashimg = '?'+hashlib.md5(str(random.getrandbits(256)).encode('utf-8')).hexdigest()
+                    oldhash = randhashimg
+                    oldthumb = basedir+thumb
+                else:
+                    randhashimg = oldhash
+                writemenu=menudone+'<br><br>'+vumetermessage+'<br><a href="'+video+'"><img src="'+thumb+randhashimg+'"><br></a>'+'<a href="/e/'+film+'">edit view</a>'
+                    #writemenu=menudone+render.player(filmfolder,film,scene,shot,take,str)
             else:
                 writemenu=menudone+'<br><br>'+vumetermessage+'<br>'
             f = open(basedir+'/static/menu.html', 'w')
