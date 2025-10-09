@@ -2504,7 +2504,7 @@ def main():
                     if menu[selected]=='SHOT:' and recordable == False or menu[selected]=='TAKE:' and recordable==False:
                         try:
                             videosize=countsize(foldername + filename + '.mp4')
-                            vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
+                            vumetermessage('length: '+get_video_length_str(foldername+filename+'.mp4')+' size: '+str(round(videosize/1000,2))+' Mb')
                         except:
                             videosize=countsize(foldername + filename + '.h264')
                             vumetermessage('videosize: '+str(round(videosize/1000,2))+' Mb')
@@ -4818,6 +4818,31 @@ def is_audio_stereo(file_path):
         print(f"Error parsing {file_path}: {e}")
         return None
 
+def get_video_length_str(filepath):
+    video_origins = (os.path.realpath(filepath))
+    try:
+        video_db=db.select('videos', where='filename="'+video_origins+'"')[0]
+        return str(datetime.timedelta(seconds=round(video_db.videolength)))
+    except:
+        pass
+    return
+    # Parse the file
+    try:
+        media_info = MediaInfo.parse(filepath)
+    except:
+        return
+    # Find the video track (usually the first video track)
+    for track in media_info.tracks:
+        if track.track_type == "Video":
+            # Duration is in milliseconds, convert to seconds
+            duration_ms = track.duration
+            if duration_ms is None:
+                return None  # No duration found
+            db.update('videos', where='filename="'+video_origins+'"', videolength=duration_ms/1000, audiolength=duration_ms/1000)
+            return str(datetime.timedelta(seconds=round(duration_ms/1000)))
+            #return int(duration_ms)
+    return None  # No video track found
+
 def get_video_length(filepath):
     global db
     video_origins = (os.path.realpath(filepath))
@@ -4837,6 +4862,7 @@ def get_video_length(filepath):
             return int(duration_ms)
             #return int(duration_ms)
     return None  # No video track found
+
 
 def get_audio_length(filepath):
     # Parse the file
