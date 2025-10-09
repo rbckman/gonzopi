@@ -1580,7 +1580,7 @@ def main():
                         else:
                             pressed = 'record_now'
                     else:
-                        pressed = 'record'
+                        pressed = 'retake_now'
                     print('exhausted from all beepings')
             elif 'CAMERA:' in pressed:
                 newselected_maybe=int(pressed.split(':')[1])
@@ -1600,14 +1600,17 @@ def main():
                         takes=1
                         shots=shots+1
                     elif pressed == "retake" and takes > 0:
-                        if shot == shots+1 and takes == 0:
-                            shot = shots
-                            takes = counttakes(filmname, filmfolder, scene, shot)
+                        takes = counttakes(filmname, filmfolder, scene, shot)
                         take = takes+1
                         takes=take
                     elif pressed == "retake" and takes == 0:
-                        take=1
-                        takes=1
+                        if shot > 1:
+                            shot = shot - 1
+                        takes = counttakes(filmname, filmfolder, scene, shot)
+                        take = takes+1
+                        takes=take
+                        #take=1
+                        #takes=1
                     elif pressed == 'record_now':
                         shot=shots+1
                         take=1
