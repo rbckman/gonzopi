@@ -952,6 +952,8 @@ def main():
                         except:
                             pass
                         os.system('cp ' + yanked + '.mp4 ' + paste + '.mp4')
+                        os.system('cp ' + yanked + '.info ' + paste + '.info')
+                        os.system('cp ' + yanked + '.nofaststart ' + paste + '.nofaststart')
                         os.system('cp ' + yanked + '.jpeg ' + paste + '.jpeg')
                         os.system('cp ' + yanked + '.h264 ' + paste + '.h264')
                         os.system('cp ' + yanked + '.wav ' + paste + '.wav')
@@ -1696,6 +1698,8 @@ def main():
                     except:
                         db = correct_database(filmname,filmfolder,db)
                         db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, videolength=float(time.time() - starttime), faststart=False)
+                    with open(foldername+filename+'.nofaststart', 'w') as f:
+                        f.write(str(int((time.time() - starttime)*1000)))
                     #time.sleep(0.005) #get audio at least 0.1 longer
                     #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
                     #if slidecommander:
@@ -4316,6 +4320,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                 if sceneshotortake == 'take':
                     os.system('rm ' + foldername + filename + '.h264')
                     os.system('rm ' + foldername + filename + '.mp4')
+                    os.system('rm ' + foldername + filename + '.info')
                     os.system('rm ' + foldername + filename + '.wav')
                     os.system('rm ' + foldername + filename + '.jpeg')
                     os.system('rm ' + foldername + filename + '_thumb.jpeg')
@@ -4351,6 +4356,7 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                     if sceneshotortake == 'take':
                         os.system('rm ' + foldername + filename + '.h264')
                         os.system('rm ' + foldername + filename + '.mp4')
+                        os.system('rm ' + foldername + filename + '.info')
                         os.system('rm ' + foldername + filename + '.wav')
                         os.system('rm ' + foldername + filename + '.jpeg')
                         os.system('rm ' + foldername + filename + '_thumb.jpeg')
@@ -4390,11 +4396,13 @@ def remove(filmfolder, filmname, scene, shot, take, sceneshotortake):
                             os.makedirs(onthefloor)
                         os.system('cp ' + foldername + filename + '.h264 ' + onthefloor + '')
                         os.system('cp ' + foldername + filename + '.mp4 ' + onthefloor + '')
+                        os.system('cp ' + foldername + filename + '.info ' + onthefloor + '')
                         os.system('cp ' + foldername + filename + '.wav ' + onthefloor + '')
                         os.system('cp ' + foldername + filename + '.jpeg ' + onthefloor + '')
                         os.system('cp ' + foldername + filename + '_thumb.jpeg ' + onthefloor + '')
                         os.system('rm ' + foldername + filename + '.h264 ')
                         os.system('rm ' + foldername + filename + '.mp4 ')
+                        os.system('rm ' + foldername + filename + '.info ')
                         os.system('rm ' + foldername + filename + '.wav ')
                         os.system('rm ' + foldername + filename + '.jpeg ')
                         os.system('rm ' + foldername + filename + '_thumb.jpeg ')
@@ -4575,6 +4583,7 @@ def organize(filmfolder, filmname):
                             mv = 'mv ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(unorganized_nr).zfill(3)
                             run_command(mv + '.mp4 ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.mp4')
                             run_command(mv + '.info ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.info')
+                            run_command(mv + '.nofaststart ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.nofaststart')
                             run_command(mv + '.h264 ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.h264')
                             run_command(mv + '.wav ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.wav')
                             run_command(mv + '.jpeg ' + filmfolder + filmname + '/' + i + '/' + p + '/take' + str(organized_nr).zfill(3) + '.jpeg')
@@ -4827,6 +4836,14 @@ def is_audio_stereo(file_path):
 
 def get_video_length_str(filepath):
     video_origins = (os.path.realpath(filepath))
+    try:
+        if os.path.isfile(filepath[:-3]+'nofaststart') == True:
+            with open(filepath[:-3]+'nofaststart', 'r') as f:
+                duration_ms = f.readline().strip()
+                print('duration in ms: ' + str(duration_ms))
+            return str(datetime.timedelta(seconds=round(int(duration_ms)/1000)))
+    except:
+        pass
     try:
         if os.path.isfile(filepath[:-3]+'info') == True:
             with open(filepath[:-3]+'info', 'r') as f:
@@ -5180,7 +5197,40 @@ def fastedit(filmfolder, filmname, filmfiles, scene):
         #print('writing shot lengths for fastedit mode')
         #with open(scenedir + '.fastedit', 'a') as f:
         #    f.write(str(totlength)+'\n')
+
+
+def check_faststart(file_path):
+    try:
+        # Load the media file
+        media_info = MediaInfo.parse(file_path)
+        
+        # Check if the file is MP4
+        for track in media_info.tracks:
+            if track.track_type == "General":
+                if track.format.lower() not in ["mpeg-4", "mp4"]:
+                    print(f"Error: '{file_path}' is not an MP4 file.")
+                # Check for IsStreamable field
+                is_streamable = track.to_data().get("is_streamable", "").lower()
+                if is_streamable == "yes":
+                    print(f"Faststart is enabled for '{file_path}' (IsStreamable: Yes).")
+                elif is_streamable == "no":
+                    print(f"Faststart is NOT enabled for '{file_path}' (IsStreamable: No).")
+                
+                # Fallback: Check MOOV atom position (if IsStreamable is not explicitly set)
+                # MediaInfo doesn't always provide direct MOOV position, so we infer from file structure
+                if "moov" in track.to_data().get("other_file_format", "").lower():
+                    print(f"Faststart is likely enabled for '{file_path}' (MOOV atom detected).")
+                    return True
+                else:
+                    print(f"Faststart is NOT enabled for '{file_path}' (MOOV atom not at start).")
+                    return False
+                return
+        
+        print(f"Error: No general track found in '{file_path}'.")
     
+    except Exception as e:
+        print(f"Error analyzing '{file_path}': {str(e)}")
+
 
 #-------------Get scene files--------------
 
@@ -5228,7 +5278,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             time.sleep(3)
             pass
         #if faststart == False:
-        if os.path.isfile(renderfilename+'.info') == False:
+        if check_faststart(renderfilename+'.mp4') == False:
+            #if os.path.isfile(renderfilename+'.nofaststart') == True:
             tmp=filmfolder+'.tmp/'+filmname+'_'+str(scene).zfill(3)+'_'+str(shot).zfill(3)+'.mp4'
             vumetermessage('found new clip compiling...')
             #os.system('mv ' + video_origins + '.mp4 ' + video_origins + '_tmp.mp4')
@@ -5241,9 +5292,9 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 db = correct_database(filmname,filmfolder,db)
                 db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
             compileshot(renderfilename,filmfolder,filmname)
+            run_command('rm '+renderfilename+'.nofaststart')
             audiohash = str(int(countsize(renderfilename + '.wav')))
             videolength = get_video_length(video_origins+'.mp4')
-
             with open(scenedir + '.audiohash', 'w') as f:
                 f.write(audiohash)
         if os.path.isfile(renderfilename + '.mp4') == True:
