@@ -253,10 +253,18 @@ def checkvideo(video,filmfolder,film,scene,shot,take):
 def get_video_length(filepath):
     video_origins = (os.path.realpath(filepath))
     try:
-        video_db=db.select('videos', where='filename="'+video_origins+'"')[0]
-        return str(datetime.timedelta(seconds=round(video_db.videolength)))
+        if os.path.isfile(filepath[:-3]+'info') == True:
+            with open(filepath[:-3]+'info', 'r') as f:
+                duration_ms = f.readline().strip()
+                print('duration in ms: ' + str(duration_ms))
+            return str(datetime.timedelta(seconds=round(int(duration_ms)/1000)))
     except:
         pass
+    #try:
+    #    video_db=db.select('videos', where='filename="'+video_origins+'"')[0]
+    #    return str(datetime.timedelta(seconds=round(video_db.videolength)))
+    #except:
+    #    pass
     return
     # Parse the file
     try:
