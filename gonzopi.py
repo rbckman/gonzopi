@@ -5275,11 +5275,13 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
         except:
             faststart = True
             print('video faststart ready!')
-            time.sleep(3)
             pass
         #if faststart == False:
-        if check_faststart(renderfilename+'.mp4') == False:
-            #if os.path.isfile(renderfilename+'.nofaststart') == True:
+        if os.path.isfile(renderfilename+'.nofaststart') == True:
+            faststart=False
+        #if check_faststart(renderfilename+'.mp4') == False:
+        #if os.path.isfile(renderfilename+'.nofaststart') == True:
+        if faststart == False:
             tmp=filmfolder+'.tmp/'+filmname+'_'+str(scene).zfill(3)+'_'+str(shot).zfill(3)+'.mp4'
             vumetermessage('found new clip compiling...')
             #os.system('mv ' + video_origins + '.mp4 ' + video_origins + '_tmp.mp4')
