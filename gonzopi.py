@@ -483,10 +483,11 @@ def main():
                     vumetermessage('press middlebutton to cancel')
                     if len(filmfiles) > 0:
                         #Check if rendered video exist
-                        camera.stop_preview()
                         #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
                         renderfilename = renderfilm(filmfolder, filmname, comp, scene)
                         #writemessage('Render done!')
+                        removeimage(camera, overlay)
+                        camera.stop_preview()
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film',take)
                             #fastedit (maybe deploy sometime)
@@ -514,6 +515,8 @@ def main():
                         camera.stop_preview()
                         #removeimage(camera, overlay)
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
+                        removeimage(camera, overlay)
+                        camera.stop_preview()
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film',take)
                         #overlay = displayimage(camera, imagename, overlay, 3)
@@ -531,12 +534,13 @@ def main():
                         vumetermessage('press middlebutton to cancel')
                         writemessage('Loading clip...')
                         organize(filmfolder, filmname)
-                        removeimage(camera, overlay)
-                        camera.stop_preview()
+
                         foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                         filename = 'take' + str(take).zfill(3)
                         #compileshot(foldername + filename,filmfolder,filmname)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
+                        removeimage(camera, overlay)
+                        camera.stop_preview()
                         if renderfilename == foldername+filename:
                             trim, split_list = playdub(filmname,foldername + filename, 'shot',take)
                             if split_list != []:
