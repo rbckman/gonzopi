@@ -296,7 +296,7 @@ def has_audio_track(file_path):
 
     except Exception as e:
         print(f"Error parsing {file_path}: {e}")
-        return None
+        return False
 
 class intro:
     def GET(self):
