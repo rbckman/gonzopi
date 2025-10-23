@@ -4883,12 +4883,6 @@ def get_video_length_str(filepath):
 def get_video_length(filepath):
     global db
     video_origins = (os.path.realpath(filepath))
-    if os.path.isfile(filepath[:-3]+'info') == True:
-        with open(filepath[:-3]+'info', 'r') as f:
-            duration_ms = f.readline().strip()
-        print('duration in ms: ' + str(duration_ms))
-        return int(duration_ms)
-    # Parse the file
     try:
         media_info = MediaInfo.parse(filepath)
     except:
@@ -5153,20 +5147,26 @@ def renderaudio(filmfolder, filmname, scene, audiofiles, filename, dubfiles, dub
     except:
         audiosilence(filename)
         audiolength = get_audio_length(filename+'.wav')
+    if audiolength == None:
+        audiosilence(filename)
+        audiolength = get_audio_length(filename+'.wav')
     if videolength != 0 and videolength != None:
         if audiolength > videolength:
             audiotrim(filename, 'end','')
+    if audiolength < videolength:
+        print('FUUUUUUUUUUUU')
+        #time.sleep(5)
     for i, d in zip(dubmix, dubfiles):
         writemessage('Dub ' + str(p) + ' audio found lets mix...')
         #first trimit!
-        audiotrim(filename, 'end', d)
+        #audiotrim(filename, 'end', d)
         try:
             #pipe = subprocess.check_output('soxi -D ' + d, shell=True)
             #dubaudiolength = pipe.decode()
-            dubaudiolength=get_audio_lenght(d)
+            dubaudiolength=get_audio_length(d)
             if dubaudiolength != videolength:
                 print('dub wrong length!')
-                time.sleep(5)
+                #time.sleep(5)
         except:
             pass
         #print(d)
@@ -5175,7 +5175,7 @@ def renderaudio(filmfolder, filmname, scene, audiofiles, filename, dubfiles, dub
         os.system('cp ' + filename + '.wav ' + filename + '_tmp.wav')
         #Fade and make stereo
         run_command('sox -V0 -b 16 -G ' + d + ' -c 2 '+filmfolder+'.tmp/fade.wav fade ' + str(round(i[2],1)) + ' 0 ' + str(round(i[3],1)))
-        run_command('sox -V0 -b 16 -G -m -v ' + str(round(i[0],1)) + ' '+filmfolder+'.tmp/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav -c 2 ' + rendered_audio + '.wav trim 0 ' + str(audiolength))
+        run_command('sox -V0 -b 16 -G -m -v ' + str(round(i[0],1)) + ' '+filmfolder+'.tmp/fade.wav -v ' + str(round(i[1],1)) + ' ' + filename + '_tmp.wav -c 2 ' + rendered_audio + '.wav trim 0 ' + str(videolength))
         os.system('ln -sfr '+rendered_audio+'.wav '+filename+'.wav')
         try:
             os.remove(filename + '_tmp.wav')
@@ -5184,6 +5184,18 @@ def renderaudio(filmfolder, filmname, scene, audiofiles, filename, dubfiles, dub
             pass
         print('Dub mix ' + str(p) + ' done!')
         p += 1
+    try:
+        videolength = get_video_length(filename+'.mp4')
+    except:
+        videolength = 0
+    try:
+        audiolength = get_audio_length(filename+'.wav')
+    except:
+        audiosilence(filename)
+        audiolength = get_audio_length(filename+'.wav')
+    if int(audiolength) != int(videolength):
+        vumetermessage('trimming audio to video...')
+        audiosync, videolength, audiolength = audiotrim(filename, 'end','')
     return
 
 #-------------Fast Edit-----------------
@@ -5422,6 +5434,28 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             rendermenu = True
             newaudiomix = True
             renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
+        ###---------TITLES----------
+        if os.path.isfile(scenedir+'title/title001.png') == True:
+            videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
+            tot = int(videos_totalt.videos)
+            video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
+            #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'title/title001.png '+encoder()+'-filter_complex "[0:v][1:v]overlay=0:0:enable=\'between(t,2,8)\'[v]" -map "[v]" -map 0:a? '+filmfolder+'.tmp/title.mp4')
+            screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
+            run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
+            #make a new sublink
+            run_command('cp '+filmfolder+'.tmp/title.mp4 '+video_origins+'.mp4')
+            os.system('ln -sfr '+video_origins+'.mp4 '+screen_filename+'.mp4')
+            run_command('rm '+filmfolder+'.tmp/title.mp4')
+            run_command('rm -r title/title001.png')
+            run_command('ffmpeg -y -sseof -1 -i ' + screen_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + screen_filename + '.jpeg')
+            #ffmpeg -i blendtest.mp4 -i blendtest3.mp4 -filter_complex "blend=screen" output2.mp4
+            newaudiomix = True
+            take=counttakes2(scenedir)
+            renderfilename = scenedir+'take' + str(counttakes2(scenedir)).zfill(3)
+            updatethumb=True
+            rendermenu = True
+            newaudiomix = True
         ###---------BLEND----------
         if os.path.isfile(scenedir+'blend/'+blendmodes[blendselect]+'.mp4') == True:
             videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
@@ -5652,6 +5686,7 @@ def renderscene(filmfolder, filmname, scene):
     print('renderfix is:'+str(renderfixscene))
     # Render if needed
     if videohash != oldvideohash or renderfixscene == True:
+        run_command('rm '+renderfilename+'.info')
         rendervideo(filmfolder,filmname,scene,filmfiles, renderfilename, 'scene ' + str(scene))
         #fastedit(filmfolder, filmname, filmfiles, scene)
         #run_command('cp '+renderfilename+ '.mp4 '+renderfilename+'_tmp.mp4')
