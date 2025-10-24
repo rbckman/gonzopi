@@ -1926,13 +1926,13 @@ def main():
                 elif menu[selected] == 'HDMI:':
                     if hdmi == 'on':
                         hdmi = 'off'
-                        os.system("sudo sed -i 's/\[edid=Ras-LCD Panel\]/\#\[edid=Ras-LCD Panel\]/' /boot/config.txt")
-                        os.system("sudo sed -i 's/\#\[edid=HDMI-A-2\]/\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        os.system("sudo sed -i '/\[edid=Ras-LCD Panel\]/c\#\[edid=Ras-LCD Panel\]' /boot/config.txt")
+                        os.system("sudo sed -i '/\#\[edid=HDMI-A-2\]/c\[edid=HDMI-A-2\]' /boot/config.txt")
                         time.sleep(0.2)
                     else:
                         hdmi = 'on'
-                        os.system("sudo sed -i 's/\#\[edid=Ras-LCD Panel\]/\[edid=Ras-LCD Panel\]/' /boot/config.txt")
-                        os.system("sudo sed -i 's/\[edid=HDMI-A-2\]/\#\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        os.system("sudo sed -i '/\#\[edid=Ras-LCD Panel\]/c\[edid=Ras-LCD Panel\]' /boot/config.txt")
+                        os.system("sudo sed -i '/\[edid=HDMI-A-2\]/c\#\[edid=HDMI-A-2\]' /boot/config.txt")
                         time.sleep(0.2)
                 elif menu[selected] == 'LENGTH:':
                     if reclength < 1:
@@ -2158,13 +2158,13 @@ def main():
                 elif menu[selected] == 'HDMI:':
                     if hdmi == 'on':
                         hdmi = 'off'
-                        os.system("sudo sed -i 's/\[edid=Ras-LCD Panel\]/\#\[edid=Ras-LCD Panel\]/' /boot/config.txt")
-                        os.system("sudo sed -i 's/\#\[edid=HDMI-A-2\]/\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        os.system("sudo sed -i '/\[edid=Ras-LCD Panel\]/c\#\[edid=Ras-LCD Panel\]' /boot/config.txt")
+                        os.system("sudo sed -i '/\#\[edid=HDMI-A-2\]/c\[edid=HDMI-A-2\]' /boot/config.txt")
                         time.sleep(0.2)
                     else:
                         hdmi = 'on'
-                        os.system("sudo sed -i 's/\#\[edid=Ras-LCD Panel\]/\[edid=Ras-LCD Panel\]/' /boot/config.txt")
-                        os.system("sudo sed -i 's/\[edid=HDMI-A-2\]/\#\[edid=HDMI-A-2\]/' /boot/config.txt")
+                        os.system("sudo sed -i '/\#\[edid=Ras-LCD Panel\]/c\[edid=Ras-LCD Panel\]' /boot/config.txt")
+                        os.system("sudo sed -i '/\[edid=HDMI-A-2\]/c\#\[edid=HDMI-A-2\]' /boot/config.txt")
                         time.sleep(0.2)
                 elif menu[selected] == 'FLIP:':
                     if flip == 'yes':
