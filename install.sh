@@ -53,11 +53,15 @@ apt-get update
 apt-get upgrade -y
 if [ "$version" = "buster" ]
 then
-    apt-get -y install git python3-pip python-configparser ffmpeg mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake pmount python3-ifaddr python3-pygame python3-serial, libmediainfo-dev, python3-pymediainfo
+    apt-get -y install git python3-pip python-configparser ffmpeg mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake pmount python3-ifaddr python3-pygame python3-serial libmediainfo-dev python3-pymediainfo
 else
     apt-get -y install git python3-pip python-configparser libav-tools mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake python3-ifaddr python3-pygame python3-serial
 fi
 usermod -a -G dialout pi
+
+echo "upgrading pip..."
+pip3 install --upgrade pip
+
 echo "installing python-omxplayer-wrapper..."
 pip3 install omxplayer-wrapper
 echo "installing blessed..."
@@ -125,12 +129,25 @@ echo "GonzoPi configuration seems to be in order in /boot/config.txt"
 echo "Adding to /boot/config.txt"
 cat <<'EOF' >> /boot/config.txt
 #-----GonzoPi configuration starts here-------
+
+[edid=HDMI-A-2]
+hdmi_enable=1
+max_framebuffers=2
+disable_overscan=1
+hdmi_force_hotplug:1=1
+hdmi_group=:1=1
+hdmi_mode:1=82
+hdmi_blanking=1
+
+[all]
+#dtoverlay=vc4-fkms-v3d
+
 #gonzopi-rpi-configuration-hyperpixel-1.0
 #hyperpixel
-#uncomment for pi4
+#enable_dpi_lcd=1
 #display_lcd_rotate=1
 start_x=1
-gpu_mem=128
+gpu_mem=512
 disable_splash=1
 force_turbo=1
 boot_delay=1
@@ -141,14 +158,18 @@ dtparam=act_led_activelow=off
 # Disable the PWR LED.
 dtparam=pwr_led_trigger=none
 dtparam=pwr_led_activelow=off
+#hdmi_force_hotplug=1
+#hdmi_group=1
+#hdmi_mode=16
+#hdmi_port=2
+#hdmi_blanking=1
+
+#[edid=Ras-LCD Panel]
+dtoverlay=hyperpixel4
+#display_auto_detect=0
+#display_default_lcd=0
 framebuffer_width=800
 framebuffer_height=480
-#hdmi_force_hotplug=1
-hdmi_group=1
-hdmi_mode=3
-[EDID=N/A-]  ##Hyperpixel HD CONFIG
-
-dtoverlay=hyperpixel4
 overscan_left=0
 overscan_right=0
 overscan_top=0
@@ -161,6 +182,9 @@ hdmi_group=3
 dpi_mode=87
 dpi_output_format=0x7f216
 hdmi_timings=480 0 10 16 59 800 0 15 113 15 0 0 0 60 0 32000000 6
+#hdmi_force_hotplug:1=1
+#hdmi_group:1=2
+#hdmi_mode:1=10
 
 #--------GonzoPi configuration end here---------
 EOF
