@@ -338,7 +338,8 @@ def main():
     #TO_BE_OR_NOT_TO_BE 
     foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
     filename = 'take' + str(take).zfill(3)
-    recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
+    picturename = 'take' + str(take).zfill(3)
+    recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264') and not os.path.isfile(foldername + picturename + '.jpeg')
 
     #CLEAN
     #clean('',filmfolder)
@@ -1601,7 +1602,8 @@ def main():
                 overlay = removeimage(camera, overlay)
                 foldername = filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                 filename = 'take' + str(take).zfill(3)
-                recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
+                picturename = 'picture' + str(take).zfill(3)
+                recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264') and not os.path.isfile(foldername + picturename + '.jpeg')
                 if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
                     #camera_recording=0 
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
@@ -1668,7 +1670,7 @@ def main():
                             picture = foldername +'picture' + str(take).zfill(3) + '.jpeg'
                             print('taking picture')
                             camera.capture(picture,format="jpeg",use_video_port=True) 
-                            run_command('touch ' + foldername + 'take' + str(take).zfill(3) + '.mp4')
+                            #run_command('touch ' + foldername + 'take' + str(take).zfill(3) + '.mp4')
                             basewidth = 800
                             img = Image.open(picture)
                             wpercent = (basewidth/float(img.size[0]))
@@ -2484,7 +2486,8 @@ def main():
                     else:
                         films_sel = ''
                     filename = 'take' + str(take).zfill(3)
-                    recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264')
+                    picturename = 'picture' + str(take).zfill(3)
+                    recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264') and not os.path.isfile(foldername + picturename + '.jpeg')
                     overlay = removeimage(camera, overlay)
                     if recordable:
                         vumetermessage('filming with '+camera_model+' ip:'+ network + ' '+camerasconnected)
@@ -2885,7 +2888,7 @@ def countlast(filmname, filmfolder):
         allfiles = []
         takes = 0
     for a in allfiles:
-        if '.mp4' in a or '.h264' in a:
+        if '.mp4' in a or '.h264' in a or '.jpeg' and 'picture' in a:
             takes = takes + 1
     return scenes, shots, takes
 
@@ -2913,7 +2916,7 @@ def countshots(filmname, filmfolder, scene):
         allfiles = []
         shots = 0
     for a in allfiles:
-        if 'shot' in a:
+        if 'shot' in a or '.jpeg' and 'picture' in a:
             shots = shots + 1
     return shots
 
@@ -2929,7 +2932,7 @@ def counttakes(filmname, filmfolder, scene, shot):
         return takes
     for a in allfiles:
         if 'take' in a:
-            if '.mp4' in a or '.h264' in a:
+            if '.mp4' in a or '.h264' in a or '.jpeg' and 'picture' in a:
                 if not doubles.replace('.h264', '.mp4') == a:
                     takes = takes + 1
                 doubles = a
@@ -2945,7 +2948,7 @@ def counttakes2(folder):
         return takes
     for a in allfiles:
         if 'take' in a:
-            if '.mp4' in a or '.h264' in a:
+            if '.mp4' in a or '.h264' in a or '.jpeg' and 'picture' in a:
                 if not doubles.replace('.h264', '.mp4') == a:
                     takes = takes + 1
                 doubles = a
@@ -2961,7 +2964,7 @@ def gettake(folder):
         return takes
     for a in allfiles:
         if 'take' in a:
-            if '.mp4' in a or '.h264' in a:
+            if '.mp4' in a or '.h264' in a or '.jpeg' and 'picture' in a:
                 if not doubles.replace('.h264', '.mp4') == a:
                     takes = takes + 1
                     filename=a
@@ -2980,7 +2983,7 @@ def nexttakefilename(filmname, filmfolder, scene, shot):
         return takes
     for a in allfiles:
         if 'take' in a:
-            if '.mp4' in a or '.h264' in a:
+            if '.mp4' in a or '.h264' in a or '.jpeg' and 'picture' in a:
                 if not doubles.replace('.h264', '.mp4') == a:
                     takes = takes + 1
                 doubles = a
@@ -2996,7 +2999,7 @@ def counttakes2(folder):
         return takes
     for a in allfiles:
         if 'take' in a:
-            if '.mp4' in a or '.h264' in a:
+            if '.mp4' in a or '.h264' in a or '.jpeg' and 'picture' in a:
                 if not doubles.replace('.h264', '.mp4') == a:
                     takes = takes + 1
                 doubles = a
@@ -5267,6 +5270,9 @@ def scenefiles(filmfolder, filmname):
 
 def rendershot(filmfolder, filmname, renderfilename, scene, shot):
     global fps, take, rendermenu, updatethumb, bitrate, muxing, db, film_fps
+    if os.path.exists(renderfilename + '.mp4') == False:
+        print('no file')
+        return
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     vumetermessage('render shot '+renderfilename)
