@@ -1608,10 +1608,14 @@ def main():
                     #camera_recording=0 
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
                     if pressed == "record":
-                        shot = shots+1
-                        take = 1
-                        takes=1
-                        shots=shots+1
+                        if takes > 0:
+                            shot = shots+1
+                            take = 1
+                            takes=1
+                            shots=shots+1
+                        else:
+                            take = 1
+                            takes=1
                     elif pressed == "retake" and takes > 0:
                         takes = counttakes(filmname, filmfolder, scene, shot)
                         take = takes+1
