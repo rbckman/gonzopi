@@ -6967,6 +6967,7 @@ def usbfilmfolder(dsk):
     buttontime = time.time()
     holdbutton = ''
     writemessage('Searching for usb storage device, middlebutton to cancel')
+    time.sleep(2)
     if os.path.exists('/dev/sda1') == True:
         os.system('sudo mount -o  noatime,nodiratime,async /dev/sda1 /media/usb0')
         os.system('sudo chown pi /media/usb0')
@@ -6983,6 +6984,7 @@ def usbfilmfolder(dsk):
         usbconnected = os.path.ismount('/media/usb'+str(usbmount))
         if pressed == 'middle' or time.time() - waiting > 8:
             writemessage('canceling..')
+            time.sleep(1)
             break
         time.sleep(0.02)
         if usbconnected == True:
@@ -7002,9 +7004,11 @@ def usbfilmfolder(dsk):
             os.system('sudo chmod 755 '+filmfolder)
             #run_command('pumount /media/usb'+str(usbmount))
             writemessage('Filming to USB'+str(usbmount))
-            #time.sleep(1)
+            time.sleep(2)
             return filmfolder
         else:
+            writemessage('Filming to SDCARD')
+            time.sleep(2)
             return
 
 #--------------Copy to USB-------------------
