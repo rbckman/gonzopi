@@ -1,0 +1,27 @@
+
+## FORMAT DRIVE TO f2fs
+
+# 1. Install f2fs tools (already in Buster/Bookworm/Bullseye repos)
+sudo apt update
+sudo apt install f2fs-tools -y
+
+# Format
+lsblk
+
+# Unmount everything
+sudo umount /dev/sda* 2>/dev/null
+
+# Quick wipe signature + make one big partition
+sudo wipefs -a /dev/sda
+sudo parted /dev/sda --script mklabel gpt mkpart primary 0% 100%
+
+# Format with the only options the old Buster f2fs-tools accept
+sudo mkfs.f2fs -f /dev/sda1
+
+## INSTALL RIGHT SCREEN DRIVER
+
+curl -sSL get.pimoroni.com/hyperpixel4-legacy | bash
+
+## select RPI3B+ even if on rpi4
+
+
