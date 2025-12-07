@@ -212,12 +212,12 @@ def main():
     shot = 1
     take = 1
     pic = 1
-    speed = 20
+    speed = 10
     pan = 0
     tilt = 0
     move = 0
     slidereader = None
-    smooth = 1000
+    smooth = 100
     slide=1
     onlysound=False
     filmname = 'reel_001'
@@ -249,6 +249,7 @@ def main():
     moving = False
     stream = ''
     live = 'no'
+    rec_process = ''
     peakshot = ''
     peaktake = ''
     plughw = 0 #default audio device
@@ -265,10 +266,11 @@ def main():
     synclist=[]
     muxing=False
     mux='no'
+    camera = ''
 
     if rpimode:
         #FIRE UP CAMERA
-        camera = startcamera(lens,fps)
+        camera = startcamera(camera)
         #START INTERFACE
         startinterface()
     else:
@@ -417,9 +419,8 @@ def main():
                     elif cammode == 'picture':
                         cammode = 'film'
                         vumetermessage('changing to film mode')
-                    camera.stop_preview()
-                    camera.close()
-                    camera = startcamera(lens,fps)
+                    camera = stopcamera(camera, rec_process)
+                    camera = startcamera(camera)
                     loadfilmsettings = True
                 #PICTURE
                 elif pressed == 'picture':
@@ -483,12 +484,12 @@ def main():
                     filmfiles = shotfiles(filmfolder, filmname, scene)
                     vumetermessage('press middlebutton to cancel')
                     if len(filmfiles) > 0:
+                        removeimage(camera, overlay)
+                        camera = stopcamera(camera, rec_process)
                         #Check if rendered video exist
                         #renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
                         renderfilename = renderfilm(filmfolder, filmname, comp, scene)
                         #writemessage('Render done!')
-                        removeimage(camera, overlay)
-                        camera.stop_preview()
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film',take)
                             #fastedit (maybe deploy sometime)
@@ -501,7 +502,8 @@ def main():
                             #    time.sleep(0.5)
                             #else:
                             #    print('nothing to remove')
-                            camera.start_preview()
+                        camera = startcamera(camera)
+                        loadfilmsettings = True
                     else:
                         vumetermessage("There's absolutely nothing in this scene! hit rec!")
                     updatethumb=True
@@ -513,15 +515,16 @@ def main():
                     filmfiles = viewfilm(filmfolder, filmname)
                     vumetermessage('press middlebutton to cancel')
                     if len(filmfiles) > 0:
-                        camera.stop_preview()
+                        removeimage(camera, overlay)
+                        camera = stopcamera(camera, rec_process)
                         #removeimage(camera, overlay)
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
-                        removeimage(camera, overlay)
-                        camera.stop_preview()
+                        #camera = stopcamera(camera, rec_process)
                         if renderfilename != '':
                             remove_shots = playdub(filmname,renderfilename, 'film',take)
                         #overlay = displayimage(camera, imagename, overlay, 3)
-                        camera.start_preview()
+                        camera = startcamera(camera)
+                        loadfilmsettings = True
                     else:
                         vumetermessage('wow, shoot first! there is zero, nada, zip footage to watch now... just hit rec!')
                     updatethumb=True
@@ -534,14 +537,13 @@ def main():
                     if takes > 0:
                         vumetermessage('press middlebutton to cancel')
                         writemessage('Loading clip...')
+                        removeimage(camera, overlay)
+                        camera = stopcamera(camera, rec_process)
                         organize(filmfolder, filmname)
-
                         foldername = filmfolder + filmname + '/scene' + str(scene).zfill(3) +'/shot' + str(shot).zfill(3) + '/'
                         filename = 'take' + str(take).zfill(3)
                         #compileshot(foldername + filename,filmfolder,filmname)
                         renderfilename, newaudiomix = rendershot(filmfolder, filmname, foldername+filename, scene, shot)
-                        removeimage(camera, overlay)
-                        camera.stop_preview()
                         if renderfilename == foldername+filename:
                             trim, split_list = playdub(filmname,foldername + filename, 'shot',take)
                             if split_list != []:
@@ -566,8 +568,9 @@ def main():
                                     writemessage('Cutting clip...')
                                     videotrimsave(foldername, 'beginning', trim[0], filename)
                             imagename = foldername + filename + '.jpeg'
+                            camera = startcamera(camera)
+                            loadfilmsettings = True
                             overlay = displayimage(camera, imagename, overlay, 3)
-                            camera.start_preview()
                         else:
                             #vumetermessage('nothing here! hit rec!')
                             playdub(filmname, renderfilename, 'shot',take)
@@ -650,7 +653,7 @@ def main():
                     newdub, yanked = clipsettings(filmfolder, filmname, scene, shot, take, plughw,yanked)
                     take = counttakes(filmname, filmfolder, scene, shot)
                     if newdub:
-                        camera.stop_preview()
+                        camera = stopcamera(camera, rec_process)
                         #save original sound
                         dubfolder = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/dub/'
                         saveoriginal = filmfolder + filmname + '/scene' + str(scene).zfill(3) + '/shot' + str(shot).zfill(3) + '/take'+str(take).zfill(3)+'.wav'
@@ -681,7 +684,8 @@ def main():
                         #rerender audio
                         #run_command('rm '+filmfolder+'.tmp/dub.wav')
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
-                        camera.start_preview()
+                        camera = startcamera(camera)
+                        loadfilmsettings = True
                         time.sleep(1)
                     else:
                         vumetermessage('see ya around!')
@@ -690,7 +694,7 @@ def main():
                 elif pressed == 'dub' and menu[selected] == 'SCENE:':
                     newdub, yanked = clipsettings(filmfolder, filmname, scene, 0, take, plughw,yanked)
                     if newdub:
-                        camera.stop_preview()
+                        camera = stopcamera(camera, rec_process)
                         renderfilename, newaudiomix = renderscene(filmfolder, filmname, scene)
                         playdub(filmname,renderfilename, 'dub',take)
                         #run_command('sox -V0 -G /dev/shm/dub.wav -c 2 ' + newdub)
@@ -708,7 +712,8 @@ def main():
                         vumetermessage('new scene dubbing made!')
                         #rerender audio
                         os.system('rm ' + filmfolder + filmname + '/.audiohash')
-                        camera.start_preview()
+                        camera = startcamera(camera)
+                        loadfilmsettings = True
                         time.sleep(1)
                     else:
                         vumetermessage('see ya around!')
@@ -717,7 +722,7 @@ def main():
                 elif pressed == 'dub' and menu[selected] == 'FILM:':
                     newdub, yanked = clipsettings(filmfolder, filmname, 0, 0, take, plughw,yanked)
                     if newdub:
-                        camera.stop_preview()
+                        camera = stopcamera(camera, rec_process)
                         renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                         playdub(filmname,renderfilename, 'dub',take)
                         videos_totalt = db.query("SELECT COUNT(*) AS videos FROM videos")[0]
@@ -727,7 +732,8 @@ def main():
                         os.system('ln -sfr '+filmfolder+'.videos/'+audio_origins+'.wav '+newdub)
                         run_command('rm '+filmfolder+'.tmp/dub.wav')
                         vumetermessage('new film dubbing made!')
-                        camera.start_preview()
+                        camera = startcamera(camera)
+                        loadfilmsettings = True
                         time.sleep(1)
                     else:
                         vumetermessage('see ya around!')
@@ -750,7 +756,8 @@ def main():
                                 except:
                                     logger.warning('uploadfilm bugging')
                                 startinterface()
-                                camera = startcamera(lens,fps)
+                                camera = startcamera(camera)
+                                loadfilmsettings = True
                                 loadfilmsettings = True
                             selectedaction = 0
                     rendermenu = True
@@ -792,7 +799,7 @@ def main():
                         stopinterface(camera)
                         gonzopiversion, gonzopivername = update(gonzopiversion, gonzopivername)
                         startinterface()
-                        camera = startcamera(lens,fps)
+                        camera = startcamera(camera)
                         loadfilmsettings = True
                         selectedaction = 0
                     rendermenu = True
@@ -801,7 +808,7 @@ def main():
                     stopinterface(camera)
                     run_command('wicd-curses')
                     startinterface()
-                    camera = startcamera(lens,fps)
+                    camera = startcamera(camera)
                     loadfilmsettings = True
                     rendermenu = True
                 #NEW FILM
@@ -830,9 +837,10 @@ def main():
                         #selectedaction = 0
                         newfilmname = ''
                         #film_reso, film_fps = film_settings()
-                        camera.stop_preview()
-                        camera.close()
-                        camera = startcamera(lens,fps)
+                        #stop()
+                        camera = stopcamera(camera, rec_process)
+                        camera = startcamera(camera)
+                        loadfilmsettings = True
                     else:
                         print(term.clear)
                         filmname = newfilmname
@@ -1089,7 +1097,7 @@ def main():
                         stopinterface(camera)
                         code.interact(local=locals())
                         startinterface()
-                        camera = startcamera(lens,fps)
+                        camera = startcamera(camera)
                         loadfilmsetings = True
                     except:
                         writemessage('hmm.. couldnt enter developer mode')
@@ -1273,7 +1281,7 @@ def main():
                         time.sleep(1)
                         logger.info('sending syncdone again...')
                     startinterface()
-                    camera = startcamera(lens,fps)
+                    camera = startcamera(camera)
                     loadfilmsettings = True
                     rendermenu = True
                 elif 'SYNCDONE:' in pressed:
@@ -1306,7 +1314,7 @@ def main():
                             #        time.sleep(3)
                             #    a=a+1
                             startinterface()
-                            camera = startcamera(lens,fps)
+                            camera = startcamera(camera)
                             loadfilmsettings = True
                             rendermenu = True
                             vumetermessage('SYNC DONE!')
@@ -2017,9 +2025,8 @@ def main():
                     elif cammode == 'picture':
                         cammode = 'film'
                         vumetermessage('changing to film mode')
-                    camera.stop_preview()
-                    camera.close()
-                    camera = startcamera(lens,fps)
+                    camera = stopcamera(camera, rec_process)
+                    camera = startcamera(camera)
                     loadfilmsettings = True
                     flushbutton()
                 elif menu[selected] == 'LENS:':
@@ -2262,9 +2269,8 @@ def main():
                     elif cammode == 'picture':
                         cammode = 'film'
                         vumetermessage('changing to film mode')
-                    camera.stop_preview()
-                    camera.close()
-                    camera = startcamera(lens,fps)
+                    camera = stopcamera(camera, rec_process)
+                    camera = startcamera(camera)
                     loadfilmsettings = True
                     flushbutton()
                 elif menu[selected] == 'LENS:':
@@ -7547,11 +7553,11 @@ def stopinterface(camera):
     #run_command('sudo systemctl stop apache2')
     return camera
 
-def startcamera(lens, fps):
-    global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso
+def startcamera(camera):
+    global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso, quality, profilelevel, lens, fps
     camera = picamera.PiCamera()
     camera.meter_mode='spot'
-    camera.video_stabilization=True
+    #camera.video_stabilization=True
     if cammode == 'film':
         if film_reso=='1920x1080':
             reso=(1920,1080)
@@ -7618,14 +7624,41 @@ def startcamera(lens, fps):
     else:
         camera.framerate = fps
     camera.crop = (0, 0, 1.0, 1.0)
-    #stabilization does not work in firmware
-    #camera.video_stabilization = True
     camera.led = False
-    #lens_shading_table = np.zeros(camera._lens_shading_table_shape(), dtype=np.uint8) + 32
-    #camera.lens_shading_table = lens_shading_table
     camera.start_preview()
     camera.awb_mode = 'auto'
+    #camera.exposure_mode = 'off'            # Locks exposure/gain
+    # These are the manual gains that actually fix the color cast on the HQ camera
+    # Start with these values under daylight or LED lighting, then fine-tune
+    camera.awb_gains = (1.7, 1.4)           # (red_gain, blue_gain)
+    # Optional but helps a lot: turn off most of the ISP "beautification"
+    camera.image_denoise = False
+    camera.image_effect = 'none'
+    # There is no direct "lens shading off" in legacy picamera,
+    # but this reduces most of the extra colour shift caused by it:
+    camera.drc_strength = 'off'             # disables extra tone-mapping that shifts hues
     time.sleep(1)
+    camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
+    return camera
+
+def stopcamera(camera, rec_process):
+    global bitrate, quality, profilelevel
+    camera.stop_recording()
+    try:
+        camera.stop_preview()
+        camera.close()
+    except:
+        print('no camera to close')
+    #camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
+    #camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
+    # Close the FFmpeg process
+    #time.sleep(0.5)
+    try: 
+        rec_process.stdin.close()
+    except:
+        rec_process = ''
+    #rec_process.wait()
+    print("Camera stopped")
     return camera
 
 def gonzopiserver(state):
