@@ -1701,7 +1701,7 @@ def main():
                         showmenu = 1
                     if onlysound != True:
                         #camera.stop_recording()
-                        recprocess, camera = stoprecording(camera, rec_process)
+                        recprocess, camera = stoprecording(camera, rec_process,bitrate, quality, profilelevel)
                     os.system('pkill arecord')
                     try:
                         db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, videolength=float(time.time() - starttime), faststart=False)
@@ -7185,13 +7185,23 @@ def startrecording(camera, takename,bitrate, quality, profilelevel, reclength):
     ffmpeg_cmd = ['ffmpeg','-i', 'pipe:0', '-fflags', '+genpts+igndts', '-c:v', 'copy', '-movflags', 'frag_keyframe+empty_moov', '-level:v', '4.2', '-g', '1', '-r', '25', '-f', 'mp4', takename, '-loglevel','debug', '-y']
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
     if reclength > 1 or reclength == 0:
-        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+        if camera.recording == True:
+            #camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+            camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
+        else:
+            #camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+            camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
     else:
-        camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality, )
+        if camera.recording == True:
+            camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
+        else:
+            camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
     return rec_process, camera
 
-def stoprecording(camera, rec_process):
-    camera.stop_recording() 
+def stoprecording(camera,rec_process,bitrate, quality, profilelevel):
+    #camera.stop_recording()
+    #camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
+    camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
     # Close the FFmpeg process
     time.sleep(0.5)
     rec_process.stdin.close()
