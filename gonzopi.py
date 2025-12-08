@@ -750,13 +750,14 @@ def main():
                             renderfilename = renderfilm(filmfolder, filmname, comp, 0)
                             cmd = uploadfilm(renderfilename, filmname)
                             if cmd != None:
-                                stopinterface(camera)
+                                camera = stopinterface(camera)
+                                camera = stopcamera(camera, 'rec_process')
                                 try:
                                     run_command(cmd)
                                 except:
                                     logger.warning('uploadfilm bugging')
                                 startinterface()
-                                camera = startcamera_preview(camera)
+                                camera = startcamera(camera)
                                 #loadfilmsettings = True
                                 loadfilmsettings = True
                             selectedaction = 0
@@ -796,20 +797,22 @@ def main():
                 #UPDATE
                 elif pressed == 'middle' and menu[selected] == 'UPDATE':
                     if webz_on() == True:
-                        stopinterface(camera)
+                        camera = stopinterface(camera)
+                        camera = stopcamera(camera, 'rec_process')
                         gonzopiversion, gonzopivername = update(gonzopiversion, gonzopivername)
                         startinterface()
-                        camera = startcamera_preview(camera)
-                        #loadfilmsettings = True
+                        camera = startcamera(camera)
+                        loadfilmsettings = True
                         selectedaction = 0
                     rendermenu = True
                 #WIFI
                 elif pressed == 'middle' and menu[selected] == 'WIFI:':
-                    stopinterface(camera)
+                    camera = stopinterface(camera)
+                    camera = stopcamera(camera, 'rec_process')
                     run_command('wicd-curses')
                     startinterface()
-                    camera = startcamera_preview(camera)
-                    #loadfilmsettings = True
+                    camera = startcamera(camera)
+                    loadfilmsettings = True
                     rendermenu = True
                 #NEW FILM
                 elif pressed == 'middle' and menu[selected] == 'NEW' or filmname == '' or pressed == 'new_film':
@@ -1094,10 +1097,11 @@ def main():
                 #DEVELOP
                 elif event == 'D':
                     try:
-                        stopinterface(camera)
+                        camera = stopinterface(camera)
+                        camera = stopcamera(camera, 'rec_process')
                         code.interact(local=locals())
                         startinterface()
-                        camera = startcamera_preview(camera)
+                        camera = startcamera(camera)
                         loadfilmsetings = True
                     except:
                         writemessage('hmm.. couldnt enter developer mode')
@@ -1261,7 +1265,8 @@ def main():
                     ip = ip.split(';')[0]
                     vumetermessage('SYNCING!')
                     time.sleep(int(synctime))
-                    stopinterface(camera)
+                    camera = stopinterface(camera)
+                    camera = stopcamera(camera, 'rec_process')
                     video_files=shotfiles(filmfolder, filmname, scene)
                     for i in video_files:
                         compileshot(i,filmfolder,filmname)
@@ -1281,7 +1286,7 @@ def main():
                         time.sleep(1)
                         logger.info('sending syncdone again...')
                     startinterface()
-                    camera = startcamera_preview(camera)
+                    camera = startcamera(camera)
                     loadfilmsettings = True
                     rendermenu = True
                 elif 'SYNCDONE:' in pressed:
@@ -1294,7 +1299,8 @@ def main():
                     #time.sleep(3)
                     if len(synclist) == len(cameras)-1:
                         for ip in synclist:
-                            stopinterface(camera)
+                            camera = stopinterface(camera)
+                            camera = stopcamera(camera, 'rec_process')
                             logger.info('SYNCING from ip:'+ip)
                             run_command('ssh-copy-id pi@'+ip)
                             try:
@@ -1314,7 +1320,7 @@ def main():
                             #        time.sleep(3)
                             #    a=a+1
                             startinterface()
-                            camera = startcamera_preview(camera)
+                            camera = startcamera(camera)
                             loadfilmsettings = True
                             rendermenu = True
                             vumetermessage('SYNC DONE!')
