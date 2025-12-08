@@ -7638,7 +7638,8 @@ def startcamera(camera):
     # but this reduces most of the extra colour shift caused by it:
     camera.drc_strength = 'off'             # disables extra tone-mapping that shifts hues
     time.sleep(1)
-    camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
+    if cammode == 'film':
+        camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
     return camera
 
 def startcamera_preview(camera):
