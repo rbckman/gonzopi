@@ -1869,7 +1869,9 @@ def main():
                 camera = startcamera(camera)
                 vumetermessage('Bitrate set to ' + str(bitrate/1000)+ ' kbits/s')
                 time.sleep(3)
-                loadfilmsettings = True
+                #print('saving settings')
+                #savesettings(settings_to_save, filmname, filmfolder)
+                #loadfilmsettings = True
                 rendermenu = True
             elif pressed == 'middle' and menu[selected] == 'VFX:':
                 if effects[effectselected] == 'colorpoint':
