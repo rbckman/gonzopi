@@ -745,7 +745,7 @@ class api:
                             if selected == p:
                                 if i.rstrip('\n') != '':
                                     #menudone=menudone+'<b> '+i.rstrip('\n')+' </b> | '
-                                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                                    menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:#FCD612;" href="">'+i+'</ka>'
                             else:
                                 if i.rstrip('\n') != '':
                                     #menudone=menudone+i.rstrip('\n')+' | '
@@ -786,7 +786,7 @@ class api:
                             except:
                                 take=1
                         if p > 0 and selected == 423:
-                            menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
+                            menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:#FCD612;" href="">'+i+'</ka>'
                         #if p > 2 and film == None:
                             #menudone=menudone+'<ka style="text-decoration:none; font-size:20px;" color:fff;" href="">'+i+'</ka>'
                         p = p + 1

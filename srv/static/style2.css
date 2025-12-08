@@ -3,7 +3,7 @@ body
     margin: 0px auto;
     text-align: left;
     background-color:#000;
-    color: #f4f4f4;
+    color: #FCD612;
     font-family: monospace;
     font-size: 10px;
     width: 100%;
@@ -19,7 +19,7 @@ pre
 
 a
 {
-    color: #FCD612;
+    color: #f4f4f4;
     padding: 5px;
 }
 
