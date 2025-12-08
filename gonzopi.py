@@ -153,7 +153,7 @@ def main():
     pressagain = ''
     #STANDARD VALUES (some of these may not be needed, should do some clean up)
     abc = '_','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','1','2','3','4','5','6','7','8','9','0'
-    numbers_only = ' ','1','2','3','4','5','6','7','8','9','0'
+    numbers_only = ' ','0','1','2','3','4','5','6','7','8','9'
     keydelay = 0.0555
     selectedaction = 0
     selected = 0
@@ -267,6 +267,8 @@ def main():
     muxing=False
     mux='no'
     camera = ''
+    gputemp = ''
+    cputemp = ''
 
     if rpimode:
         #FIRE UP CAMERA
@@ -1817,7 +1819,7 @@ def main():
                     if udp_ip == '':
                         udp_ip, udp_port = newudp_ip(numbers_only, network)
                         rendermenu = True
-                    stream = startstream(camera, stream, plughw, channels,network,udp_ip,udp_port)
+                    stream = startstream(camera, stream, plughw, channels,network,udp_ip,udp_port,bitrate)
                     if stream == '':
                         vumetermessage('something wrong with streaming')
                     else:
@@ -1862,6 +1864,12 @@ def main():
                     showgonzopictrl=False
             elif pressed == 'middle' and menu[selected] == 'Q:':
                 bitrate = get_bitrate(numbers_only, bitrate)
+                bitrate = int(bitrate*1000)
+                camera = stopcamera(camera, rec_process)
+                camera = startcamera(camera)
+                vumetermessage('Bitrate set to ' + str(bitrate/1000)+ ' kbits/s')
+                time.sleep(3)
+                loadfilmsettings = True
                 rendermenu = True
             elif pressed == 'middle' and menu[selected] == 'VFX:':
                 if effects[effectselected] == 'colorpoint':
@@ -2596,6 +2604,12 @@ def main():
                         savesettings(settings_to_save, filmname, filmfolder)
                     if time.time() - pausetime > savesettingsevery: 
                         pausetime = time.time()
+                        #CPU AND GPU TEMP
+                        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                            cputemp = 'cpu: '+str(int(f.read()) / 1000)+'°C'
+                        # GPU/SoC temp
+                        result = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, text=True)
+                        gputemp = 'gpu: '+ str(float(result.stdout.split('=')[1].split("'")[0])) + '°C'
                         #NETWORKS
                         networks=[]
                         network=''
@@ -2626,7 +2640,7 @@ def main():
                             if searchforcameras == 'on':
                                 camerasconnected='searching '+str(pingip)
                             if menu[selected] != 'SHOT:' and menu[selected] != 'SCENE:' and menu[selected] != 'FILM:' and menu[selected] != 'TAKE:':
-                                vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected)
+                                vumetermessage('filming with '+camera_model +' ip:'+ network + ' '+camerasconnected +' '+cputemp+' '+gputemp)
                         disk = os.statvfs(filmfolder)
                         diskleft = str(int(disk.f_bavail * disk.f_frsize / 1024 / 1024 / 1024)) + 'Gb'
                         #checksync = int(disk.f_bavail * disk.f_frsize / 1024 / 1024 )
@@ -3881,25 +3895,33 @@ def get_bitrate(abc, bitrate):
     cursor = '_'
     blinking = True
     pausetime = time.time()
+    bitrate=int(bitrate/1000)
     menuinput=str(bitrate)
     while True:
-        message = 'New bitrate: ' + menuinput
+        message = 'New bitrate ' + menuinput 
+        endmessage = ' kbits/s'
         print(term.clear+term.home)
         print(message+cursor)
-        writemessage(message + cursor)
+        writemessage(message + cursor + endmessage)
         vumetermessage(helpmessage)
         pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
         if event == ' ':
             event = '_'
-        if pressed == 'down':
+        if pressed == 'up':
             pausetime = time.time()
             if abcx < (len(abc) - 1):
                 abcx = abcx + 1
                 cursor = abc[abcx]
-        elif pressed == 'up':
+            else:
+                abcx = 0
+                cursor = abc[abcx]
+        elif pressed == 'down':
             pausetime = time.time()
             if abcx > 0:
                 abcx = abcx - 1
+                cursor = abc[abcx]
+            else:
+                abcx = len(abc) - 1
                 cursor = abc[abcx]
         elif pressed == 'right' and abcx != 0:
             pausetime = time.time()
@@ -3916,13 +3938,13 @@ def get_bitrate(abc, bitrate):
         elif pressed == 'middle' or event == 10:
             if abc[abcx] != ' ' or menuinput != '':
                 menuinput = menuinput + abc[abcx]
-                if int(menuinput) < 25000001:
+                if int(menuinput) < 65001:
                     logger.info("New bitrate " + menuinput)
                     bitrate = int(menuinput)
                     return bitrate
                     break
                 else:
-                    helpmessage = 'in the range of bitrate 1-25000000'
+                    helpmessage = 'in the range of bitrate 1-65000'
         elif pressed == 'retake':
             return '' 
         elif event in abc:
@@ -7162,7 +7184,7 @@ def uploadfilm(filename, filmname):
 
 #-------------Streaming---------------
 
-def startstream(camera, stream, plughw, channels,network, udp_ip, udp_port):
+def startstream(camera, stream, plughw, channels,network, udp_ip, udp_port, bitrate):
     #youtube
     #youtube="rtmp://a.rtmp.youtube.com/live2/"
     #with open("/home/pi/.youtube-live") as fp:
@@ -7178,7 +7200,10 @@ def startstream(camera, stream, plughw, channels,network, udp_ip, udp_port):
     stream_cmd = 'ffmpeg -f h264 -r 24.989 -i - -vcodec copy -f mpegts udp://'+udp_ip+':'+udp_port
     try:
         stream = subprocess.Popen(stream_cmd, shell=True, stdin=subprocess.PIPE) 
-        camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = bitrate, quality=quality)
+        if bitrate > 1000:
+            camera.start_recording(stream.stdin, splitter_port=2, format='h264', bitrate = bitrate)
+        else:
+            camera.start_recording(stream.stdin, splitter_port=2, format='h264', quality=quality)
     except:
         stream = ''
     #now = time.strftime("%Y-%m-%d-%H:%M:%S") 
@@ -7199,22 +7224,35 @@ def startrecording(camera, takename,bitrate, quality, profilelevel, reclength):
     rec_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
     if reclength > 1 or reclength == 0:
         if camera.recording == True:
-            #camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
-            camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
+            if bitrate > 1000:
+                camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+            else:
+                camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
         else:
-            #camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
-            camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
+            if bitrate > 1000:
+                camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+            else:
+                camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
     else:
         if camera.recording == True:
-            camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
+            if bitrate > 1000:
+                camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+            else:
+                camera.split_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
         else:
-            camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
+            if bitrate > 1000:
+                camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+            else:
+                camera.start_recording(rec_process.stdin, format='h264', level=profilelevel, intra_period=5, quality = quality)
     return rec_process, camera
 
 def stoprecording(camera,rec_process,bitrate, quality, profilelevel):
     #camera.stop_recording()
     #camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
-    camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
+    if bitrate > 1000:
+        camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
+    else:
+        camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
     # Close the FFmpeg process
     time.sleep(0.5)
     rec_process.stdin.close()
@@ -7646,7 +7684,10 @@ def startcamera(camera):
     camera.drc_strength = 'off'             # disables extra tone-mapping that shifts hues
     time.sleep(1)
     if cammode == 'film':
-        camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
+        if bitrate > 1000:
+            camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
+        else:
+            camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
     return camera
 
 def startcamera_preview(camera):
@@ -7657,7 +7698,10 @@ def startcamera_preview(camera):
         camera.start_preview()
     except:
         print('no preview')
-    camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
+    if bitrate > 1000:
+        camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
+    else:
+        camera.start_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
     return camera
 
 def stopcamera_preview(camera):
