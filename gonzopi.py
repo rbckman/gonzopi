@@ -3540,7 +3540,8 @@ def loadfilm(filmname, filmfolder, camera, overlay):
             #camera.stop_preview()
             #camera.close()
             #camera = startcamera(lens,fps)
-            writemessage('Returning')
+            writemessage('Great Scott! a new film, May the Force Be With You!')
+            time.sleep(2)
             return camera, newfilm
         time.sleep(0.02)
 
@@ -7670,7 +7671,8 @@ def stopcamera_preview(camera):
 
 def stopcamera(camera, rec_process):
     global bitrate, quality, profilelevel
-    camera.stop_recording()
+    if camera.recording:
+        camera.stop_recording()
     try:
         camera.stop_preview()
         camera.close()
