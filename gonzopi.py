@@ -2407,7 +2407,9 @@ def main():
                     cameras=filmsettings[27]
                     udp_ip=filmsettings[28]
                     udp_port=filmsettings[29]
-                    bitrate=filmsettings[30]
+                    if newbitrate == '':
+                        bitrate=filmsettings[30]
+                        newbitrate = ''
                     pan=filmsettings[31]
                     tilt=filmsettings[32]
                     move=filmsettings[33]
@@ -2428,9 +2430,6 @@ def main():
                 #    #START INTERFACE
                 #else:
                 #    camera=None
-                if newbitrate != '':
-                    bitrate = int(newbitrate)
-                    newbitrate = ''
                 if flip == "yes":
                     camera.vflip = True
                     camera.hflip = True
@@ -7617,7 +7616,7 @@ def stopinterface(camera):
     return camera
 
 def startcamera(camera):
-    global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso, quality, profilelevel, lens, fps
+    global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso, quality, profilelevel, lens, fps, bitrate
     camera = picamera.PiCamera()
     camera.meter_mode='spot'
     #camera.video_stabilization=True
