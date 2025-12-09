@@ -269,6 +269,7 @@ def main():
     camera = ''
     gputemp = ''
     cputemp = ''
+    newbitrate = ''
 
     if rpimode:
         #FIRE UP CAMERA
@@ -1864,14 +1865,14 @@ def main():
                     showgonzopictrl=False
             elif pressed == 'middle' and menu[selected] == 'Q:':
                 bitrate = get_bitrate(numbers_only, bitrate)
+                newbitrate = int(bitrate*1000)
                 bitrate = int(bitrate*1000)
                 camera = stopcamera(camera, rec_process)
                 camera = startcamera(camera)
-                vumetermessage('Bitrate set to ' + str(bitrate/1000)+ ' kbits/s')
-                time.sleep(3)
+                vumetermessage('Bitrate set to ' + str(int(newbitrate/1000))+ ' kbits/s')
+                time.sleep(2)
                 #print('saving settings')
-                #savesettings(settings_to_save, filmname, filmfolder)
-                #loadfilmsettings = True
+                loadfilmsettings = True
                 rendermenu = True
             elif pressed == 'middle' and menu[selected] == 'VFX:':
                 if effects[effectselected] == 'colorpoint':
@@ -2427,6 +2428,9 @@ def main():
                 #    #START INTERFACE
                 #else:
                 #    camera=None
+                if newbitrate != '':
+                    bitrate = int(newbitrate)
+                    newbitrate = ''
                 if flip == "yes":
                     camera.vflip = True
                     camera.hflip = True
@@ -3941,7 +3945,7 @@ def get_bitrate(abc, bitrate):
             if abc[abcx] != ' ' or menuinput != '':
                 menuinput = menuinput + abc[abcx]
                 if int(menuinput) < 65001:
-                    logger.info("New bitrate " + menuinput)
+                    logger.info("New bitrate!")
                     bitrate = int(menuinput)
                     return bitrate
                     break
