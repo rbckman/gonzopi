@@ -271,19 +271,6 @@ def main():
     cputemp = ''
     newbitrate = ''
 
-    if rpimode:
-        #FIRE UP CAMERA
-        camera = startcamera(camera)
-        #START INTERFACE
-        startinterface()
-    else:
-        camera=None
-
-    #GET FILMFOLDER AND CAMERA VERSION
-    camera_model, camera_revision , filmfolder = getconfig(camera)
-    if os.path.isdir(filmfolder) == False:
-        os.makedirs(filmfolder)
-
     #SYSTEM CONFIGS (turn off hdmi)
     #run_command('tvservice -o')
     #Kernel page cache optimization for sd card
@@ -292,6 +279,11 @@ def main():
         #Make screen shut off work and run full brightness
         run_command('gpio -g mode 19 pwm ')
         run_command('gpio -g pwm 19 1023')
+
+    filmfolder = os.path.expanduser('~')+'/gonzopifilms/'
+
+    if os.path.isdir(filmfolder) == False:
+        os.makedirs(filmfolder)
 
     #STORAGE DRIVES
     storagedrives=[['sd',filmfolder]]
@@ -323,6 +315,27 @@ def main():
         filmname = filmname 
         if os.path.isdir(filmfolder+filmname) == False:
             os.makedirs(filmfolder+filmname)
+
+    #Load settings
+    try:
+        filmsettings = loadsettings(filmfolder, filmname)
+        quality = filmsettings[18]
+        bitrate=filmsettings[30]
+        logger.warning('quality and bitrate: '+str(quality)+' '+str(bitrate)+' loaded')
+        time.sleep(0.2)
+    except:
+        logger.warning('could not load bitrate')
+
+    if rpimode:
+        #FIRE UP CAMERA
+        camera = startcamera(camera)
+        #START INTERFACE
+        startinterface()
+    else:
+        camera=None
+
+    #GET FILMFOLDER AND CAMERA VERSION
+    camera_model, camera_revision , originalfilmfolder = getconfig(camera)
 
     #THUMBNAILCHECKER
     oldscene = scene
