@@ -4224,7 +4224,11 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                             else:
                                 run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
                         #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=26, bitrate=5000000)
-                        camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=quality, level=profilelevel, intra_period=5)
+                        #camera.start_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', quality=quality, level=profilelevel, intra_period=5)
+                        if bitrate > 1000:
+                            camera.split_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)
+                        else:
+                            camera.split_recording(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3) + '.h264', format='h264', level=profilelevel, intra_period=5, quality = quality)
                         if sound == True:
                             os.system(gonzopifolder+'/alsa-utils-1.1.3/aplay/arecord -D hw:'+str(plughw)+' -f '+soundformat+' -c '+str(channels)+' -r '+soundrate+' -vv '+foldername+'timelapse/'+filename+'_'+str(n).zfill(3)+'.wav &')
                         files.append(foldername + 'timelapse/' + filename + '_' + str(n).zfill(3))
@@ -4239,7 +4243,11 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                     if t > duration and recording == True:
                         if sound == True:
                             os.system('pkill arecord')
-                        camera.stop_recording()
+                        #camera.stop_recording()
+                        if bitrate > 1000:
+                            camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
+                        else:
+                            camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
                         recording = False
                         starttime = time.time()
                         t = 0
@@ -4254,7 +4262,11 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                     elif pressed == 'middle' and n > 1:
                         if recording == True:
                             os.system('pkill arecord')
-                            camera.stop_recording()
+                            #camera.stop_recording()
+                            if bitrate > 1000:
+                                camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, bitrate = bitrate)   # back to hot standby
+                            else:
+                                camera.split_recording('/dev/null', format='h264', level=profilelevel, intra_period=5, quality = quality)   # back to hot standby
                         #create thumbnail
                         try:
                             if film_reso == '1920x1080':
