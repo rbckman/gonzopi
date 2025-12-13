@@ -53,9 +53,9 @@ apt-get update
 apt-get upgrade -y
 if [ "$version" = "buster" ]
 then
-    apt-get -y install git python3-pip python-configparser ffmpeg mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake pmount python3-ifaddr python3-pygame python3-serial libmediainfo-dev python3-pymediainfo f2fs-tools
+    apt-get -y install git python3-pip python-configparser ffmpeg mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake pmount python3-ifaddr python3-pygame python3-serial libmediainfo-dev python3-pymediainfo f2fs-tools
 else
-    apt-get -y install git python3-pip python-configparser libav-tools mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev usbmount python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake python3-ifaddr python3-pygame python3-serial f2fs-tools
+    apt-get -y install git python3-pip python-configparser libav-tools mediainfo gpac omxplayer sox cpufrequtils apache2 libapache2-mod-wsgi-py3 libdbus-glib-1-dev dbus libdbus-1-dev python3-numpy python3-pil python3-smbus python3-shortuuid wiringpi make gcc cmake python3-ifaddr python3-pygame python3-serial f2fs-tools
 fi
 usermod -a -G dialout pi
 
@@ -328,8 +328,8 @@ cat <<'EOF' >> /dev/shm/apache2.conf
 EOF
 systemctl reload apache2
 
-echo 'Dont do sync while copying to usb drives, does increase speed alöt!'
-sed -i '/MOUNTOPTIONS=/c\MOUNTOPTIONS="noexec,nodev,noatime,nodiratime"' /etc/usbmount/usbmount.conf
+#echo 'Dont do sync while copying to usb drives, does increase speed alöt!'
+#sed -i '/MOUNTOPTIONS=/c\MOUNTOPTIONS="noexec,nodev,noatime,nodiratime"' /etc/usbmount/usbmount.conf
 
 echo "Adding harddrive tools..."
 cat <<'EOF'
@@ -352,31 +352,31 @@ apt-get -y install ntfs-3g exfat-fuse
 #sed -i '/FS_MOUNTOPTIONS=/c\FS_MOUNTOPTIONS="-fstype=ntfs-3g,nls=utf8,umask=007,gid=46 -fstype=fuseblk,nls=utf8,umask=007,gid=46 -fstype=vfat,gid=1000,uid=1000,umask=007"' /etc/usbmount/usbmount.conf
 #sed -i '/FILESYSTEMS=/c\FILESYSTEMS="vfat ext2 ext3 ext4 hfsplus ntfs fuseblk vfat"' /etc/usbmount/usbmount.conf
 
-cat <<'EOF' >> /etc/usbmount/usbmount.conf
-FS_MOUNTOPTIONS="-fstype=ntfs-3g,nls=utf8,umask=007,gid=46 -fstype=fuseblk,nls=utf8,umask=007,gid=46 -fstype=vfat,gid=1000,uid=1000,umask=007"
-FILESYSTEMS="vfat ext2 ext3 ext4 hfsplus ntfs fuseblk vfat"
-EOF
+#cat <<'EOF' >> /etc/usbmount/usbmount.conf
+#FS_MOUNTOPTIONS="-fstype=ntfs-3g,nls=utf8,umask=007,gid=46 -fstype=fuseblk,nls=utf8,umask=007,gid=46 -fstype=vfat,gid=1000,uid=1000,#umask=007"
+#FILESYSTEMS="vfat ext2 ext3 ext4 hfsplus ntfs fuseblk vfat"
+#EOF
 
-cat <<'EOF' > /etc/udev/rules.d/usbmount.rules
-KERNEL=="sd*", DRIVERS=="sbp2",         ACTION=="add",  PROGRAM="/bin/systemd-escape -p --template=usbmount@.service $env{DEVNAME}", ENV{SYSTEMD_WANTS}+="%c"
-KERNEL=="sd*", SUBSYSTEMS=="usb",       ACTION=="add",  PROGRAM="/bin/systemd-escape -p --template=usbmount@.service $env{DEVNAME}", ENV{SYSTEMD_WANTS}+="%c"
-KERNEL=="ub*", SUBSYSTEMS=="usb",       ACTION=="add",  PROGRAM="/bin/systemd-escape -p --template=usbmount@.service $env{DEVNAME}", ENV{SYSTEMD_WANTS}+="%c"
-KERNEL=="sd*",                          ACTION=="remove",       RUN+="/usr/share/usbmount/usbmount remove"
-KERNEL=="ub*",                          ACTION=="remove",       RUN+="/usr/share/usbmount/usbmount remove"
-EOF
-
-cat <<'EOF' > /etc/systemd/system/usbmount@.service
-[Unit]
-BindTo=%i.device
-After=%i.device
-
-[Service]
-Type=oneshot
-TimeoutStartSec=0
-Environment=DEVNAME=%I
-ExecStart=/usr/share/usbmount/usbmount add
-RemainAfterExit=yes
-EOF
+#cat <<'EOF' > /etc/udev/rules.d/usbmount.rules
+#KERNEL=="sd*", DRIVERS=="sbp2",         ACTION=="add",  PROGRAM="/bin/systemd-escape -p --template=usbmount@.service $env{DEVNAME}", #ENV{SYSTEMD_WANTS}+="%c"
+#KERNEL=="sd*", SUBSYSTEMS=="usb",       ACTION=="add",  PROGRAM="/bin/systemd-escape -p --template=usbmount@.service $env{DEVNAME}", #ENV{SYSTEMD_WANTS}+="%c"
+#KERNEL=="ub*", SUBSYSTEMS=="usb",       ACTION=="add",  PROGRAM="/bin/systemd-escape -p --template=usbmount@.service $env{DEVNAME}", #ENV{SYSTEMD_WANTS}+="%c"
+#KERNEL=="sd*",                          ACTION=="remove",       RUN+="/usr/share/usbmount/usbmount remove"
+#KERNEL=="ub*",                          ACTION=="remove",       RUN+="/usr/share/usbmount/usbmount remove"
+#EOF
+#
+#cat <<'EOF' > /etc/systemd/system/usbmount@.service
+#[Unit]
+#BindTo=%i.device
+#After=%i.device
+#
+#[Service]
+#Type=oneshot
+#TimeoutStartSec=0
+#Environment=DEVNAME=%I
+#ExecStart=/usr/share/usbmount/usbmount add
+#RemainAfterExit=yes
+#EOF
 
 echo "Adding hacking tools..."
 apt-get -y install vim htop screen nmap
