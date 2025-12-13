@@ -6350,6 +6350,7 @@ def playdub(filmname, filename, player_menu, take):
     trimfromend=0
     remove_shots = []
     split_list=[]
+    soundsync=0.0
     oldmenu=''
     if video == True:
         if player_menu == 'dubbb':
@@ -6442,8 +6443,8 @@ def playdub(filmname, filename, player_menu, take):
             menu = 'BACK', 'REDUB', 'PHONES:', 'MIC:'
             settings = '', '', str(headphoneslevel), str(miclevel)
         else:
-            menu = 'BACK', 'PAUSE', 'REPLAY', 'PHONES:'
-            settings = '', '', '', str(headphoneslevel)
+            menu = 'BACK', 'PAUSE', 'REPLAY', 'PHONES:', 'SYNC:'
+            settings = '', '', '', str(headphoneslevel), str(soundsync)
         if dub == True:
             header = 'Dubbing ' + str(round(t,1))
         else:
@@ -6479,6 +6480,9 @@ def playdub(filmname, filename, player_menu, take):
                 if headphoneslevel < 100:
                     headphoneslevel = headphoneslevel + 2
                     run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+            elif menu[selected] == 'SYNC:':
+                soundsync += 0.01
+                soundsync = round(soundsync,2)
             elif menu[selected] == 'MIC:':
                 if miclevel < 100:
                     miclevel = miclevel + 2
@@ -6503,7 +6507,7 @@ def playdub(filmname, filename, player_menu, take):
                         player.set_position(t)
                         player.pause()
                         if sound == False:
-                            playerAudio.set_position(t)
+                            playerAudio.set_position(soundsync+t)
                             playerAudio.pause()
                         #playerAudio.set_position(player.position())
                     except:
@@ -6513,6 +6517,9 @@ def playdub(filmname, filename, player_menu, take):
                 if headphoneslevel > 0:
                     headphoneslevel = headphoneslevel - 2
                     run_command('amixer -c 0 sset Speaker ' + str(headphoneslevel) + '%')
+            elif menu[selected] == 'SYNC:':
+                soundsync -= 0.01
+                soundsync = round(soundsync,2)
             elif menu[selected] == 'MIC:':
                 if miclevel > 0:
                     miclevel = miclevel - 2
@@ -6523,7 +6530,7 @@ def playdub(filmname, filename, player_menu, take):
                         try:
                             player.set_position(t-2)
                             if sound == False:
-                                playerAudio.set_position(t-2)
+                                playerAudio.set_position(soundsync+t-2)
                             time.sleep(0.25)
                             #playerAudio.set_position(player.position())
                         except:
@@ -6538,7 +6545,7 @@ def playdub(filmname, filename, player_menu, take):
                         player.set_position(t)
                         player.pause()
                         if sound == False:
-                            playerAudio.set_position(t)
+                            playerAudio.set_position(soundsync+t)
                             playerAudio.pause()
                         #playerAudio.set_position(player.position())
                     except:
@@ -6548,7 +6555,7 @@ def playdub(filmname, filename, player_menu, take):
                 try:
                     player.set_position(t-60)
                     if sound == False:
-                        playerAudio.set_position(t-60)
+                        playerAudio.set_position(soundsync+t-60)
                     time.sleep(0.25)
                     #playerAudio.set_position(player.position())
                 except:
@@ -6558,7 +6565,7 @@ def playdub(filmname, filename, player_menu, take):
                 try:
                     player.set_position(t+60)
                     if sound == False:
-                        playerAudio.set_position(t+60)
+                        playerAudio.set_position(soundsync+t+60)
                     time.sleep(0.25)
                     #playerAudio.set_position(player.position())
                 except:
@@ -6605,6 +6612,12 @@ def playdub(filmname, filename, player_menu, take):
                         player.quit()
                         if sound == False:
                             playerAudio.quit()
+                            if soundsync < 0:
+                                fastaudiotrim(filename,'0',str(soundsync))
+                                #audiotrim(filename+'.mp4', 'beginning','') 
+                            elif soundsync > 0:
+                                fastaudiotrim(filename,str(soundsync),'')
+                                #audiotrim(filename+'.mp4', 'end','') 
                     #os.system('pkill -9 aplay') 
                 except:
                     #kill it if it dont stop
@@ -6615,6 +6628,15 @@ def playdub(filmname, filename, player_menu, take):
                 os.system('pkill -9 omxplayer')
                 #os.system('pkill -9 dbus-daemon')
                 return [trimfromstart, trimfromend], split_list
+            elif menu[selected] == 'SYNC:':
+                try:
+                    player.set_position(t-2)
+                    if sound == False:
+                        playerAudio.set_position(soundsync+t-2)
+                    time.sleep(0.25)
+                    #playerAudio.set_position(player.position())
+                except:
+                    print('couldnt set position of player')
             elif menu[selected] == 'REPLAY' or menu[selected] == 'REDUB':
                 pause = False
                 try:
@@ -6626,7 +6648,7 @@ def playdub(filmname, filename, player_menu, take):
                         player.set_position(0)
                         if sound == False:
                             playerAudio.pause()
-                            playerAudio.set_position(0)
+                            playerAudio.set_position(soundsync+0)
                     if dub == True:
                         p = 0
                         while p < 3:
@@ -6697,6 +6719,12 @@ def playdub(filmname, filename, player_menu, take):
                 player.quit()
                 if sound == False:
                     playerAudio.quit()
+                    if soundsync < 0:
+                        fastaudiotrim(filename,'0',str(soundsync))
+                        #audiotrim(filename+'.mp4', 'beginning','') 
+                    elif soundsync > 0:
+                        fastaudiotrim(filename,str(soundsync),'')
+                        #audiotrim(filename+'.mp4', 'end','') 
                 return [trimfromstart, trimfromend], split_list
                 #return remove_shots
         if t > (clipduration - 0.3):
@@ -6706,11 +6734,23 @@ def playdub(filmname, filename, player_menu, take):
             player.quit()
             if sound == False:
                 playerAudio.quit()
+                if soundsync < 0:
+                    fastaudiotrim(filename,'0',str(soundsync))
+                    #audiotrim(filename+'.mp4', 'beginning','') 
+                elif soundsync > 0:
+                    fastaudiotrim(filename,str(soundsync),'')
+                    #audiotrim(filename+'.mp4', 'end','') 
             return [trimfromstart, trimfromend], split_list
     try:
         player.quit()
         if sound == False:
             playerAudio.quit()
+            if soundsync < 0:
+                fastaudiotrim(filename,'0',str(soundsync))
+                #audiotrim(filename+'.mp4', 'beginning','') 
+            elif soundsync > 0:
+                fastaudiotrim(filename,str(soundsync),'')
+                #audiotrim(filename+'.mp4', 'end','') 
     except:
         pass
     return [trimfromstart, trimfromend], split_list
@@ -6882,8 +6922,14 @@ def getaudiocards():
 #--------------Fast Audio Trim--------------------
 # make audio file same length as video file
 def fastaudiotrim(filename, beginning, end):
-    run_command('sox -V0 ' + filename + '.wav ' + filename + '_temp.wav trim ' + beginning + ' ' + end)
-    run_command('sox -V0 -G ' + filename + '_temp.wav ' + filename + '.wav fade 0.01 0 0.01')
+    global filmfolder
+    audio_origins = (os.path.realpath(filename+'.wav'))
+    if end != '':
+        run_command('sox -V0 ' + filename + '.wav ' + filmfolder+'.tmp/trim.wav trim ' + beginning + ' ' + end + ' pad '+str(float(end)*-1))
+    else: 
+        run_command('sox -V0 ' + filename + '.wav ' + filmfolder+'.tmp/trim.wav trim ' + beginning)
+    run_command('sox -V0 -G ' + filmfolder+'.tmp/trim.wav ' + audio_origins + ' fade 0.01 0 0.01')
+    os.system('rm '+filmfolder+'.tmp/trim.wav')
 
 #--------------Audio Trim--------------------
 # make audio file same length as video file
