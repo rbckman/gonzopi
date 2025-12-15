@@ -1699,6 +1699,8 @@ def main():
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.wav '+foldername+filename+'.wav')
                             recording = True
                             showmenu = 0
+                            with open(foldername+filename+'.nofaststart', 'w') as f:
+                                f.write(str(int((time.time() - starttime)*1000)))
                         if cammode == 'picture':
                             #picdate=datetime.datetime.now().strftime('%Y%d%m')
                             picture = foldername +'picture' + str(take).zfill(3) + '.jpeg'
@@ -1738,8 +1740,6 @@ def main():
                     except:
                         db = correct_database(filmname,filmfolder,db)
                         db.update('videos', where='filename="'+filmfolder+'.videos/'+video_origins+'.mp4"', soundlag=soundlag, videolength=float(time.time() - starttime), faststart=False)
-                    with open(foldername+filename+'.nofaststart', 'w') as f:
-                        f.write(str(int((time.time() - starttime)*1000)))
                     #time.sleep(0.005) #get audio at least 0.1 longer
                     #camera.capture(foldername + filename + '.jpeg', resize=(800,341))
                     #if slidecommander:
@@ -4945,7 +4945,7 @@ def get_video_length_str(filepath):
             duration_ms = track.duration
             if duration_ms is None:
                 return None  # No duration found
-            db.update('videos', where='filename="'+video_origins+'"', videolength=duration_ms/1000, audiolength=duration_ms/1000)
+            db.update('videos', where='filename="'+video_origins+'"', videolength=duration_ms/1000)
             with open(filepath[:-3] + 'info', 'w') as f:
                 f.write(str(duration_ms))
             return str(datetime.timedelta(seconds=round(duration_ms/1000)))
@@ -4966,7 +4966,7 @@ def get_video_length(filepath):
             duration_ms = track.duration
             if duration_ms is None:
                 return None  # No duration found
-            db.update('videos', where='filename="'+video_origins+'"', videolength=duration_ms/1000, audiolength=duration_ms/1000)
+            db.update('videos', where='filename="'+video_origins+'"', videolength=duration_ms/1000)
             with open(filepath[:-3] + 'info', 'w') as f:
                 f.write(str(duration_ms))
             return int(duration_ms)
@@ -5023,10 +5023,10 @@ def compileshot(filename,filmfolder,filmname):
         vumetermessage('creating audio track...')
         audiosilence(filename)
         try:
-            db.update('videos', where='filename="'+video_origins+'.mp4"', videolength=videolength/1000, audiolength=videolength/1000)
+            db.update('videos', where='filename="'+video_origins+'.mp4"', videolength=videolength/1000)
         except:
             db = correct_database(filmname,filmfolder,db)
-            db.update('videos', where='filename="'+video_origins+'.mp4"', videolength=videolength/1000, audiolength=videolength/1000)
+            db.update('videos', where='filename="'+video_origins+'.mp4"', videolength=videolength/1000)
     #add audio/video start delay sync
     try:
         audiolength = get_audio_length(filename+'.wav')
@@ -5035,13 +5035,7 @@ def compileshot(filename,filmfolder,filmname):
         #if there is no audio length
         vumetermessage('creating audio track...')
         audiosilence(filename)
-    print('trimming audio')
-    if int(audiolength) > int(videolength+int(0.013*1000)):
-        vumetermessage('trimming audio...')
-        audio_origins = (os.path.realpath(filename+'.wav'))
-        run_command('sox -V0 -b 16 '+filename+'.wav -c 2 '+filmfolder+'.tmp/temp.wav trim 0.013')
-        run_command('mv '+filmfolder+'.tmp/temp.wav '+ audio_origins)
-        os.system('rm '+filmfolder+'.tmp/temp.wav')
+
     fps_rounded=round(fps)
     if int(fps) != int(film_fps):
         vumetermessage('stretching audio...')
@@ -5050,10 +5044,10 @@ def compileshot(filename,filmfolder,filmname):
         vumetermessage('trimming audio to video...')
         audiosync, videolength, audiolength = audiotrim(filename, 'end','')
         try:
-            db.update('videos', where='filename="'+video_origins+'.mp4"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
+            db.update('videos', where='filename="'+video_origins+'.mp4"', audiolength=audiolength/1000, audiosync=audiosync)
         except:
             db = correct_database(filmname,filmfolder,db)
-            db.update('videos', where='filename="'+video_origins+'.mp4"', videolength=videolength/1000, audiolength=audiolength/1000, audiosync=audiosync)
+            db.update('videos', where='filename="'+video_origins+'.mp4"', audiolength=audiolength/1000, audiosync=audiosync)
     mux=False
     #one more if stereo check!
     stereo = is_audio_stereo(filename+'.wav')
@@ -5384,10 +5378,27 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             except:
                 db = correct_database(filmname,filmfolder,db)
                 db.update('videos', where='filename="'+video_origins+'.mp4"', faststart=True)
+            print('trimming audio standard gap from start 0.013s')
+            vumetermessage('trimming and syncing audio...')
+            audio_origins = (os.path.realpath(renderfilename+'.wav'))[:-4]
+            audiolength = get_audio_length(audio_origins+'.wav')
+            videolength = get_video_length(video_origins+'.mp4')
+            print('fuuuuuu:'+str(audiolength)+' '+str(videolength))
+            #time.sleep(3)
+            #if audiolength > videolength: 
+            run_command('sox -V0 -b 16 '+audio_origins+'.wav -c 2 '+filmfolder+'.tmp/temp.wav trim 0.013')
+            #run_command('ffmpeg -i '+filmfolder+'.tmp/temp.wav -filter:a atempo=1.00033703703703703706 '+filmfolder+'.tmp/temp2.wav')
+            run_command('ffmpeg -i '+filmfolder+'.tmp/temp.wav -t '+str(round(videolength/1000, 3))+' -filter:a "rubberband=tempo=0.9995" '+filmfolder+'.tmp/temp2.wav')
+            run_command('mv '+filmfolder+'.tmp/temp.wav '+ audio_origins+'.wav')
+            os.system('rm '+filmfolder+'.tmp/temp.wav')
+            os.system('rm '+filmfolder+'.tmp/temp2.wav')
+            audiolength = get_audio_length(audio_origins+'.wav')
+            videolength = get_video_length(video_origins+'.mp4')
+            print('fuuuuuu:'+str(audiolength)+' '+str(videolength))
+            #time.sleep(3)
             compileshot(renderfilename,filmfolder,filmname)
             run_command('rm '+renderfilename+'.nofaststart')
             audiohash = str(int(countsize(renderfilename + '.wav')))
-            videolength = get_video_length(video_origins+'.mp4')
             with open(scenedir + '.audiohash', 'w') as f:
                 f.write(audiohash)
         if os.path.isfile(renderfilename + '.mp4') == True:
@@ -6887,7 +6898,7 @@ def videotrim(filmfolder, foldername ,filename, where, s, t, make_new_take_or_sh
         #    audiotrim(trim_filename, 'end', foldername+'dub/original.wav')
     #take last frame 
     videolength = get_video_length(video_origins+'.mp4')
-    db.insert('videos', tid=datetime.datetime.now(), filename=video_origins+'.mp4', foldername=foldername, audiolength=videolength/1000, videolength=videolength/1000)
+    #db.insert('videos', tid=datetime.datetime.now(), filename=video_origins+'.mp4', foldername=foldername, audiolength=videolength/1000, videolength=videolength/1000)
     if film_reso == '1920x1080':
         run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=800:450 ' + trim_filename + '.jpeg')
         run_command('ffmpeg -y -sseof -1 -i ' + trim_filename + '.mp4 -update 1 -q:v 1 -vf scale=80:45 ' + trim_filename + '_thumb.jpeg')
@@ -7731,7 +7742,10 @@ def startcamera(camera):
         if film_fps == 25:
             #fps_selection=[5,15,24.985,35,49]
             #if sound is gettin before pic add 0.001
-            fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]
+            #fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]-0.67s 1800s
+            fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]#-0.4s 600s
+            #fps_selection=[5,8,10,11,12,13,14,15,24.9888,35,49]+078 300s
+            #fps_selection=[5,8,10,11,12,13,14,15,24.987,35,49]+1s 300s
             fps=fps_selection[fps_selected]
             camera.framerate = fps 
         elif film_fps == 24:
