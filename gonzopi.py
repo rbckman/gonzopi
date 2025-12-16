@@ -6465,8 +6465,10 @@ def playdub(filmname, filename, player_menu, take):
             menu = 'BACK', 'REDUB', 'PHONES:', 'MIC:'
             settings = '', '', str(headphoneslevel), str(miclevel)
         else:
-            menu = 'BACK', 'PAUSE', 'REPLAY', 'PHONES:', 'SYNC:'
-            settings = '', '', '', str(headphoneslevel), str(soundsync)
+            #menu = 'BACK', 'PAUSE', 'REPLAY', 'PHONES:', 'SYNC:'
+            menu = 'BACK', 'PAUSE', 'REPLAY', 'PHONES:'
+            #settings = '', '', '', str(headphoneslevel), str(soundsync)
+            settings = '', '', '', str(headphoneslevel)
         if dub == True:
             header = 'Dubbing ' + str(round(t,1))
         else:
