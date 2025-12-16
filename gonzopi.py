@@ -1688,7 +1688,9 @@ def main():
                             except:
                                 db=correct_database(filmname,filmfolder,db)
                                 db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
-                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+filmfolder+ '.videos/'+video_origins+'.wav &')
+                            #os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+filmfolder+ '.videos/'+video_origins+'.wav &')
+                            #START RECORDING AUDIO AND FINETUNE IT FOR PICAMERA CLOCK
+                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv - | sox -t raw -r '+soundrate+' -c '+str(channels)+' -b 16 -e signed - -t wav '+filmfolder+ '.videos/'+video_origins+'.wav tempo 0.9998 &') #99933 if sound lags behind reduce with 0.0001 or even finer
                             sound_start = time.time()
                             if onlysound != True:
                                 #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
@@ -5048,7 +5050,6 @@ def compileshot(filename,filmfolder,filmname):
         except:
             db = correct_database(filmname,filmfolder,db)
             db.update('videos', where='filename="'+video_origins+'.mp4"', audiolength=audiolength/1000, audiosync=audiosync)
-    mux=False
     #one more if stereo check!
     stereo = is_audio_stereo(filename+'.wav')
     if stereo == False:
@@ -5056,7 +5057,9 @@ def compileshot(filename,filmfolder,filmname):
         run_command('mv '+filmfolder+'.tmp/temp.wav '+ filename + '.wav')
         os.system('rm '+filmfolder+'.tmp/temp.wav')
     logger.info('audio is:' + str(audiolength))
-    if mux == True:
+    #mux=False
+    ifaudio = get_audio_length(filename+'.mp4')
+    if muxing == True and ifaudio == None :
         #muxing mp3 layer to mp4 file
         #count estimated audio filesize with a bitrate of 320 kb/s
         audiosize = countsize(filename + '.wav') * 0.453
@@ -5388,10 +5391,10 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             #if audiolength > videolength: 
             run_command('sox -V0 -b 16 '+audio_origins+'.wav -c 2 '+filmfolder+'.tmp/temp.wav trim 0.013')
             #run_command('ffmpeg -i '+filmfolder+'.tmp/temp.wav -filter:a atempo=1.00033703703703703706 '+filmfolder+'.tmp/temp2.wav')
-            run_command('ffmpeg -i '+filmfolder+'.tmp/temp.wav -t '+str(round(videolength/1000, 3))+' -filter:a "rubberband=tempo=0.9995" '+filmfolder+'.tmp/temp2.wav')
+            #run_command('ffmpeg -i '+filmfolder+'.tmp/temp.wav -t '+str(round(videolength/1000, 3))+' -filter:a "rubberband=tempo=0.9995" '+filmfolder+'.tmp/temp2.wav')
             run_command('mv '+filmfolder+'.tmp/temp.wav '+ audio_origins+'.wav')
             os.system('rm '+filmfolder+'.tmp/temp.wav')
-            os.system('rm '+filmfolder+'.tmp/temp2.wav')
+            #os.system('rm '+filmfolder+'.tmp/temp2.wav')
             audiolength = get_audio_length(audio_origins+'.wav')
             videolength = get_video_length(video_origins+'.mp4')
             print('fuuuuuu:'+str(audiolength)+' '+str(videolength))
@@ -5645,8 +5648,9 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
                 logger.info('compile done!')
             else:
                 print('Already rendered!')
-            muxings=False
-            if muxings == True:
+            #muxings=False
+            ifaudio = get_audio_length(renderfilename+'.mp4')
+            if muxing == True and ifaudio == None:
                 #muxing mp3 layer to mp4 file
                 #count estimated audio filesize with a bitrate of 320 kb/s
                 audiosize = countsize(renderfilename + '.wav') * 0.453
@@ -5740,6 +5744,8 @@ def renderscene(filmfolder, filmname, scene):
         #time.sleep(5)
         scene = int(p.rsplit('scene',1)[1][:3])
         shot = int(p.rsplit('shot',1)[1][:3])
+        #remove audio track
+        call(['MP4Box', '-rem', '2',  p], shell=False)
         rendershotname, renderfix = rendershot(filmfolder, filmname, p, scene, shot)
         if renderfix == True:
             renderfixscene = True
@@ -5752,6 +5758,7 @@ def renderscene(filmfolder, filmname, scene):
     for p in filmfiles:
         scene = int(p.rsplit('scene',1)[1][:3])
         shot = int(p.rsplit('shot',1)[1][:3])
+        call(['MP4Box', '-rem', '2',  p], shell=False)
         rendershotname, renderfix = rendershot(filmfolder, filmname, p, scene, shot)
         if renderfix == True:
             renderfixscene = True
@@ -5773,6 +5780,8 @@ def renderscene(filmfolder, filmname, scene):
     # Render if needed
     if videohash != oldvideohash or renderfixscene == True:
         run_command('rm '+renderfilename+'.info')
+        #remove audio track
+        call(['MP4Box', '-rem', '2', renderfilename+'.mp4'], shell=False)
         rendervideo(filmfolder,filmname,scene,filmfiles, renderfilename, 'scene ' + str(scene))
         #fastedit(filmfolder, filmname, filmfiles, scene)
         #run_command('cp '+renderfilename+ '.mp4 '+renderfilename+'_tmp.mp4')
@@ -5830,8 +5839,9 @@ def renderscene(filmfolder, filmname, scene):
     else:
         print('Already rendered!')
     #dont mux scenes for now
-    mux = False
-    if mux == True:
+    #mux = False
+    ifaudio = get_audio_length(renderfilename+'.mp4')
+    if muxing == True and ifaudio == None:
         #muxing mp3 layer to mp4 file
         #count estimated audio filesize with a bitrate of 320 kb/s
         try:
@@ -5951,7 +5961,8 @@ def renderfilm(filmfolder, filmname, comp, scene):
         else:
             print('Already rendered!')
         #muxing = True
-        if muxing == True:
+        ifaudio = get_audio_length(renderfilename+'.mp4')
+        if muxing == True and ifaudio == None:
             #muxing mp3 layer to mp4 file
             #count estimated audio filesize with a bitrate of 320 kb/s
             audiosize = countsize(renderfilename + '.wav') * 0.453
