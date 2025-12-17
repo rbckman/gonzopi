@@ -1635,6 +1635,14 @@ def main():
                 picturename = 'picture' + str(take).zfill(3)
                 recordable = not os.path.isfile(foldername + filename + '.mp4') and not os.path.isfile(foldername + filename + '.h264') and not os.path.isfile(foldername + picturename + '.jpeg')
                 if recording == False and recordable == True or recording == False and pressed == 'record_now' or recording == False and pressed == 'retake_now':
+                    #calculate ratio
+                    syncratio=0.9998
+                    if int(round(fps)) != int(film_fps):
+                        syncratio=24.989/fps-((1.0-syncratio)/24.989*fps)
+                        #syncratio=24.989/fps-((1.0-syncratio)/24.989*fps)
+                        #syncratio=25/fps
+                    #print('fuuuuuuuuuuu: '+str(syncratio))
+                    #time.sleep(5)
                     #camera_recording=0 
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
                     if pressed == "record":
@@ -1690,7 +1698,8 @@ def main():
                                 db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
                             #os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+filmfolder+ '.videos/'+video_origins+'.wav &')
                             #START RECORDING AUDIO AND FINETUNE IT FOR PICAMERA CLOCK
-                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv - | sox -t raw -r '+soundrate+' -c '+str(channels)+' -b 16 -e signed - -t wav '+filmfolder+ '.videos/'+video_origins+'.wav tempo 0.9998 &') #99933 if sound lags behind reduce with 0.0001 or even finer
+
+                            os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv - | sox -t raw -r '+soundrate+' -c '+str(channels)+' -b 16 -e signed - -t wav '+filmfolder+ '.videos/'+video_origins+'.wav speed '+str(syncratio)+' &') #magic number is 0.9998, if sound lags behind reduce with 0.0001 or even finer
                             sound_start = time.time()
                             if onlysound != True:
                                 #camera.start_recording(filmfolder+ '.videos/'+video_origins+'.h264', format='h264', bitrate = bitrate, level=profilelevel, quality=quality, intra_period=1)
@@ -1769,8 +1778,8 @@ def main():
                             buzz(300)
                         else:
                             run_command('aplay -D plughw:' + str(plughw) + ' '+ gonzopifolder + '/extras/beep.wav')
-                    if int(round(fps)) != int(film_fps):
-                        compileshot(foldername + filename,filmfolder,filmname)
+                    #if int(round(fps)) != int(film_fps):
+                    #    compileshot(foldername + filename,filmfolder,filmname)
                     #os.system('cp /dev/shm/' + filename + '.wav ' + foldername + filename + '.wav')
                     if beeps > 0:
                         if bus:
@@ -2088,7 +2097,9 @@ def main():
                     if fps_selected < len(fps_selection)-1:
                         fps_selected+=1
                         fps=fps_selection[fps_selected]
-                        camera.framerate = fps
+                        camera = stopcamera_preview(camera)
+                        camera.framerate = fps 
+                        camera = startcamera_preview(camera)
                 elif menu[selected] == 'Q:':
                     if quality < 39:
                         quality += 1
@@ -2337,7 +2348,9 @@ def main():
                     if fps_selected > 0:
                         fps_selected-=1
                         fps=fps_selection[fps_selected]
-                        camera.framerate = fps
+                        camera = stopcamera_preview(camera)
+                        camera.framerate = fps 
+                        camera = startcamera_preview(camera)
                 elif menu[selected] == 'Q:':
                     if quality > 10:
                         quality -= 1
@@ -5037,11 +5050,10 @@ def compileshot(filename,filmfolder,filmname):
         #if there is no audio length
         vumetermessage('creating audio track...')
         audiosilence(filename)
-
-    fps_rounded=round(fps)
-    if int(fps) != int(film_fps):
-        vumetermessage('stretching audio...')
-        stretchaudio(filename,fps)
+    #fps_rounded=round(fps)
+    #if int(fps) != int(film_fps):
+    #    vumetermessage('stretching audio...')
+    #    stretchaudio(filename,fps)
     if int(audiolength) != int(videolength):
         vumetermessage('trimming audio to video...')
         audiosync, videolength, audiolength = audiotrim(filename, 'end','')
@@ -7756,7 +7768,7 @@ def startcamera(camera):
             #fps_selection=[5,15,24.985,35,49]
             #if sound is gettin before pic add 0.001
             #fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]-0.67s 1800s
-            fps_selection=[5,8,10,11,12,13,14,15,24.989,35,49]#-0.4s 600s
+            fps_selection=[5,8,10,11,12,13,14,15,24.989,30,35,40,42,45,49]#-0.4s 600s
             #fps_selection=[5,8,10,11,12,13,14,15,24.9888,35,49]+078 300s
             #fps_selection=[5,8,10,11,12,13,14,15,24.987,35,49]+1s 300s
             fps=fps_selection[fps_selected]
