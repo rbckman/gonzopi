@@ -4,7 +4,7 @@ After=multi-user.target
 
 [Service]
 Type=idle
-ExecStart=/home/pi/tarina/extras/wifiset.sh
+ExecStart=/home/pi/gonzopi/extras/wifiset.sh
 
 [Install]
 WantedBy=multi-user.target

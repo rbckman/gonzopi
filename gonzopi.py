@@ -195,6 +195,9 @@ def main():
     soundrate = '48000'
     recording = False
     retake = False
+    playdubonrec = False
+    playdubrecord = False
+    playdubrecfile = ''
     lastmenu = ''
     menudone = ''
     rendermenu = True
@@ -1643,6 +1646,29 @@ def main():
                         #syncratio=25/fps
                     #print('fuuuuuuuuuuu: '+str(syncratio))
                     #time.sleep(5)
+                    #check if dub and play it
+                    if playdubrecord == True:
+                        playdubrecfile=filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)+'/dub/dub001.wav'
+                    if os.path.exists(playdubrecfile) == True and playdubonrec == False and playdubrecord == True:
+                        writemessage('Loading scene...')
+                        organize(filmfolder, filmname)
+                        filmfiles = shotfiles(filmfolder, filmname, scene)
+                        vumetermessage('press middlebutton to cancel')
+                        playonrec_start = 0
+                        if len(filmfiles) > 0:
+                            renderfilm(filmfolder, filmname, comp, scene)
+                        try:
+                            playerAudio = OMXPlayer(playdubrecfile, args=['--adev','alsa:hw:'+str(plughw), '--loop'], dbus_name='org.mpris.MediaPlayer2.omxplayer2', pause=True)
+                            playdubonrec = True
+                        except:
+                            writemessage('something wrong with play dub on rec audio player')
+                            playdubonrec = False
+                        playdubonrec_start=get_video_length(filmfolder + filmname + '/' + 'scene' + str(scene).zfill(3)+'/scene.mp4')/1000
+                        dublength=get_video_length(playdubrecfile)
+                        #if playonrec_start > dublength:
+                        #    playdubonrec = False
+                        #else:
+                        #    playdubonrec = True
                     #camera_recording=0 
                     scenes, shots, takes = browse(filmname,filmfolder,scene,shot,take) 
                     if pressed == "record":
@@ -1696,6 +1722,22 @@ def main():
                             except:
                                 db=correct_database(filmname,filmfolder,db)
                                 db.insert('videos', tid=datetime.datetime.now(), filename=filmfolder+'.videos/'+video_origins+'.mp4', foldername=foldername, filmname=filmname, scene=scene, shot=shot, take=take, audiolength=0, videolength=0)
+                            #check if there's a dub and no
+                            if playdubonrec == True:
+                                if playdubonrec_start > 3:
+                                    playerAudio.play()
+                                    playerAudio.set_position(playdubonrec_start - 3)
+                                    vumetermessage('Geat Ready in 3...')
+                                    time.sleep(1)
+                                    vumetermessage('Geat Ready in 2...')
+                                    time.sleep(1)
+                                    vumetermessage('Geat Ready in 1...')
+                                    time.sleep(0.5)
+                                    vumetermessage('Go!')
+                                    time.sleep(0.5)
+                                else:
+                                    playerAudio.play()
+                                    playerAudio.set_position(playdubonrec_start)
                             #os.system(gonzopifolder + '/alsa-utils-1.1.3/aplay/arecord -D hw:' + str(plughw) + ' -f '+soundformat+' -c ' + str(channels) + ' -r '+soundrate+' -vv '+filmfolder+ '.videos/'+video_origins+'.wav &')
                             #START RECORDING AUDIO AND FINETUNE IT FOR PICAMERA CLOCK
 
@@ -1706,6 +1748,7 @@ def main():
                                 rec_process, camera=startrecording(camera, filmfolder+ '.videos/'+video_origins+'.mp4',bitrate, quality, profilelevel, reclength)
                                 starttime = time.time()
                                 soundlag=sound_start-starttime
+
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.mp4 '+foldername+filename+'.mp4')
                             os.system('ln -sfr '+filmfolder+'.videos/'+video_origins+'.wav '+foldername+filename+'.wav')
                             recording = True
@@ -1771,6 +1814,10 @@ def main():
                             updatethumb = True
                         except:
                             logger.warning('something wrong with camera jpeg capture')
+                    if playdubonrec == True:
+                        playerAudio.pause()
+                        playerAudio.quit()
+                        playdubonrec=False
                     #delayerr = audiotrim(foldername,filename)
                     onlysound = False
                     if beeps > 0:
@@ -4980,13 +5027,13 @@ def get_video_length(filepath):
             # Duration is in milliseconds, convert to seconds
             duration_ms = track.duration
             if duration_ms is None:
-                return None  # No duration found
+                return 0  # No duration found
             db.update('videos', where='filename="'+video_origins+'"', videolength=duration_ms/1000)
             with open(filepath[:-3] + 'info', 'w') as f:
                 f.write(str(duration_ms))
             return int(duration_ms)
             #return int(duration_ms)
-    return None  # No video track found
+    return 0  # No video track found
 
 
 def get_audio_length(filepath):
@@ -6766,6 +6813,8 @@ def playdub(filmname, filename, player_menu, take):
         if t > (clipduration - 0.3):
             os.system('pkill aplay') 
             if dub == True:
+                writemessage('Video ended. Press any key to stop dubbing...')
+                waitforanykey()
                 os.system('pkill arecord')
             player.quit()
             if sound == False:
