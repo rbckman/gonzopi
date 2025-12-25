@@ -872,6 +872,9 @@ def main():
                     newfilmname = nameyourfilm(filmfolder, filmname, abc, False)
                     if filmname != newfilmname:
                         os.system('mv ' + filmfolder + filmname + ' ' + filmfolder + newfilmname)
+                        os.system('mv ' + filmfolder + newfilmname + '/'+filmname+'.mp4 ' + filmfolder + newfilmname+'/'+newfilmname+'.mp4')
+                        os.system('mv ' + filmfolder + newfilmname + '/'+filmname+'.wav ' + filmfolder + newfilmname+'/'+newfilmname+'.wav')
+                        os.system('mv ' + filmfolder + newfilmname + '/'+filmname+'.info ' + filmfolder + newfilmname+'/'+newfilmname+'.info')
                         filmname = newfilmname
                         db = get_film_files(filmname,filmfolder,db)
                         vumetermessage('Film title changed to ' + filmname + '!')
