@@ -715,6 +715,8 @@ class api:
             sendtocamera(ip,port,'copy')
         elif i.func == 'paste':
             sendtocamera(ip,port,'paste')
+        elif i.func == 'dub':
+            sendtocamera(ip,port,'dub')
         elif i.scene!=None and i.shot!=None and i.film != None:
             #sendtocamera(ip,port,'NEWFILM:'+i.film)
             #time.sleep(0.05)

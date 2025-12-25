@@ -108,6 +108,8 @@ $$(document).on('keydown', function (event) {
         $$('#DELETE').trigger('click');
     } else if (event.which == 13) {
         $$('#MIDDLE').trigger('click');
+    } else if (event.which == 68) {
+        $$('#DUB').trigger('click');
     } else if (event.which == 97) {
         $$('#CAMERA0').trigger('click');
     } else if (event.which == 98) {
@@ -194,7 +196,7 @@ $if thumb != '':
 </div>
 
 <div class="controller3">
-<a id="MOVE">MOVE</a> <a id="COPY">COPY</a> <a id="PASTE">PASTE</a><br>
+<a id="MOVE">MOVE</a> <a id="COPY">COPY</a> <a id="PASTE">PASTE</a> <a id="DUB">DUB</a> <br>
 </div>
 
 </div>
@@ -558,6 +560,18 @@ $$('#PASTE').on('click', function () {
     method: "POST",
     type: "Content-type",
     url:"/api?func=paste",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+$$('#DUB').on('click', function () { 
+    $$.ajax({
+    method: "POST",
+    type: "Content-type",
+    url:"/api?func=dub",
     success: function(result) {
     },
     error: function(result) {

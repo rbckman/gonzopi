@@ -5209,6 +5209,7 @@ def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
             l.write("file '"+str(f)+".mp4'\n")
     videomerge.append('-i')
     videomerge.append(scenedir+'.renderlist')
+    videomerge.append('-an')
     videomerge.append('-c:v')
     videomerge.append('copy')
     videomerge.append('-movflags')
@@ -5611,7 +5612,8 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
             video_origins=filmfolder+'.videos/'+datetime.datetime.now().strftime('%Y%d%m')+'_'+os.urandom(8).hex()+'_'+str(tot).zfill(5)
             #compileshot(scenedir+'blend/'+blendmodes[blendselect]+'.h264',filmfolder,filmname)
             call(['MP4Box', '-rem', '2', scenedir+'blend/'+blendmodes[blendselect] + '.mp4'], shell=False)
-            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 '+encoder()+'-filter_complex "blend="'+blendmodes[blendselect]+' '+filmfolder+'.tmp/blend.mp4')
+            run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 '+encoder()+'-filter_complex "blend='+blendmodes[blendselect]+'" -an '+filmfolder+'.tmp/blend.mp4')
+            #run_command('ffmpeg -y -i '+renderfilename+'.mp4 -i '+scenedir+'blend/'+blendmodes[blendselect]+'.mp4 '+encoder()+'-filter_complex "[0:v][1:v]blend=all_mode='+blendmodes[blendselect]+':all_opacity=0.5[v]" -map "[v]" -an '+filmfolder+'.tmp/blend.mp4')
             screen_filename = scenedir+'take' + str(counttakes2(scenedir)+1).zfill(3)
             run_command('cp ' + renderfilename + '.wav ' + screen_filename + '.wav')
             #make a new sublink
@@ -5771,6 +5773,11 @@ def rendershot(filmfolder, filmname, renderfilename, scene, shot):
 
 def renderscene(filmfolder, filmname, scene):
     global fps, muxing
+    #dont start muxing individual shots or scenes lol
+    mux = False
+    if muxing == True:
+        mux = True
+        muxing = False
     #This function checks and calls rendervideo & renderaudio if something has changed in the film
     #Video
     videohash = ''
@@ -5804,7 +5811,7 @@ def renderscene(filmfolder, filmname, scene):
         scene = int(p.rsplit('scene',1)[1][:3])
         shot = int(p.rsplit('shot',1)[1][:3])
         #remove audio track
-        call(['MP4Box', '-rem', '2',  p], shell=False)
+        #call(['MP4Box', '-rem', '2',  p], shell=False)
         rendershotname, renderfix = rendershot(filmfolder, filmname, p, scene, shot)
         if renderfix == True:
             renderfixscene = True
@@ -5817,7 +5824,7 @@ def renderscene(filmfolder, filmname, scene):
     for p in filmfiles:
         scene = int(p.rsplit('scene',1)[1][:3])
         shot = int(p.rsplit('shot',1)[1][:3])
-        call(['MP4Box', '-rem', '2',  p], shell=False)
+        #call(['MP4Box', '-rem', '2',  p+'.mp4'], shell=False)
         rendershotname, renderfix = rendershot(filmfolder, filmname, p, scene, shot)
         if renderfix == True:
             renderfixscene = True
@@ -5900,7 +5907,8 @@ def renderscene(filmfolder, filmname, scene):
     #dont mux scenes for now
     #mux = False
     ifaudio = get_audio_length(renderfilename+'.mp4')
-    if muxing == True and ifaudio == None:
+    if mux == True and ifaudio == None:
+        muxing = True
         #muxing mp3 layer to mp4 file
         #count estimated audio filesize with a bitrate of 320 kb/s
         try:
@@ -5936,6 +5944,11 @@ def renderfilm(filmfolder, filmname, comp, scene):
     global fps, muxing
     def render(q, filmfolder, filmname, comp, scene):
         global fps, muxing
+        #dont start muxing individual shots or scenes lol
+        mux = False
+        if muxing == True:
+            mux = True
+            muxing = False
         newaudiomix = False
         #if comp == 1:
         #    newaudiomix = True
@@ -5946,6 +5959,7 @@ def renderfilm(filmfolder, filmname, comp, scene):
             return
         scenes = countscenes(filmfolder, filmname)
         for i in range(scenes):
+
             scenefilename, audiomix = renderscene(filmfolder, filmname, i + 1)
             #Check if a scene has a new audiomix
             print('audiomix of scene ' + str(i + 1) + ' is ' + str(audiomix))
@@ -6021,7 +6035,8 @@ def renderfilm(filmfolder, filmname, comp, scene):
             print('Already rendered!')
         #muxing = True
         ifaudio = get_audio_length(renderfilename+'.mp4')
-        if muxing == True and ifaudio == None:
+        if mux == True and ifaudio == None:
+            muxing = True
             #muxing mp3 layer to mp4 file
             #count estimated audio filesize with a bitrate of 320 kb/s
             audiosize = countsize(renderfilename + '.wav') * 0.453
@@ -6267,6 +6282,7 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
             dubmix.append(newdub)
             dubrecord = filefolder + 'dub' + str(len(dubfiles)+1).zfill(3) + '.wav'
             os.system('cp '+yanked+'.wav '+dubrecord)
+            vumetermessage('dub' + yanked + ' pasted!')
             dubfiles, dubmix, newmix = getdubs(filmfolder, filmname, scene, shot)
             dubselected = len(dubfiles) - 1
             dubrecord=''
@@ -6288,6 +6304,9 @@ def clipsettings(filmfolder, filmname, scene, shot, take, plughw, yanked):
         elif pressed == 'move' and selected == 4:
             vumetermessage('press insert button to move dub')
             movedub = filefolder + 'dub' + str(dubselected + 1).zfill(3) + '.wav'
+        elif pressed == 'copy':
+            vumetermessage('dub' + str(dubselected + 1).zfill(3)+' copied!')
+            yanked = filefolder + 'dub' + str(dubselected + 1).zfill(3)
         elif pressed == 'insert' and selected == 4:
             vumetermessage('moving dub please hold on')
             pastedub = filefolder + 'dub' + str(dubselected + 1).zfill(3) + '_insert.wav'
@@ -6515,8 +6534,8 @@ def playdub(filmname, filename, player_menu, take):
             settings = '','',''
         elif pause == True:
             if player_menu == 'shot':
-                menu = 'BACK', 'PLAY', 'REPLAY', 'TRIM'
-                settings = '','','',''
+                menu = 'BACK', 'PLAY', 'REPLAY', 'TRIM', 'SPLIT'
+                settings = '','','','',''
             else:
                 menu = 'BACK', 'PLAY', 'REPLAY'
                 settings = '','',''
@@ -6780,6 +6799,13 @@ def playdub(filmname, filename, player_menu, take):
             elif menu[selected] == 'CANCEL':
                 selected = 1
                 trim = False
+            elif menu[selected] == 'SPLIT':
+                split_list.append([[0, player.position()], takename])
+                split_list.append([[player.position(), clipduration], takename])
+                vumetermessage('split '+str(len(split_list))+' position set to: '+ str(player.position()))
+                player.quit()
+                #playerAudio.quit()
+                return trim, split_list
             elif menu[selected] == 'FROM BEGINNING':
                 trim = ['beginning', player.position()]
                 player.quit()
@@ -7641,6 +7667,8 @@ def getbutton(lastbutton, buttonpressed, buttontime, holdbutton):
                 pressed=nextstatus
             elif "paste" in nextstatus:
                 pressed="insert"
+            elif "dub" in nextstatus:
+                pressed="dub"
             elif "MAKEPLACEHOLDERS:" in nextstatus:
                 pressed=nextstatus
             #print(nextstatus)
