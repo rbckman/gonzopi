@@ -7528,25 +7528,14 @@ def empty(filename):
 def waitforanykey():
     vumetermessage("press any key to continue..")
     time.sleep(1)
-    while True:
-        with term.cbreak():
-            val = term.inkey(timeout=0)
-        if not val:
-            event = ''
-        elif val.is_sequence:
-            event = val.name
-        elif val:
-            event = val
-        if i2cbuttons == True:
-            readbus = bus.read_byte_data(DEVICE,GPIOB)
-            readbus2 = bus.read_byte_data(DEVICE,GPIOA)
-        else:
-            readbus = 255
-            readbus2 = 247
-        if readbus != 255 or readbus2 != 247 or event != '':
-            time.sleep(0.05)
-            vumetermessage(' ')
-            return
+    pressed = ''
+    buttonpressed = ''
+    buttontime = time.time()
+    holdbutton = ''
+    flushbutton()
+    while pressed == '':
+        pressed, buttonpressed, buttontime, holdbutton, event, keydelay = getbutton(pressed, buttonpressed, buttontime, holdbutton)
+    return
 
 def middlebutton():
     with term.cbreak():

@@ -39,6 +39,8 @@ $$(document).on('keydown', function (event) {
         $$('#COPY').trigger('click');
     } else if (event.which == 80) {
         $$('#PASTE').trigger('click');
+    } else if (event.which == 68) {
+        $$('#DUB').trigger('click');
     }
 });
 </script>
@@ -91,7 +93,7 @@ button {
 <a id="VIEW">VIEW</a> <a id="UP">UP</a> <a id="RECORD">RECORD</a><br>
 <a id="LEFT">LEFT</a> <a id="MIDDLE">MIDDLE</a> <a id="RIGHT">RIGHT</a><br>
 <a id="DELETE">DELETE</a> <a id="DOWN">DOWN</a> <a id="RETAKE">RETAKE</a><br>
-<a id="MOVE">MOVE</a> <a id="COPY">COPY</a> <a id="PASTE">PASTE</a><br>
+<a id="MOVE">MOVE</a> <a id="COPY">COPY</a> <a id="PASTE">PASTE</a> <a id="DUB">DUB</a> <br>
 </div>
 <div id="menu2" style="margin:0 auto; width:99%" ></div>
 <div id="menu" style="margin:0 auto; width:99%">
@@ -355,6 +357,19 @@ $$('#PASTE').on('click', function () {
     }
 })
 });
+$$('#DUB').on('click', function () { 
+    $$.ajax({
+    method: "POST",
+    type: "Content-type",
+    url:"/api?func=dub",
+    success: function(result) {
+    },
+    error: function(result) {
+    console.log('error', result);
+    }
+})
+});
+
 
   // Function to fetch data and update div
   function updateShotData() {
