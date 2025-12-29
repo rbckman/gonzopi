@@ -135,7 +135,7 @@ hdmi_enable=1
 max_framebuffers=2
 disable_overscan=1
 hdmi_force_hotplug:1=1
-hdmi_group=:1=1
+hdmi_group:1=2
 hdmi_mode:1=82
 hdmi_blanking=1
 
