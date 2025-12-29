@@ -6668,9 +6668,9 @@ def playdub(filmname, filename, player_menu, take):
         elif holdbutton == 'insert':
             if t > 1:
                 try:
-                    player.set_position(t+60)
+                    player.set_position(t+30)
                     if sound == False:
-                        playerAudio.set_position(soundsync+t+60)
+                        playerAudio.set_position(soundsync+t+30)
                     time.sleep(0.25)
                     #playerAudio.set_position(player.position())
                 except:
