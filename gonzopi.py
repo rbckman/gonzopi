@@ -2689,7 +2689,7 @@ def main():
                         pausetime = time.time()
                         #CPU AND GPU TEMP
                         with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
-                            cputemp = 'cpu: '+str(int(f.read()) / 1000)+'°C'
+                            cputemp = 'cpu: '+str(round(int(f.read()) / 1000,1))+'°C'
                         # GPU/SoC temp
                         result = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, text=True)
                         gputemp = 'gpu: '+ str(float(result.stdout.split('=')[1].split("'")[0])) + '°C'
@@ -6688,7 +6688,7 @@ def playdub(filmname, filename, player_menu, take):
         elif pressed == 'record':
             if trimfromstart != 0 and trimfromend != 0 and trimfromstart < trimfromend:
                 split_list.append([[trimfromstart, trimfromend], takename])
-                vumetermessage('split '+str(len(split_list))+' position set to: '+ str(player.position()))
+                vumetermessage('split '+str(len(split_list))+' set')
                 player.pause()
                 if sound == False:
                     playerAudio.pause()
