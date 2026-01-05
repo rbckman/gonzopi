@@ -125,6 +125,9 @@ curl -sSL get.pimoroni.com/hyperpixel4-legacy | bash
 cat <<'EOF' >> /etc/udev/rules.d/98-hyperpixel4-calibration.rules
 ATTRS{name}=="Goodix Capacitive TouchScreen", ENV{LIBINPUT_CALIBRATION_MATRIX}="0 1 0 -1 0 1"
 EOF
+cat <<'EOF' >> /etc/udev/rules.d/99-disable-smart-control.rules
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1915", ATTRS{idProduct}=="1012", ATTR{authorized}="0"
+EOF
 echo "GonzoPi configuration seems to be in order in /boot/config.txt"
 echo "Adding to /boot/config.txt"
 cat <<'EOF' >> /boot/config.txt
