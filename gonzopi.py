@@ -7375,6 +7375,8 @@ def uploadfilm(filename, filmname):
 #-------------Streaming---------------
 
 def startstream(camera, stream, plughw, channels,network, udp_ip, udp_port, bitrate):
+    if camera.recording == True:
+        camera.stop_recording()
     #youtube
     #youtube="rtmp://a.rtmp.youtube.com/live2/"
     #with open("/home/pi/.youtube-live") as fp:
@@ -7402,6 +7404,7 @@ def startstream(camera, stream, plughw, channels,network, udp_ip, udp_port, bitr
 def stopstream(camera, stream):
     camera.stop_recording(splitter_port=2) 
     os.system('pkill -9 ffmpeg') 
+    startcamera_preview(camera)
     print("Camera safely shut down") 
     print("Good bye")
     stream = ''
@@ -7782,7 +7785,8 @@ def stopinterface(camera):
 def startcamera(camera):
     global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso, quality, profilelevel, lens, fps, bitrate
     camera = picamera.PiCamera()
-    camera.meter_mode='spot'
+    camera.meter_mode='average'
+    # 'spot', 'average', 'backlit', 'matrix'
     #camera.video_stabilization=True
     if cammode == 'film':
         if film_reso=='1920x1080':
@@ -7856,6 +7860,7 @@ def startcamera(camera):
     camera.led = False
     camera.start_preview()
     camera.awb_mode = 'auto'
+    camera.exposure_compensation = -11  # e.g., underexpose to discourage quick gain boosts
     #camera.exposure_mode = 'off'            # Locks exposure/gain
     # These are the manual gains that actually fix the color cast on the HQ camera
     # Start with these values under daylight or LED lighting, then fine-tune
