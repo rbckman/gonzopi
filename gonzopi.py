@@ -1866,6 +1866,7 @@ def main():
             elif pressed == 'middle' and menu[selected] == 'SHUTTER:':
                 if camera.shutter_speed == 0:
                     camera.shutter_speed = camera.exposure_speed
+                    camera.exposure_mode = 'off'            # Locks exposure/gain
                 else:
                     camera.shutter_speed = 0
             elif pressed == 'middle' and menu[selected] == 'ISO:':
@@ -2011,8 +2012,10 @@ def main():
                         camera.shutter_speed = camera.exposure_speed
                     if camera.shutter_speed < 5000:
                         camera.shutter_speed = min(camera.shutter_speed + 50, 50000)
+                        camera.exposure_mode = 'off'            # Locks exposure/gain
                     else:
                         camera.shutter_speed = min(camera.shutter_speed + 200, 50000)
+                        camera.exposure_mode = 'off'            # Locks exposure/gain
                 elif menu[selected] == 'ISO:':
                     camera.iso = min(camera.iso + 100, 1600)
                 elif menu[selected] == 'BEEP:':
@@ -2254,8 +2257,10 @@ def main():
                         camera.shutter_speed = camera.exposure_speed
                     if camera.shutter_speed < 5000:
                         camera.shutter_speed = max(camera.shutter_speed - 50, 20)
+                        camera.exposure_mode = 'off'            # Locks exposure/gain
                     else:
                         camera.shutter_speed = max(camera.shutter_speed - 200, 200)
+                        camera.exposure_mode = 'off'            # Locks exposure/gain
                 elif menu[selected] == 'ISO:':
                     camera.iso = max(camera.iso - 100, 100)
                 elif menu[selected] == 'BEEP:':
@@ -7785,7 +7790,7 @@ def stopinterface(camera):
 def startcamera(camera):
     global camera_model, fps_selection, fps_selected, cammode, film_fps, film_reso, quality, profilelevel, lens, fps, bitrate
     camera = picamera.PiCamera()
-    camera.meter_mode='average'
+    camera.meter_mode='spot'
     # 'spot', 'average', 'backlit', 'matrix'
     #camera.video_stabilization=True
     if cammode == 'film':
@@ -7860,8 +7865,8 @@ def startcamera(camera):
     camera.led = False
     camera.start_preview()
     camera.awb_mode = 'auto'
-    camera.exposure_compensation = -11  # e.g., underexpose to discourage quick gain boosts
-    #camera.exposure_mode = 'off'            # Locks exposure/gain
+    camera.exposure_compensation = -5  # e.g., underexpose to discourage quick gain boosts
+    camera.exposure_mode = 'off'            # Locks exposure/gain
     # These are the manual gains that actually fix the color cast on the HQ camera
     # Start with these values under daylight or LED lighting, then fine-tune
     camera.awb_gains = (1.7, 1.4)           # (red_gain, blue_gain)
