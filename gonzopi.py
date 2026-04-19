@@ -1869,6 +1869,7 @@ def main():
                     camera.exposure_mode = 'off'            # Locks exposure/gain
                 else:
                     camera.shutter_speed = 0
+                    camera.exposure_mode = 'auto'            # Locks exposure/gain
             elif pressed == 'middle' and menu[selected] == 'ISO:':
                 if camera.iso == 0:
                     camera.iso = 100
@@ -2010,6 +2011,7 @@ def main():
                 elif menu[selected] == 'SHUTTER:':
                     if camera.shutter_speed == 0:
                         camera.shutter_speed = camera.exposure_speed
+                        camera.exposure_mode = 'off'            # Locks exposure/gain
                     if camera.shutter_speed < 5000:
                         camera.shutter_speed = min(camera.shutter_speed + 50, 50000)
                         camera.exposure_mode = 'off'            # Locks exposure/gain
