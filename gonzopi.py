@@ -6000,7 +6000,7 @@ def renderfilm(filmfolder, filmname, comp, scene):
             print('no videohash found, making one...')
             with open(filmdir + '.videohash', 'w') as f:
                 f.write(videohash)
-        if videohash != oldvideohash:
+        if videohash != oldvideohash or os.path.exists(renderfilename+'.mp4') == False:
             rendervideo(filmfolder,filmname,scene,filmfiles, renderfilename, filmname)
             print('updating video hash')
             with open(filmdir + '.videohash', 'w') as f:
