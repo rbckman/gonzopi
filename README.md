@@ -42,7 +42,21 @@ Gluing takes and scenes together takes a while and depends on your usb harddrive
 
 Installing
 ----------
-Download [Raspbian buster (not the latest!)](https://downloads.raspberrypi.com/raspios_oldstable_lite_armhf/images/raspios_oldstable_lite_armhf-2023-05-03/2023-05-03-raspios-buster-armhf-lite.img.xz) and follow [install instructions | a simple install script should take care of it all!](https://www.raspberrypi.org/documentation/installation/installing-images/README.md).
+
+[download latest release](https://github.com/rbckman/gonzopi/releases)
+
+follow the flash instruction.
+
+start filmmaking.
+
+#### or installing from source
+
+Download [Raspbian buster (not the latest!)](https://downloads.raspberrypi.com/raspios_oldstable_lite_armhf/images/raspios_oldstable_lite_armhf-2023-05-03/2023-05-03-raspios-buster-armhf-lite.img.xz)
+
+`sudo dd if=raspios_oldstable_lite_armhf-2023-05-03/2023-05-03-raspios-buster-armhf-lite.img of=/dev/YOURSDCARD bs=4M status=progress`
+
+`touch ssh` in boot
+
 [Ssh into](https://www.raspberrypi.org/documentation/remote-access/ssh/) Raspberry Pi and run:
 ```
 sudo apt-get install git
