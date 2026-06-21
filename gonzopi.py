@@ -4399,11 +4399,17 @@ def timelapse(beeps,camera,filmname,foldername,filename,between,duration,backlig
                         #show progress
                         while p.poll() is None:
                             time.sleep(0.1)
+                            #CPU AND GPU TEMP
+                            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                                cputemp = 'cpu: '+str(round(int(f.read()) / 1000,1))+'°C'
+                            # GPU/SoC temp
+                            result = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, text=True)
+                            gputemp = 'gpu: '+ str(float(result.stdout.split('=')[1].split("'")[0])) + '°C'
                             try:
                                 rendersize = countsize(filename + '.mp4')
                             except:
                                 continue
-                            writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done')
+                            writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done '+cputemp + ' ' + gputemp)
                         run_command('rm '+scenedir+'.renderlist')
                         print('Video rendered!')
                         os.system('ln -sfr '+video_origins+'.mp4 '+filename+'.mp4')
@@ -5230,14 +5236,19 @@ def rendervideo(filmfolder, filmname, scene, filmfiles, filename, renderinfo):
     #videomerge.append(filename + '.h264')
     #call(videomerge, shell=True) #how to insert somekind of estimated time while it does this?
     p = Popen(videomerge)
-    #show progress
     while p.poll() is None:
         time.sleep(0.1)
+        #CPU AND GPU TEMP
+        with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            cputemp = 'cpu: '+str(round(int(f.read()) / 1000,1))+'°C'
+        # GPU/SoC temp
+        result = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, text=True)
+        gputemp = 'gpu: '+ str(float(result.stdout.split('=')[1].split("'")[0])) + '°C'
         try:
-            rendersize = countsize(rendered_video+'.mp4')
+            rendersize = countsize(rendered_video + '.mp4')
         except:
             continue
-        writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done')
+        writemessage('video rendering ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done '+cputemp + ' ' + gputemp)
     print('Video rendered!')
     os.system('ln -sfr '+rendered_video+'.mp4 '+filename+'.mp4')
     run_command('rm '+scenedir+'.renderlist')
