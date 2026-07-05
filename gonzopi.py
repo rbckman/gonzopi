@@ -5865,7 +5865,8 @@ def renderscene(filmfolder, filmname, scene):
             f.write(videohash)
     print('renderfix is:'+str(renderfixscene))
     # Render if needed
-    if videohash != oldvideohash or renderfixscene == True:
+    videolength = get_video_length(renderfilename+'.mp4')
+    if videohash != oldvideohash or renderfixscene == True or videolength == None:
         run_command('rm '+renderfilename+'.info')
         #remove audio track
         call(['MP4Box', '-rem', '2', renderfilename+'.mp4'], shell=False)
@@ -5913,7 +5914,8 @@ def renderscene(filmfolder, filmname, scene):
     if os.path.isfile(scenedir+'/.rerender') == True:
         renderfixscene=True
         os.system('rm '+scenedir+'/.rerender')
-    if audiohash != oldaudiohash or newmix == True or renderfix == True or renderfixscene == True:
+    audiolength = get_audio_length(renderfilename+'.wav')
+    if audiohash != oldaudiohash or newmix == True or renderfix == True or renderfixscene == True or audiolength == None:
         renderaudio(filmfolder, filmname, scene, filmfiles, renderfilename, dubfiles, dubmix)
         print('updating audiohash...')
         with open(scenedir + '.audiohash', 'w') as f:
@@ -6080,13 +6082,20 @@ def renderfilm(filmfolder, filmname, comp, scene):
             #call(['MP4Box', '-inter', '40', '-v', renderfilename + '_tmp.mp4'], shell=False)
             #call(['ffmpeg', '-i', renderfilename + '_tmp.mp4', '-c', 'copy', '-movflags', 'faststart', renderfilename+'.mp4', '-y'], shell=False)
             p = Popen(['MP4Box', '-add', renderfilename + '_tmp.mp4', '-add', renderfilename + '.mp3', '-new', renderfilename + '.mp4'], shell=False)
+            videosize = countsize(renderfilename + '_tmp.mp4') * 0.453 + countsize(renderfilename + '.mp3') * 0.453
             while p.poll() is None:
-                time.sleep(0.02)
+                time.sleep(0.01)
+                #CPU AND GPU TEMP
+                with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+                    cputemp = 'cpu: '+str(round(int(f.read()) / 1000,1))+'°C'
+                # GPU/SoC temp
+                result = subprocess.run(['vcgencmd', 'measure_temp'], capture_output=True, text=True)
+                gputemp = 'gpu: '+ str(float(result.stdout.split('=')[1].split("'")[0])) + '°C'
                 try:
                     rendersize = countsize(renderfilename + '.mp4')
                 except:
                     continue
-                writemessage('audio & video merging ' + str(int(rendersize)) + ' of ' + str(int(audiosize)) + ' kb done')
+                writemessage('audio & video merging ' + str(int(rendersize)) + ' of ' + str(int(videosize)) + ' kb done ' + cputemp + ' ' + gputemp)
             os.remove(renderfilename + '_tmp.mp4')
             os.remove(renderfilename + '.mp3')
         q.put(renderfilename)
