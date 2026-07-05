@@ -5054,7 +5054,11 @@ def get_video_length(filepath):
 
 def get_audio_length(filepath):
     # Parse the file
-    media_info = MediaInfo.parse(filepath)
+    video_origins = (os.path.realpath(filepath))
+    try:
+        media_info = MediaInfo.parse(filepath)
+    except:
+        return
     # Find the video track (usually the first video track)
     for track in media_info.tracks:
         if track.track_type == "Audio":
